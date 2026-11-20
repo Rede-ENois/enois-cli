@@ -1,0 +1,130 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ChamadasApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta obter(String chamadaId) {
+        return this.cliente.get("/calls/" + ConsultaTextos.caminho(chamadaId))
+    }
+
+    Resposta atender(String chamadaId) {
+        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/answer", "{}")
+    }
+
+    Resposta recusar(String chamadaId) {
+        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/decline", "{}")
+    }
+
+    Resposta cancelar(String chamadaId) {
+        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/cancel", "{}")
+    }
+
+    Resposta encerrar(String chamadaId) {
+        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/end", "{}")
+    }
+}
+
+class PapoRetoApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta publicacoes(String assunto, String janela) {
+        return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
+            + "/publicacoes" + Consulta.par("janela", janela))
+    }
+
+    Resposta linhaDoTempo(String assunto, String janela) {
+        return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
+            + "/timeline" + Consulta.par("janela", janela))
+    }
+}
+
+class ModeracaoApiAdmin {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta sindicancias(String estado, Int limite) {
+        return this.cliente.get("/admin/sanctions" + Consulta.query(listOf(
+            Consulta.par("status", estado),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta editarSindicancia(String sindicanciaId, String campo, String valor) {
+        return this.cliente.post("/admin/sanctions/" + ConsultaTextos.caminho(sindicanciaId)
+            + "/edit", json.encode(mapOf("field", campo, "value", valor)))
+    }
+
+    Resposta revogarSindicancia(String sindicanciaId) {
+        return this.cliente.post("/admin/sanctions/"
+            + ConsultaTextos.caminho(sindicanciaId) + "/revoke", "{}")
+    }
+
+    Resposta recursos(String estado, Int limite) {
+        return this.cliente.get("/admin/appeals" + Consulta.query(listOf(
+            Consulta.par("status", estado),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta deferirRecurso(String recursoId) {
+        return this.cliente.post("/admin/appeals/"
+            + ConsultaTextos.caminho(recursoId) + "/approve", "{}")
+    }
+
+    Resposta indeferirRecurso(String recursoId) {
+        return this.cliente.post("/admin/appeals/"
+            + ConsultaTextos.caminho(recursoId) + "/deny", "{}")
+    }
+
+    Resposta minhasSugestoes(Int limite) {
+        return this.cliente.get("/suggestions/mine" + Consulta.par("limit",
+            Consulta.numero(limite)))
+    }
+
+    Resposta aprovarSugestao(String sugestaoId) {
+        return this.cliente.post("/admin/suggestions/"
+            + ConsultaTextos.caminho(sugestaoId) + "/approve", "{}")
+    }
+
+    Resposta recusarSugestao(String sugestaoId) {
+        return this.cliente.post("/admin/suggestions/"
+            + ConsultaTextos.caminho(sugestaoId) + "/reject", "{}")
+    }
+}
+
+class SelosApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta selos(String postId) {
+        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals")
+    }
+
+    Resposta quemSelo(String postId) {
+        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals/people")
+    }
+
+    Resposta selar(String postId) {
+        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals", "{}")
+    }
+}
