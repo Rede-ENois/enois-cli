@@ -1,0 +1,34 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ChamadasApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta obter(String chamadaId) {
+        return this.cliente.get("/calls/" + ConsultaTextos.caminho(chamadaId))
+    }
+
+    Resposta atender(String chamadaId) {
+        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/answer", "{}")
+    }
+
+    Resposta recusar(String chamadaId) {
+        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/decline", "{}")
+    }
+
+    Resposta cancelar(String chamadaId) {
+        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/cancel", "{}")
+    }
+
+    Resposta encerrar(String chamadaId) {
+        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/end", "{}")
+    }
+}

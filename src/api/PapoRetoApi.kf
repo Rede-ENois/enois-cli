@@ -1,0 +1,24 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class PapoRetoApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta publicacoes(String assunto, String janela) {
+        return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
+            + "/publicacoes" + Consulta.par("janela", janela))
+    }
+
+    Resposta linhaDoTempo(String assunto, String janela) {
+        return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
+            + "/timeline" + Consulta.par("janela", janela))
+    }
+}

@@ -1,0 +1,26 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class SelosApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta selos(String postId) {
+        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals")
+    }
+
+    Resposta quemSelo(String postId) {
+        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals/people")
+    }
+
+    Resposta selar(String postId) {
+        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals", "{}")
+    }
+}

@@ -4,54 +4,6 @@ import core.Cliente
 import core.Resposta
 import kof.json
 
-class ChamadasApi {
-
-    Cliente cliente
-
-    public constructor(Cliente cliente) {
-        this.cliente = cliente
-    }
-
-    Resposta obter(String chamadaId) {
-        return this.cliente.get("/calls/" + ConsultaTextos.caminho(chamadaId))
-    }
-
-    Resposta atender(String chamadaId) {
-        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/answer", "{}")
-    }
-
-    Resposta recusar(String chamadaId) {
-        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/decline", "{}")
-    }
-
-    Resposta cancelar(String chamadaId) {
-        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/cancel", "{}")
-    }
-
-    Resposta encerrar(String chamadaId) {
-        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/end", "{}")
-    }
-}
-
-class PapoRetoApi {
-
-    Cliente cliente
-
-    public constructor(Cliente cliente) {
-        this.cliente = cliente
-    }
-
-    Resposta publicacoes(String assunto, String janela) {
-        return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
-            + "/publicacoes" + Consulta.par("janela", janela))
-    }
-
-    Resposta linhaDoTempo(String assunto, String janela) {
-        return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
-            + "/timeline" + Consulta.par("janela", janela))
-    }
-}
-
 class ModeracaoApiAdmin {
 
     Cliente cliente
@@ -105,26 +57,5 @@ class ModeracaoApiAdmin {
     Resposta recusarSugestao(String sugestaoId) {
         return this.cliente.post("/admin/suggestions/"
             + ConsultaTextos.caminho(sugestaoId) + "/reject", "{}")
-    }
-}
-
-class SelosApi {
-
-    Cliente cliente
-
-    public constructor(Cliente cliente) {
-        this.cliente = cliente
-    }
-
-    Resposta selos(String postId) {
-        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals")
-    }
-
-    Resposta quemSelo(String postId) {
-        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals/people")
-    }
-
-    Resposta selar(String postId) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals", "{}")
     }
 }
