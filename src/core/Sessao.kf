@@ -12,31 +12,35 @@ record Usuario(
 )
 
 record EstadoSessao(
-    String token,
-    String renova,
+    String? token,
+    String? renova,
     String? id,
     String? nome,
     String? usuario,
     String? email,
     String? avatar,
-    Int? faisca
+    Int? faisca,
+    String? alvo
 )
 
 class Sessao {
 
     String token
     String renova
+    String alvo
     Usuario? usuario
 
     public constructor() {
         this.token = ""
         this.renova = ""
+        this.alvo = ""
         this.usuario = Sessao.nenhum()
     }
 
     public constructor(String token, String renova) {
         this.token = token
         this.renova = renova
+        this.alvo = ""
         this.usuario = Sessao.nenhum()
     }
 
@@ -101,7 +105,8 @@ class Sessao {
             avatar = this.usuario.avatar
             faisca = this.usuario.faisca
         }
-        var estado = EstadoSessao(this.token, this.renova, id, nome, login, email, avatar, faisca)
+        var estado = EstadoSessao(this.token, this.renova, id, nome, login, email, avatar,
+            faisca, this.alvo)
         return json.encode(estado)
     }
 
@@ -116,7 +121,8 @@ class Sessao {
     }
 
     static Sessao deEstado(EstadoSessao e) {
-        var s = Sessao(e.token, e.renova)
+        var s = Sessao(Sessao.texto(e.token), Sessao.texto(e.renova))
+        s.alvo = Sessao.texto(e.alvo)
         if (e.nome != null && e.nome.length > 0) {
             s.usuario = Usuario(
                 texto(e.id), e.nome, texto(e.usuario), texto(e.email),
@@ -131,9 +137,13 @@ class Sessao {
 
     static Sessao carregar() {
         var bruto = File(caminhoArquivo()).readText()
-        if (bruto == null) { return Sessao() }
-        var e = json.decode<EstadoSessao>(bruto)
-        return deEstado(e)
+        if (bruto == null || bruto.trim().length == 0) { return Sessao() }
+        try {
+            var e = json.decode<EstadoSessao>(bruto)
+            return deEstado(e)
+        } catch (String erro) {
+            return Sessao()
+        }
     }
 
     Bool salvar() {
@@ -144,6 +154,7 @@ class Sessao {
     Bool limpar() {
         this.token = ""
         this.renova = ""
+        this.alvo = ""
         this.usuario = Sessao.nenhum()
         return File(caminhoArquivo()).writeText("{}")
     }

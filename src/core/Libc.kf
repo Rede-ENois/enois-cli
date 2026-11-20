@@ -1,0 +1,15 @@
+package core
+
+foreign module libc {
+    library "libc.so.6"
+    abi c
+    ownership borrowed
+    extern isatty(Int descritor): Int
+    extern tcgetattr(Int descritor, Buffer(U8) estado): Int
+    extern tcsetattr(Int descritor, Int acao, Buffer(U8) estado): Int
+    extern cfmakeraw(Buffer(U8) estado): void
+    extern read(Int descritor, Buffer(U8) destino, Int tamanho): Int
+    extern write(Int descritor, String texto, Int tamanho): Int
+    extern strlen(String texto): Int
+    extern ioctl(Int descritor, Int pedido, Buffer(U8) destino): Int
+}

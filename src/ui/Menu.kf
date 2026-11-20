@@ -2,18 +2,52 @@ package ui
 
 import core.Ansi
 import core.Entrada
+import core.Faisca
 import core.Tema
 
 class Menu {
 
     static String topo(String nomeApp, String usuario) {
-        var largura = Ansi.LARGURA_CONTEUDO
-        var linha = ""
-        linha = linha + Tema.destaque(nomeApp)
-        if (usuario.length > 0) {
-            linha = linha + "  " + Tema.suave("@" + usuario)
+        return Menu.topoCom(nomeApp, Menu.direitaDe(usuario))
+    }
+
+    static String direitaDe(String usuario) {
+        if (usuario.length == 0) { return "" }
+        return Tema.suave("@" + usuario)
+    }
+
+    static String topoCom(String nomeApp, String direita) {
+        var esquerda = Tema.marca(nomeApp)
+        var folga = Ansi.LARGURA_CONTEUDO - Ansi.largura(esquerda) - Ansi.largura(direita)
+        if (folga < 1) { folga = 1 }
+        var linha = esquerda + Ansi.padEsquerda("", folga) + direita
+        return linha + "\n" + Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE)
+    }
+
+    static String cabecalho(String titulo, String sub) {
+        var linhas = listOf<String>()
+        linhas.add(Tema.titulo(titulo))
+        if (sub.length > 0) {
+            linhas.add(Tema.mudo(sub))
         }
-        return Ansi.padDireita(linha, largura)
+        return Caixa.juntar(linhas)
+    }
+
+    static String rodape(String dica) {
+        var linhas = listOf<String>()
+        linhas.add(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        if (dica.length > 0) {
+            linhas.add(Tema.mudo("  " + dica))
+        }
+        return Caixa.juntar(linhas)
+    }
+
+    static void rodapeDe(String dica) {
+        println(rodape(dica))
+    }
+
+    static String saldo(Int mf) {
+        return Tema.suave("saldo ") + Tema.destaque(Faisca.texto(mf))
     }
 
     static Int principal(List<String> opcoes, String rotuloSaida) {

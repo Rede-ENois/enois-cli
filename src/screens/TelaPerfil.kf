@@ -23,8 +23,7 @@ class TelaPerfil {
 
     void executar() {
         print(Ansi.LIMPAR)
-        println(Menu.topo("énois", ""))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Menu.topo("Énóis", ""))
         var r = PerfilApi(this.cliente).eu()
         if (!r.ok()) {
             println(Caixa.simples(Lista.vazia("sem perfil — entre na sua conta")))

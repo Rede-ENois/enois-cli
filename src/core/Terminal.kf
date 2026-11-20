@@ -1,0 +1,42 @@
+package core
+
+record Tamanho(Int colunas, Int linhas)
+
+class Terminal {
+
+    static Int LARGURA_PADRAO = 80
+    static Int ALTURA_PADRAO = 24
+    static Int LARGURA_MINIMA = 40
+    static Int LARGURA_MAXIMA = 120
+    static Int PEDIDO_DE_TAMANHO = 21523
+
+    static Int largura() {
+        var medida = Terminal.tamanho().colunas
+        if (medida <= 0) { return Terminal.LARGURA_PADRAO }
+        if (medida < Terminal.LARGURA_MINIMA) { return Terminal.LARGURA_MINIMA }
+        if (medida > Terminal.LARGURA_MAXIMA) { return Terminal.LARGURA_MAXIMA }
+        return medida
+    }
+
+    static Int altura() {
+        var medida = Terminal.tamanho().linhas
+        if (medida <= 0) { return Terminal.ALTURA_PADRAO }
+        return medida
+    }
+
+    static Tamanho tamanho() {
+        try {
+            var bruto = buffer.alloc(8)
+            var resposta = ioctl(1, Terminal.PEDIDO_DE_TAMANHO, bruto)
+            if (resposta != 0) { resposta = ioctl(0, Terminal.PEDIDO_DE_TAMANHO, bruto) }
+            if (resposta != 0) { return Tamanho(0, 0) }
+            var medida = buffer.peek32(bruto, 0)
+            var linhas = medida % 65536
+            var colunas = medida / 65536
+            if (linhas <= 0 || colunas <= 0) { return Tamanho(0, 0) }
+            return Tamanho(colunas, linhas)
+        } catch (String e) {
+            return Tamanho(0, 0)
+        }
+    }
+}

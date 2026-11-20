@@ -13,16 +13,28 @@ import ui.Menu
 class TelaNotificacoes {
 
     Cliente cliente
+    String contexto
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
+        this.contexto = "social"
+    }
+
+    public constructor(Cliente cliente, String contexto) {
+        this.cliente = cliente
+        this.contexto = contexto
+    }
+
+    String contextoDoServidor() {
+        if (this.contexto == "profissional") { return "CORPORATE" }
+        return "SOCIAL"
     }
 
     void executar() {
         var cursor = ""
         var temMais = true
         while (temMais) {
-            var r = NotificacoesApi(this.cliente).listar(cursor, 20, "SOCIAL")
+            var r = NotificacoesApi(this.cliente).listar(cursor, 20, this.contextoDoServidor())
             if (!r.ok()) {
                 println(Tema.erro(r.mensagem()))
                 Entrada.pausar()
@@ -31,8 +43,7 @@ class TelaNotificacoes {
             var pagina = NotificacoesApi.pagina(r)
             var itens = pagina.items
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("notificações"))
             if (itens == null || itens.size() == 0) {
                 println(Caixa.simples(Lista.vazia("nenhuma notificação")))

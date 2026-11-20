@@ -1,0 +1,33 @@
+package core
+
+class Json {
+
+    static String texto(Map<String, Object> m, String chave) {
+        var v = Json.valor(m, chave)
+        if (v == null) { return "" }
+        return String.valueOf(v)
+    }
+
+    static Int numero(Map<String, Object> m, String chave) {
+        var v = Json.valor(m, chave)
+        if (v == null) { return 0 }
+        try {
+            return Integer.parseInt(String.valueOf(v))
+        } catch (String e) {
+            return 0
+        }
+    }
+
+    static Bool logico(Map<String, Object> m, String chave) {
+        var v = Json.valor(m, chave)
+        if (v == null) { return false }
+        return String.valueOf(v) == "true"
+    }
+
+    static String? valor(Map<String, Object> m, String chave) {
+        if (m == null) { return null }
+        var v = m.get(chave)
+        if (v == null) { return null }
+        return String.valueOf(v)
+    }
+}

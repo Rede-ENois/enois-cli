@@ -28,8 +28,7 @@ class TelaServicos {
             var pedidos = listOf<PedidoServico>()
             if (vitrine.pedidos != null) { pedidos = vitrine.pedidos }
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("serviços"))
             var opcoes = listOf<String>()
             for (var i = 0; i < ofertas.size(); i = i + 1) {

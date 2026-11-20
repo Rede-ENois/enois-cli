@@ -1,0 +1,128 @@
+package core
+
+class Faisca {
+
+    static Int ESCALA = 1000
+
+    static String texto(Int mf) {
+        var total = mf
+        var sinal = 1
+        if (total < 0) {
+            total = total * -1
+            sinal = -1
+        }
+        var faiscas = (total / ESCALA) * sinal
+        var fagulhas = total % ESCALA
+        var partes = listOf<String>()
+        if (faiscas != 0 || fagulhas == 0) {
+            partes.add(milhar(faiscas) + " " + Faisca.nome("faísca", "faíscas", faiscas))
+        }
+        if (fagulhas > 0) {
+            var valor = milhar(fagulhas)
+            if (mf < 0 && faiscas == 0) { valor = "-" + valor }
+            partes.add(valor + " " + Faisca.nome("fagulha", "fagulhas", fagulhas))
+        }
+        var saida = ""
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            if (i > 0) { saida = saida + " " }
+            saida = saida + partes.get(i)
+        }
+        return saida
+    }
+
+    static String curto(Int mf) {
+        return milhar(mf / ESCALA) + " faíscas"
+    }
+
+    static String milhar(Int valor) {
+        var negativo = valor < 0
+        var digitos = String.valueOf(valor)
+        if (negativo) { digitos = digitos.substring(1) }
+        var saida = ""
+        var contados = 0
+        for (var i = digitos.length - 1; i >= 0; i = i - 1) {
+            if (contados > 0 && contados % 3 == 0) { saida = "." + saida }
+            saida = digitos.substring(i, i + 1) + saida
+            contados = contados + 1
+        }
+        if (negativo) { return "-" + saida }
+        return saida
+    }
+
+    static String nome(String singular, String plural, Int quantidade) {
+        var absoluto = quantidade
+        if (absoluto < 0) { absoluto = absoluto * -1 }
+        if (absoluto == 1) { return singular }
+        return plural
+    }
+
+    static String sem(String texto, String alvo) {
+        if (texto == null || alvo.length == 0) { return texto }
+        var descartar = alvo.charAt(0)
+        var saida = ""
+        for (var i = 0; i < texto.length; i = i + 1) {
+            var c = texto.charAt(i)
+            if (c != descartar) { saida = saida + c }
+        }
+        return saida
+    }
+
+    static Int deTexto(String texto) {
+        var limpo = texto.trim()
+        if (limpo.length == 0) { return -1 }
+        var negativo = false
+        if (limpo.startsWith("-")) {
+            negativo = true
+            limpo = limpo.substring(1)
+        }
+        var inteira = limpo
+        var fracao = ""
+        var virgula = limpo.lastIndexOf(",")
+        if (virgula >= 0) {
+            inteira = limpo.substring(0, virgula)
+            fracao = limpo.substring(virgula + 1)
+            inteira = Faisca.sem(inteira, ".")
+        } else {
+            var ponto = limpo.lastIndexOf(".")
+            if (ponto > 0) {
+                inteira = limpo.substring(0, ponto)
+                fracao = limpo.substring(ponto + 1)
+            }
+        }
+        inteira = Faisca.sem(inteira, " ")
+        var mf = Faisca.inteiro(inteira)
+        if (mf < 0) { return -1 }
+        var resto = Faisca.fracao(fracao)
+        if (resto < 0) { return -1 }
+        var total = mf * ESCALA + resto
+        if (negativo) { return total * -1 }
+        return total
+    }
+
+    static Int inteiro(String digitos) {
+        if (digitos.length == 0) { return 0 }
+        try {
+            var n = Integer.parseInt(digitos)
+            if (n < 0) { return -1 }
+            return n
+        } catch (String e) {
+            return -1
+        }
+    }
+
+    static Int fracao(String digitos) {
+        if (digitos.length == 0) { return 0 }
+        var f = ""
+        for (var i = 0; i < 3; i = i + 1) {
+            if (i < digitos.length) { f = f + digitos.substring(i, i + 1) }
+        }
+        while (f.length < 3) { f = f + "0" }
+        try {
+            var n = Integer.parseInt(f)
+            if (n < 0) { return -1 }
+            return n
+        } catch (String e) {
+            return -1
+        }
+    }
+}

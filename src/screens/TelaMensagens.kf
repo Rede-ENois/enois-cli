@@ -16,16 +16,29 @@ class TelaMensagens {
 
     Cliente cliente
     Sessao sessao
+    String contexto
 
     public constructor(Cliente cliente, Sessao sessao) {
         this.cliente = cliente
         this.sessao = sessao
+        this.contexto = "social"
+    }
+
+    public constructor(Cliente cliente, Sessao sessao, String contexto) {
+        this.cliente = cliente
+        this.sessao = sessao
+        this.contexto = contexto
+    }
+
+    String contextoDoServidor() {
+        if (this.contexto == "profissional") { return "CORPORATE" }
+        return "SOCIAL"
     }
 
     void executar() {
         var rodando = true
         while (rodando && Entrada.ativa) {
-            var r = MensagensApi(this.cliente).listar(null, 20, "SOCIAL")
+            var r = MensagensApi(this.cliente).listar(null, 20, this.contextoDoServidor())
             if (!r.ok()) {
                 println(Tema.erro(r.mensagem()))
                 Entrada.pausar()
@@ -34,8 +47,7 @@ class TelaMensagens {
             var pagina = MensagensApi.paginaConversas(r)
             var itens = pagina.items
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("mensagens"))
             println("")
             if (itens == null || itens.size() == 0) {

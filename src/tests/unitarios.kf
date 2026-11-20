@@ -19,6 +19,16 @@ test "consulta sem pares nao ganha interrogacao" {
     assert(Cliente.query(listOf("", "")) == "")
 }
 
+test "consulta com pagina nao repete a interrogacao" {
+    var q = Cliente.query(listOf(Cliente.pagina(null, 20), Cliente.par("context", "SOCIAL")))
+    assert(q == "?limit=20&context=SOCIAL")
+}
+
+test "consulta com cursor e contexto separa por e comercial" {
+    var q = Cliente.query(listOf(Cliente.pagina("abc", 5), Cliente.par("context", "CORPORATE")))
+    assert(q == "?cursor=abc&limit=5&context=CORPORATE")
+}
+
 test "caminho escapa espaco" {
     assert(Cliente.caminho("a b") == "a+b")
 }

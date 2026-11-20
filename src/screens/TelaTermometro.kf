@@ -21,8 +21,7 @@ class TelaTermometro {
     void executar() {
         var janelas = TermometroApi.janelasDe(TermometroApi(this.cliente).painel())
         print(Ansi.LIMPAR)
-        println(Menu.topo("énois", ""))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Menu.topo("Énóis", ""))
         println(Tema.destaque("termômetro"))
         println(Tema.mudo("o humor da rede por janela"))
         if (janelas.size() == 0) {

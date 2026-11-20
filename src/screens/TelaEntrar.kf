@@ -25,28 +25,62 @@ class TelaEntrar {
 
     Bool executar() {
         print(Ansi.LIMPAR)
-        println(Menu.topo("énois", ""))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Menu.topo("Énóis", ""))
         println(Caixa.simples(Tema.destaque("entrar") + "\n" + Tema.suave("alvo: " + this.config.alvo + " · " + this.config.urlApi)))
         var email = Entrada.textoObrigatorio("e-mail")
         var senha = Entrada.secreta("senha")
         println(Tema.mudo("conectando…"))
         var resultado = this.cliente.entrar(email, senha)
         if (resultado.startsWith("2fa:")) {
-            var desafio = resultado.substring(4)
-            println(Tema.alerta("segundo fator exigido"))
-            var codigo = Entrada.textoObrigatorio("código do autenticador")
-            resultado = this.cliente.verificar2fa(desafio, codigo)
+            resultado = this.desafio(resultado.substring(4))
+        }
+        if (resultado.startsWith("senha-expirada:")) {
+            resultado = this.novaSenha(resultado.substring(14))
         }
         if (!resultado.startsWith("ok")) {
-            println(Tema.erro(resultado.substring(5)))
+            println(Tema.erro(this.mensagemDe(resultado)))
             Entrada.pausar()
             return false
         }
+        this.sessao.alvo = this.config.alvo
+        this.sessao.salvar()
         var nome = ""
         if (this.sessao.usuario != null) { nome = this.sessao.usuario.nome }
         println(Tema.ok("entrou como " + nome))
         return true
+    }
+
+    String desafio(String bruto) {
+        var partes = bruto.split(":")
+        var id = ""
+        var metodo = ""
+        if (partes.length > 0) { id = partes[0] }
+        if (partes.length > 1) { metodo = partes[1] }
+        var rotulo = "código do autenticador"
+        if (metodo == "EMAIL") { rotulo = "código enviado no e-mail" }
+        println(Tema.alerta("segundo fator exigido"))
+        var codigo = Entrada.textoObrigatorio(rotulo)
+        return this.cliente.verificar2fa(id, codigo)
+    }
+
+    String novaSenha(String resetToken) {
+        println(Tema.alerta("sua senha expirou — defina uma nova"))
+        var senha = Entrada.secreta("nova senha")
+        while (senha.length < 8) {
+            println(Tema.erro("  a senha precisa de pelo menos 8 caracteres."))
+            senha = Entrada.secreta("nova senha")
+        }
+        var confirmacao = Entrada.secreta("confirme a nova senha")
+        while (confirmacao != senha) {
+            println(Tema.erro("  as senhas não batem."))
+            confirmacao = Entrada.secreta("confirme a nova senha")
+        }
+        return this.cliente.redefinirSenha(resetToken, senha)
+    }
+
+    String mensagemDe(String resultado) {
+        if (resultado.startsWith("erro:")) { return resultado.substring(5) }
+        return resultado
     }
 
     void provarFeed() {

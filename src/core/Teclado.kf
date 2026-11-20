@@ -1,0 +1,133 @@
+package core
+
+record Tecla(String nome, String caractere)
+
+class Teclado {
+
+    static Int BYTES_TERMIOS = 60
+    static Int POSICAO_VMIN = 23
+    static Int POSICAO_VTIME = 22
+    static Int ESPERA_DECIMOS = 1
+
+    List<Int> original = listOf<Int>()
+    Bool ativo = false
+
+    static Bool disponivel() {
+        try {
+            return isatty(0) == 1
+        } catch (String e) {
+            return false
+        }
+    }
+
+    Bool entrar() {
+        if (this.ativo) { return true }
+        var estado = buffer.alloc(64)
+        if (tcgetattr(0, estado) != 0) { return false }
+        for (var i = 0; i < Teclado.BYTES_TERMIOS; i = i + 1) {
+            this.original.add(buffer.peek8(estado, i))
+        }
+        this.ativo = true
+        return this.aplicar(1, 0)
+    }
+
+    Bool aplicar(Int minimo, Int espera) {
+        var estado = buffer.alloc(64)
+        for (var i = 0; i < this.original.size(); i = i + 1) {
+            buffer.poke8(estado, i, this.original.get(i))
+        }
+        cfmakeraw(estado)
+        var posicaoVmin: Int = Teclado.POSICAO_VMIN
+        var posicaoVtime: Int = Teclado.POSICAO_VTIME
+        buffer.poke8(estado, posicaoVmin, minimo)
+        buffer.poke8(estado, posicaoVtime, espera)
+        return tcsetattr(0, 0, estado) == 0
+    }
+
+    Bool sair() {
+        if (!this.ativo) { return true }
+        var estado = buffer.alloc(64)
+        for (var i = 0; i < this.original.size(); i = i + 1) {
+            buffer.poke8(estado, i, this.original.get(i))
+        }
+        this.ativo = false
+        return tcsetattr(0, 0, estado) == 0
+    }
+
+    Int lerByte() {
+        var destino = buffer.alloc(1)
+        if (read(0, destino, 1) <= 0) { return -1 }
+        return buffer.peek8(destino, 0)
+    }
+
+    Int lerByteComEspera() {
+        this.aplicar(0, Teclado.ESPERA_DECIMOS)
+        var lido = this.lerByte()
+        this.aplicar(1, 0)
+        return lido
+    }
+
+    Tecla ler() {
+        var primeiro = this.lerByte()
+        if (primeiro < 0) { return Tecla("fim", "") }
+        if (primeiro == 27) { return this.lerEscape() }
+        if (primeiro == 13 || primeiro == 10) { return Tecla("enter", "") }
+        if (primeiro == 9) { return Tecla("tab", "") }
+        if (primeiro == 127 || primeiro == 8) { return Tecla("voltar", "") }
+        if (primeiro == 3) { return Tecla("ctrl-c", "") }
+        if (primeiro == 32) { return Tecla("espaco", "") }
+        if (primeiro < 32) { return Tecla("controle", "") }
+        return Tecla("texto", this.lerTexto(primeiro))
+    }
+
+    String lerTexto(Int primeiro) {
+        if (primeiro < 128) { return String.valueOf(primeiro as Char) }
+        var restantes = 0
+        var codigo = 0
+        if ((primeiro & 224) == 192) {
+            restantes = 1
+            codigo = primeiro & 31
+        } else if ((primeiro & 240) == 224) {
+            restantes = 2
+            codigo = primeiro & 15
+        } else if ((primeiro & 248) == 240) {
+            restantes = 3
+            codigo = primeiro & 7
+        } else {
+            return ""
+        }
+        for (var i = 0; i < restantes; i = i + 1) {
+            var seguinte = this.lerByte()
+            if (seguinte < 0) { return "" }
+            codigo = (codigo << 6) | (seguinte & 63)
+        }
+        return Teclado.deCodigo(codigo)
+    }
+
+    static String deCodigo(Int codigo) {
+        if (codigo <= 0) { return "" }
+        if (codigo > 65535) { return "" }
+        return String.valueOf(codigo as Char)
+    }
+
+    Tecla lerEscape() {
+        var segundo = this.lerByteComEspera()
+        if (segundo < 0) { return Tecla("escape", "") }
+        if (segundo == 91) { return this.lerColchete() }
+        if (segundo == 79) { return this.lerColchete() }
+        return Tecla("desconhecida", "")
+    }
+
+    Tecla lerColchete() {
+        var terceiro = this.lerByteComEspera()
+        if (terceiro < 0) { return Tecla("escape", "") }
+        if (terceiro == 65) { return Tecla("cima", "") }
+        if (terceiro == 66) { return Tecla("baixo", "") }
+        if (terceiro == 67) { return Tecla("direita", "") }
+        if (terceiro == 68) { return Tecla("esquerda", "") }
+        if (terceiro == 72) { return Tecla("inicio", "") }
+        if (terceiro == 70) { return Tecla("fim", "") }
+        if (terceiro == 90) { return Tecla("voltar-aba", "") }
+        return Tecla("desconhecida", "")
+    }
+}

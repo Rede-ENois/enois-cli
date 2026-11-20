@@ -24,8 +24,7 @@ class TelaConfessionario {
         while (rodando && Entrada.ativa) {
             var posts = this.posts()
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("confessionário"))
             println(Tema.mudo("histórias anônimas, ninguém sabe quem contou"))
             var opcoes = listOf<String>()

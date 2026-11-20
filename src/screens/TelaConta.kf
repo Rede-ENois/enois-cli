@@ -25,14 +25,14 @@ class TelaConta {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("conta"))
             if (this.sessao.usuario != null) {
                 println(Tema.mudo("@" + this.sessao.usuario.usuario))
             }
             var opcoes = listOf("preferências", "avisos e notificações", "segurança", "carteira",
-                "moderação", "penalidades", "sugestões", "trocar senha", "excluir conta")
+                "moderação", "penalidades", "sugestões", "trocar senha", "sair da conta",
+                "excluir conta")
             var escolha = Entrada.menu("ajustes", opcoes, "voltar")
             if (escolha < 0) {
                 rodando = false
@@ -52,6 +52,8 @@ class TelaConta {
                 TelaSugestoes(this.cliente).executar()
             } else if (escolha == 7) {
                 this.trocarSenha()
+            } else if (escolha == 8) {
+                this.sair()
             } else {
                 this.excluir()
             }
@@ -186,6 +188,17 @@ class TelaConta {
             println(Tema.ok("senha trocada"))
         } else {
             println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void sair() {
+        if (!Entrada.confirmar("encerrar a sessão nesta conta?")) { return }
+        var confirmado = this.cliente.sair()
+        if (confirmado) {
+            println(Tema.ok("sessão encerrada"))
+        } else {
+            println(Tema.erro("não foi possível sair agora. sua sessão continua ativa neste aparelho"))
         }
         Entrada.pausar()
     }

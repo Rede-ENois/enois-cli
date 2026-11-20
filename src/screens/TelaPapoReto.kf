@@ -23,8 +23,7 @@ class TelaPapoReto {
         while (rodando && Entrada.ativa) {
             var itens = PapoRetoApi.assuntosDe(PapoRetoApi(this.cliente).assuntos(null))
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("papo reto"))
             println(Tema.mudo("do que a rede está falando agora"))
             if (itens.size() == 0) {

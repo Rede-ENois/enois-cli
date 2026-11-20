@@ -10,18 +10,34 @@ class Badge {
     }
 
     static String sucesso(String texto) {
-        return Tema.comFundo(Tema.FUNDO_SUCESSO, Tema.TEXTO, " " + texto + " ")
+        return Tema.comFundo(Tema.FUNDO_SUCESSO, Tema.SUCESSO, " " + texto + " ")
     }
 
     static String alerta(String texto) {
-        return Tema.comFundo(Tema.FUNDO_AVISO, Tema.TEXTO, " " + texto + " ")
+        return Tema.comFundo(Tema.FUNDO_AVISO, Tema.AVISO, " " + texto + " ")
     }
 
     static String erro(String texto) {
-        return Tema.comFundo(Tema.FUNDO_DESTRUTIVO, Tema.TEXTO, " " + texto + " ")
+        return Tema.comFundo(Tema.FUNDO_DESTRUTIVO, Tema.DESTRUTIVO, " " + texto + " ")
     }
 
     static String neutra(String texto) {
         return Tema.comFundo(Tema.FUNDO_MUDO, Tema.TEXTO_SUAVE, " " + texto + " ")
+    }
+
+    static String hoje(String texto) {
+        return Tema.comFundo(Tema.FUNDO_AVISO, Tema.AVISO, " " + texto + " ")
+    }
+
+    static String amor(String texto) {
+        return Tema.comFundo(Tema.FUNDO_MUDO, Tema.AMOR, " " + texto + " ")
+    }
+
+    static String crescimento(String texto) {
+        return Tema.comFundo(Tema.FUNDO_SUCESSO, Tema.CRESCIMENTO, " " + texto + " ")
+    }
+
+    static String oportunidade(String texto) {
+        return Tema.comFundo(Tema.FUNDO_AVISO, Tema.OPORTUNIDADE, " " + texto + " ")
     }
 }

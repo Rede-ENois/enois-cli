@@ -23,8 +23,7 @@ class TelaSugestoes {
         while (rodando && Entrada.ativa) {
             var itens = SugestoesApi.listaDe(SugestoesApi(this.cliente).minhas(20))
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("sugestões"))
             println(Tema.mudo("aprovada vira issue no repositório do destino"))
             var opcoes = listOf<String>()

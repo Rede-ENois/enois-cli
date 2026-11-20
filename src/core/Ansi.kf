@@ -4,29 +4,64 @@ class Ansi {
 
     static String ESC = "\u001b"
     static String LIMPAR = ESC + "[2J" + ESC + "[H"
+    static String LIMPAR_LINHA = ESC + "[2K"
+    static String ALTERNATIVO = ESC + "[?1049h"
+    static String NORMAL = ESC + "[?1049l"
     static String OCULTAR_CURSOR = ESC + "[?25l"
     static String MOSTRAR_CURSOR = ESC + "[?25h"
 
-    static Int LARGURA_CONTEUDO = 100
-    static Int LARGURA_MINIMA = 40
-
-    static String SEM_COR = "\u001b\\[[0-9;]*m"
+    static Int LARGURA_CONTEUDO = Terminal.largura()
+    static Int LARGURA_MINIMA = Terminal.LARGURA_MINIMA
 
     static Int largura(String s) {
         if (s == null) { return 0 }
-        var limpo = s.replaceAll(SEM_COR, "")
         var total = 0
-        for (var i = 0; i < limpo.length; i = i + 1) {
-            var c = limpo.charAt(i)
-            if (c >= 0x1F300 && c <= 0x1FAFF) {
-                total = total + 2
-            } else if (c >= 0x2600 && c <= 0x27BF) {
+        var i = 0
+        while (i < s.length) {
+            var c = s.charAt(i)
+            if (c == 27) {
+                i = Ansi.pularSequencia(s, i)
+                continue
+            }
+            if (Ansi.peso(c) == 2) {
                 total = total + 2
             } else {
                 total = total + 1
             }
+            i = i + 1
         }
         return total
+    }
+
+    static Int peso(Int c) {
+        if (c >= 0x1F300 && c <= 0x1FAFF) { return 2 }
+        if (c >= 0x2600 && c <= 0x27BF) { return 2 }
+        return 1
+    }
+
+    static Int pularSequencia(String s, Int inicio) {
+        var i = inicio + 1
+        if (i >= s.length) { return s.length }
+        if (s.charAt(i) != 91) { return i }
+        i = i + 1
+        while (i < s.length) {
+            var c = s.charAt(i)
+            i = i + 1
+            if (c >= 64 && c <= 126) { break }
+        }
+        return i
+    }
+
+    static String trecho(String s, Int de, Int ate) {
+        var saida = ""
+        for (var i = de; i < ate; i = i + 1) {
+            saida = saida + s.charAt(i)
+        }
+        return saida
+    }
+
+    static String posicao(Int linha, Int coluna) {
+        return ESC + "[" + linha + ";" + coluna + "H"
     }
 
     static String padDireita(String s, Int maximo) {
@@ -66,15 +101,20 @@ class Ansi {
         if (largura(s) <= maximo) { return s }
         var saida = ""
         var total = 0
-        for (var i = 0; i < s.length; i = i + 1) {
+        var i = 0
+        while (i < s.length) {
             var c = s.charAt(i)
-            var peso = 1
-            if ((c >= 0x1F300 && c <= 0x1FAFF) || (c >= 0x2600 && c <= 0x27BF)) {
-                peso = 2
+            if (c == 27) {
+                var fim = Ansi.pularSequencia(s, i)
+                saida = saida + Ansi.trecho(s, i, fim)
+                i = fim
+                continue
             }
+            var peso = Ansi.peso(c)
             if (total + peso > maximo - 1) { break }
             saida = saida + c
             total = total + peso
+            i = i + 1
         }
         return saida + "…"
     }

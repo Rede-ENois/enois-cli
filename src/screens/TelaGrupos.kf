@@ -26,8 +26,7 @@ class TelaGrupos {
             var grupos = listOf<Grupo>()
             if (itens != null) { grupos = itens }
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("grupos"))
             var total = grupos.size()
             var opcoes = listOf<String>()

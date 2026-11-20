@@ -24,8 +24,7 @@ class TelaProjetos {
     void executar() {
         var itens = ProjetosApi.listaDe(ProjetosApi(this.cliente).meus())
         print(Ansi.LIMPAR)
-        println(Menu.topo("énois", ""))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Menu.topo("Énóis", ""))
         println(Tema.destaque("projetos"))
         if (itens.size() == 0) {
             println(Caixa.simples(Lista.vazia("nenhum projeto no seu diário")))

@@ -17,72 +17,124 @@ class App {
     }
 
     void executar() {
-        var contexto = "social"
+        this.conferirSessao()
         var rodando = true
         while (rodando && Entrada.ativa) {
-            var escolha = this.tela(contexto)
+            var escolha = this.tela()
             if (escolha == "sair") { rodando = false }
-            if (escolha == "contexto") {
-                if (contexto == "social") {
-                    contexto = "profissional"
-                } else {
-                    contexto = "social"
-                }
-            }
             this.abrir(escolha)
         }
+        this.encerrarSessao()
         println(Tema.mudo("até já"))
     }
 
-    String tela(String contexto) {
-        print(Ansi.LIMPAR)
-        var usuario = ""
-        if (this.sessao.logado() && this.sessao.usuario != null) {
-            usuario = this.sessao.usuario.usuario
+    void encerrarSessao() {
+        if (!this.sessao.logado()) { return }
+        var encerrada = this.cliente.sair()
+        if (encerrada) {
+            println(Tema.mudo("sessão encerrada no servidor"))
+        } else {
+            println(Tema.erro("não foi possível encerrar a sessão no servidor. sua sessão continua ativa neste aparelho"))
         }
-        println(Menu.topo("énois", usuario))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+    }
+
+    void conferirSessao() {
+        if (!this.sessao.logado()) { return }
+        if (this.sessao.alvo.length > 0 && this.sessao.alvo != this.config.alvo) {
+            this.sessao.limpar()
+            println(Tema.alerta("a sessão guardada era de outro alvo — entre de novo"))
+            return
+        }
+        if (!this.cliente.sessaoValida()) {
+            this.sessao.limpar()
+            println(Tema.alerta("sessão expirada — entre de novo"))
+            return
+        }
+        this.sessao.alvo = this.config.alvo
+        this.sessao.salvar()
+    }
+
+    String tela() {
+        if (this.sessao.logado() && Teclado.disponivel()) { return this.painel() }
+        return this.numerado()
+    }
+
+    String painel() {
+        var seletor = Seletor(this.config.contexto)
+        var rota = seletor.escolher(this.topo(), "↑↓ navega · enter escolhe · tab troca de contexto · q encerra")
+        this.guardarContexto(seletor.contexto)
+        if (rota.length == 0) { return "sair" }
+        return rota
+    }
+
+    String numerado() {
+        print(Ansi.LIMPAR)
+        println(this.topo())
         if (!this.sessao.logado()) {
-            println(Tema.mudo("sem sessão · alvo: " + this.config.alvo))
-            var entrada = Entrada.menu("você", listOf("entrar", "trocar alvo"), "encerrar")
+            println(Caixa.simples(Tema.titulo("você") + "\n" + Tema.suave("alvo: " + this.config.alvo + " · " + this.config.urlApi)))
+            var entrada = Entrada.menu("entrar", listOf("entrar", "trocar alvo"), "encerrar")
             if (entrada < 0) { return "sair" }
             if (entrada == 0) { return "entrar" }
             return "trocar alvo"
         }
-        println(Tema.ok("sessão ativa") + Tema.mudo(" · " + contexto
-            + " · alvo: " + this.config.alvo))
-        var opcoes = this.opcoes(contexto)
-        var escolha = Entrada.menu("principal", opcoes, "encerrar")
+        var itens = Navegacao.visiveis(this.config.contexto)
+        println(Abas.lista(Navegacao.CONTEXTOS, this.config.contexto))
+        println("")
+        var escolha = Entrada.menuSecoes("principal", Navegacao.secoes(itens), this.rotulos(itens), "encerrar")
         if (escolha < 0) { return "sair" }
-        return opcoes.get(escolha)
+        Menu.rodapeDe("número para escolher · 0 encerra a cli")
+        return itens.get(escolha).rota
     }
 
-    List<String> opcoes(String contexto) {
-        var opcoes = listOf("feed", "mensagens")
-        if (contexto == "social") {
-            opcoes.add("rede")
-            opcoes.add("salvos")
-            opcoes.add("comunidades")
-            opcoes.add("grupos")
-            opcoes.add("eventos")
-            opcoes.add("blogs")
-            opcoes.add("par de estudo")
-        } else {
-            opcoes.add("vagas")
-            opcoes.add("freelances")
-            opcoes.add("serviços")
-            opcoes.add("empresas")
-            opcoes.add("mentoria")
-            opcoes.add("perfil profissional")
+    String topo() {
+        var usuario = ""
+        var saldo = 0
+        if (this.sessao.logado() && this.sessao.usuario != null) {
+            usuario = this.sessao.usuario.usuario
+            saldo = this.sessao.usuario.faisca
         }
-        opcoes.add("explorar")
-        opcoes.add("perfil")
-        opcoes.add("notificações")
-        opcoes.add("conta")
-        opcoes.add("trocar interface")
-        opcoes.add("trocar alvo")
-        opcoes.add("sair")
-        return opcoes
+        return Menu.topoCom("Énóis", this.direita(usuario, saldo))
+    }
+
+    List<List<String>> rotulos(List<ItemNavegacao> itens) {
+        var grupos = listOf<List<String>>()
+        for (var secao in Navegacao.secoes(itens)) {
+            var rotulos = listOf<String>()
+            for (var item in Navegacao.daSecao(itens, secao)) {
+                rotulos.add(item.rotulo)
+            }
+            grupos.add(rotulos)
+        }
+        return grupos
+    }
+
+    void guardarContexto(String novo) {
+        if (novo == this.config.contexto) { return }
+        this.config.usaContexto(novo)
+        this.config.salvar()
+    }
+
+    void alternarContexto() {
+        this.config.usaContexto(Navegacao.proximoContexto(this.config.contexto))
+        this.config.salvar()
+        println(Tema.suave("contexto: " + this.config.contexto))
+    }
+
+    String direita(String usuario, Int saldo) {
+        var partes = listOf<String>()
+        if (usuario.length > 0) {
+            partes.add(Tema.suave("@" + usuario))
+        }
+        if (saldo > 0) {
+            partes.add(Tema.suave(Faisca.texto(saldo)))
+        }
+        partes.add(Tema.mudo(this.config.alvo))
+        var linha = ""
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            if (i > 0) { linha = linha + Tema.mudo(" · ") }
+            linha = linha + partes.get(i)
+        }
+        return linha
     }
 
     void abrir(String escolha) {
@@ -90,9 +142,9 @@ class App {
             var entrar = TelaEntrar(this.cliente, this.config, this.sessao)
             if (entrar.executar()) { entrar.provarFeed() }
         } else if (escolha == "feed") {
-            TelaFeed(this.cliente).executar()
+            TelaFeed(this.cliente, this.config.contexto).executar()
         } else if (escolha == "mensagens") {
-            TelaMensagens(this.cliente, this.sessao).executar()
+            TelaMensagens(this.cliente, this.sessao, this.config.contexto).executar()
         } else if (escolha == "rede") {
             TelaRede(this.cliente, this.sessao).executar()
         } else if (escolha == "salvos") {
@@ -124,11 +176,25 @@ class App {
         } else if (escolha == "perfil") {
             TelaPerfil(this.cliente, this.sessao).executar()
         } else if (escolha == "notificações") {
-            TelaNotificacoes(this.cliente).executar()
+            TelaNotificacoes(this.cliente, this.config.contexto).executar()
         } else if (escolha == "conta") {
             TelaConta(this.cliente, this.sessao).executar()
+        } else if (escolha == "trocar contexto") {
+            this.alternarContexto()
         } else if (escolha == "trocar alvo") {
             this.alternarAlvo()
+        } else if (escolha == "sair da conta") {
+            this.sairDaConta()
+        }
+    }
+
+    void sairDaConta() {
+        if (!Entrada.confirmar("encerrar a sessão nesta conta?")) { return }
+        var confirmado = this.cliente.sair()
+        if (confirmado) {
+            println(Tema.ok("sessão encerrada"))
+        } else {
+            println(Tema.erro("não foi possível sair agora. sua sessão continua ativa neste aparelho"))
         }
     }
 
@@ -139,6 +205,11 @@ class App {
             this.config.usaAlvo("qa")
         }
         this.config.salvar()
-        println(Tema.suave("alvo: " + this.config.alvo))
+        if (this.sessao.logado()) {
+            this.sessao.limpar()
+            println(Tema.suave("alvo: " + this.config.alvo + " — entre de novo neste alvo"))
+        } else {
+            println(Tema.suave("alvo: " + this.config.alvo))
+        }
     }
 }

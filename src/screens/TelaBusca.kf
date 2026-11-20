@@ -22,8 +22,7 @@ class TelaBusca {
         var termo = Entrada.textoObrigatorio("buscar")
         var r = BuscaApi(this.cliente).buscar(termo, null, 30)
         print(Ansi.LIMPAR)
-        println(Menu.topo("énois", ""))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Menu.topo("Énóis", ""))
         if (!r.ok()) {
             println(Tema.erro(r.mensagem()))
             Entrada.pausar()

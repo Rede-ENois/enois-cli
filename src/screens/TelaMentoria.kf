@@ -26,8 +26,7 @@ class TelaMentoria {
             var mentores = listOf<Mentor>()
             if (itens != null) { mentores = itens }
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("mentoria"))
             var opcoes = listOf<String>()
             for (var i = 0; i < mentores.size(); i = i + 1) {

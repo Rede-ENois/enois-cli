@@ -26,8 +26,7 @@ class TelaRede {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("rede"))
             var escolha = Entrada.menu("conexões",
                 listOf("sugestões", "seguidores", "seguindo", "pedidos"), "voltar")

@@ -23,8 +23,7 @@ class TelaParesEstudo {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("par de estudo"))
             var meus = ParesEstudoApi.meusDe(busca.meus())
             println(this.resumo(meus))

@@ -24,8 +24,7 @@ class TelaDevelopers {
         while (rodando && Entrada.ativa) {
             var origens = DevelopersApi.origensDe(DevelopersApi(this.cliente).origens())
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("desenvolvedores"))
             println(Tema.mudo("origens autorizadas a chamar a api pública"))
             var opcoes = listOf<String>()
