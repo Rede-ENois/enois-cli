@@ -1,0 +1,153 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+/**
+ * Tela do feed: a linha do tempo do Explorar em lista de cards.
+ *
+ * Cada post é um cartão do DS no terminal (Caixa.card): autor em destaque,
+ * conteúdo quebrado na largura do conteúdo e contadores em texto suave.
+ */
+class TelaFeed {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    /** Desenha uma página inteira e pergunta se quer a próxima. */
+    Bool pagina(PaginaFeed pagina) {
+        print(Ansi.LIMPAR)
+        println(Menu.topo("énois", ""))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        var itens = pagina.items
+        if (itens == null || itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("feed vazio — siga alguém pelo Explorar")))
+            return false
+        }
+        var cursorProximo = ""
+        if (pagina.nextCursor != null) { cursorProximo = pagina.nextCursor }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            println(this.card(itens.get(i)))
+        }
+        if (cursorProximo.length == 0) {
+            println(Tema.mudo("~ fim do feed"))
+            return false
+        }
+        return Entrada.confirmar("carregar mais")
+    }
+
+    /** Card de um post; campos ausentes da API saem do card. */
+    String card(PostResumo p) {
+        var topo = this.linhaAutor(p)
+        var corpo = ""
+        if (p.conteudo != null && p.conteudo.length > 0) {
+            corpo = p.conteudo
+        }
+        var rodape = this.linhaRodape(p)
+        var conteudo = topo
+        if (corpo.length > 0) { conteudo = conteudo + "\n" + corpo }
+        conteudo = conteudo + "\n" + rodape
+        var linhas = Caixa.cartao(conteudo)
+        var saida = ""
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            if (i > 0) { saida = saida + "\n" }
+            saida = saida + linhas.get(i)
+        }
+        return saida
+    }
+
+    /** "Nome @usuario · tipo · quando" + crédito de repost quando é republicado. */
+    String linhaAutor(PostResumo p) {
+        var nome = ""
+        if (p.autor != null) {
+            var a = p.autor
+            if (a.nome != null) { nome = a.nome }
+            var usuario = ""
+            if (a.usuario != null) { usuario = " @" + a.usuario }
+            nome = nome + usuario
+        }
+        var tipo = ""
+        if (p.tipo != null && p.tipo.length > 0) { tipo = " · " + Tema.suave(tipoEmTexto(p.tipo)) }
+        var linha = Tema.destaque(nome + tipo)
+        if (p.autorRepostado != null && p.autorRepostado.length > 0) {
+            linha = Tema.mudo("↻ @" + p.autorRepostado) + "\n" + linha
+        }
+        return linha
+    }
+
+    /** Contadores + enquete quando o post tem uma. */
+    String linhaRodape(PostResumo p) {
+        var reacoes = 0
+        var comentarios = 0
+        if (p.contadores != null) {
+            var c = p.contadores
+            if (c.reacoes != null) { reacoes = c.reacoes }
+            if (c.comentarios != null) { comentarios = c.comentarios }
+        }
+        var rodape = Tema.suave("♥ " + String.valueOf(reacoes) + "   💬 " + String.valueOf(comentarios))
+        if (p.enquete != null) {
+            rodape = rodape + "\n" + this.linhaEnquete(p.enquete)
+        }
+        return rodape
+    }
+
+    /** Alternativas da enquete com a fatia de votos de cada uma. */
+    String linhaEnquete(Enquete e) {
+        var opcoes = e.opcoes
+        if (opcoes == null || opcoes.size() == 0) { return "" }
+        var total = 0
+        if (e.totalVotos != null) { total = e.totalVotos }
+        var linhas = ""
+        for (var i = 0; i < opcoes.size(); i = i + 1) {
+            var o = opcoes.get(i)
+            var texto = ""
+            if (o.texto != null) { texto = o.texto }
+            var votos = 0
+            if (o.votos != null) { votos = o.votos }
+            var fatia = 0
+            if (total > 0) { fatia = (votos * 20) / total }
+            var barra = ""
+            for (var b = 0; b < 20; b = b + 1) {
+                if (b < fatia) {
+                    barra = barra + "█"
+                } else {
+                    barra = barra + "░"
+                }
+            }
+            linhas = linhas + Tema.suave(barra + " " + String.valueOf(votos)) + " " + texto + "\n"
+        }
+        var resumo = Tema.mudo(String.valueOf(total) + " votos")
+        if (linhas.length > 0) { resumo = linhas + resumo }
+        return resumo
+    }
+
+    /** Tipo do post em texto curto e humano. */
+    static String tipoEmTexto(String tipo) {
+        if (tipo == "INSIGHT") { return "insight" }
+        if (tipo == "ARTICLE") { return "artigo" }
+        if (tipo == "QUESTION") { return "pergunta" }
+        if (tipo == "PROJECT") { return "projeto" }
+        if (tipo == "OPPORTUNITY") { return "oportunidade" }
+        if (tipo == "PAGE") { return "página" }
+        if (tipo == "NEWS") { return "notícia" }
+        if (tipo == "TUTORIAL") { return "tutorial" }
+        if (tipo == "REVIEW") { return "resenha" }
+        if (tipo == "BUSINESS") { return "profissional" }
+        if (tipo == "DIVERTIDO") { return "divertido" }
+        if (tipo == "MOMENT") { return "momento" }
+        if (tipo == "INSTANTE") { return "instante" }
+        if (tipo == "BLOG") { return "blog" }
+        if (tipo == "POLL") { return "enquete" }
+        if (tipo == "COMPLAINT") { return "reclamação" }
+        return tipo
+    }
+}

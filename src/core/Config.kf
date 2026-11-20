@@ -15,8 +15,9 @@ class Config {
     static String URL_PRODUCAO = "https://api.enois.ia.br/api"
     static String URL_QA = "https://enois-api-qa.b7cloud.tech/api"
 
-    /** Origem que a API espera ver no X-Client-Origin. */
-    static String ORIGEM_PADRAO = "https://enois.ia.br"
+    /** Origem que a API espera ver no X-Client-Origin (uma por alvo — o CORS é por ambiente). */
+    static String ORIGEM_PRODUCAO = "https://enois.ia.br"
+    static String ORIGEM_QA = "https://enois-qa.b7cloud.tech"
 
     /** Diretório de estado do CLI (mesmo padrão do `~/.config`). */
     static String dirEstado() {
@@ -31,16 +32,18 @@ class Config {
     public constructor() {
         this.alvo = "producao"
         this.urlApi = URL_PRODUCAO
-        this.origem = ORIGEM_PADRAO
+        this.origem = ORIGEM_PRODUCAO
     }
 
-    /** Troca de alvo e rederiva a URL da API. */
+    /** Troca de alvo e rederiva a URL da API e a origem (cada ambiente tem a sua). */
     void usaAlvo(String novo) {
         this.alvo = novo
         if (novo == "qa") {
             this.urlApi = URL_QA
+            this.origem = ORIGEM_QA
         } else {
             this.urlApi = URL_PRODUCAO
+            this.origem = ORIGEM_PRODUCAO
         }
     }
 

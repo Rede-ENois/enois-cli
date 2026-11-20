@@ -1,0 +1,73 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+/**
+ * Perfil e usuários — o espelho terminal do profileApi/usersApi do frontend.
+ */
+class PerfilApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    /** O perfil de quem está logado. */
+    Resposta eu() {
+        return this.cliente.get("/me")
+    }
+
+    /** Perfil público por @ (nome de usuário). */
+    Resposta porUsuario(String usuario) {
+        return this.cliente.get("/users/" + ConsultaTextos.caminho(usuario))
+    }
+
+    /** Perfil por id (quando só há o id, ex. de menção). */
+    Resposta porId(String id) {
+        return this.cliente.get("/users/by-id/" + ConsultaTextos.caminho(id))
+    }
+
+    /** Rede do perfil: "connections" ou "followers". */
+    Resposta rede(String usuario, String tipo) {
+        var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/" + tipo
+        return this.cliente.get(caminho)
+    }
+
+    /** Busca de usuários por termo. */
+    Resposta buscar(String termo) {
+        return this.cliente.get("/users/search" + Consulta.query(listOf(
+            Consulta.par("q", termo))))
+    }
+
+    /** Edita nome, bio e afins do perfil próprio (campos opcionais da API). */
+    Resposta editar(String nome, String bio) {
+        var corpo = ""
+        if (bio.length > 0) {
+            corpo = json.encode(mapOf("name", nome, "bio", bio))
+        } else {
+            corpo = json.encode(mapOf("name", nome))
+        }
+        return this.cliente.patch("/me/profile", corpo)
+    }
+
+    /** Decodifica um perfil. */
+    static Perfil perfil(Resposta r) {
+        if (!r.ok()) { return Perfil("", null, null, null, null, null, null, null, null, null, null) }
+        return json.decode<Perfil>(r.corpo)
+    }
+
+    /** Decodifica uma rede de perfis (students lista, não pagina — devolve tudo). */
+    static List<PessoaRede> redeDe(Resposta r) {
+        if (!r.ok()) { return listOf() }
+        return json.decode<List<PessoaRede>>(r.corpo)
+    }
+
+    /** Decodifica uma lista de busca de usuários. */
+    static List<UsuarioBusca> buscaDe(Resposta r) {
+        if (!r.ok()) { return listOf() }
+        return json.decode<List<UsuarioBusca>>(r.corpo)
+    }
+}

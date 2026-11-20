@@ -17,20 +17,52 @@ class Caixa {
         return Ansi.LARGURA_CONTEUDO
     }
 
-    /** Card com título e um bloco de texto livre. */
+    /** Card com título e um bloco de texto livre; multi-linha quebra por \n. */
     static List<String> card(String titulo, String corpo) {
         var largura = Caixa.larguraPadrao()
-        var linhas = listOf<String>()
         var interna = largura - 4
+        var linhas = listOf<String>()
         linhas.add(Caixa.linhaSuperior(largura))
         var rotulo = " " + titulo + " "
-        linhas.add(Tema.pinta(Tema.BORDA_SUAVE, "│ ") + Tema.destaque(rotulo) + Ansi.padDireita("", interna - Ansi.largura(rotulo)) + Tema.pinta(Tema.BORDA_SUAVE, "│"))
+        linhas.add(Caixa.conteudo(Tema.destaque(rotulo), interna))
         linhas.add(Caixa.linhaMeio(largura))
         for (var parte in Ansi.quebrar(corpo, interna)) {
             linhas.add(Caixa.conteudo(parte, interna))
         }
         linhas.add(Caixa.linhaInferior(largura))
         return linhas
+    }
+
+    /** Card com corpo multi-linha (post): quebra cada linha por `\n` e desenha. */
+    static List<String> cartao(String corpo) {
+        var largura = Caixa.larguraPadrao()
+        var interna = largura - 4
+        var linhas = listOf<String>()
+        linhas.add(Caixa.linhaSuperior(largura))
+        for (var linha in Caixa.partes(corpo)) {
+            for (var parte in Ansi.quebrar(linha, interna)) {
+                linhas.add(Caixa.conteudo(parte, interna))
+            }
+        }
+        linhas.add(Caixa.linhaInferior(largura))
+        return linhas
+    }
+
+    /** Divide o corpo em linhas mantendo as vazias (o `split` do Kof pula vazias). */
+    static List<String> partes(String corpo) {
+        var saida = listOf<String>()
+        var atual = ""
+        for (var i = 0; i < corpo.length; i = i + 1) {
+            var c = corpo.substring(i, i + 1)
+            if (c == "\n") {
+                saida.add(atual)
+                atual = ""
+            } else {
+                atual = atual + c
+            }
+        }
+        saida.add(atual)
+        return saida
     }
 
     /** Card simples, sem título: só o corpo dentro da borda. */

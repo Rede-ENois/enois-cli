@@ -1,0 +1,50 @@
+package api
+
+import java.net.URLEncoder
+
+/**
+ * Montagem de parâmetros de consulta (o `buildQuery` do frontend).
+ *
+ * A API pagina por cursor: toda listagem recebe `cursor` (a próxima página,
+ * ausente na primeira) e `limit`. Parâmetros vazios saem da query — o backend
+ * entende ausência como padrão.
+ *
+ * O Kof 0.8.0 não documenta iteração de mapa, então a query é montada a partir
+ * de pares explícitos: cada `par()` devolve "chave=valor" encodado ou vazio,
+ * e `query()` junta os não-vazios com "&" e prefixa "?".
+ */
+class Consulta {
+
+    /** Um par "chave=valor" encodado; vazio quando o valor é vazio (sai da query). */
+    static String par(String chave, String valor) {
+        if (valor == null) { return "" }
+        if (valor.length == 0) { return "" }
+        return URLEncoder.encode(chave, "UTF-8") + "=" + URLEncoder.encode(valor, "UTF-8")
+    }
+
+    /** Número já como texto, para `par("limit", ...)`. */
+    static String numero(Int valor) {
+        return String.valueOf(valor)
+    }
+
+    /** Junta os pares não-vazios em uma query; vazio quando nenhum par sobra. */
+    static String query(List<String> pares) {
+        var fora = ""
+        for (var p in pares) {
+            if (p.length == 0) { continue }
+            if (fora.length > 0) { fora = fora + "&" }
+            fora = fora + p
+        }
+        if (fora.length == 0) { return "" }
+        return "?" + fora
+    }
+
+    /** Página: cursor e limite — a forma que toda listagem usa. */
+    static String pagina(String? cursor, Int limite) {
+        var c = ""
+        if (cursor != null) { c = cursor }
+        return Consulta.query(listOf(
+            Consulta.par("cursor", c),
+            Consulta.par("limit", Consulta.numero(limite))))
+    }
+}
