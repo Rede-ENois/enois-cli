@@ -1,0 +1,185 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaParesEstudo {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var busca = ParesEstudoApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("par de estudo"))
+            var meus = ParesEstudoApi.meusDe(busca.meus())
+            println(this.resumo(meus))
+            var escolha = Entrada.menu("duplas", listOf("buscar objetivo", "metas populares",
+                "pedir par", "check-in", "encerrar dupla", "cancelar pedido"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.buscar(busca)
+            } else if (escolha == 1) {
+                this.metas(busca)
+            } else if (escolha == 2) {
+                this.pedir(busca)
+            } else if (escolha == 3) {
+                this.checkin(meus)
+            } else if (escolha == 4) {
+                this.encerrar(meus)
+            } else {
+                this.cancelar(busca)
+            }
+        }
+    }
+
+    String resumo(MeusPares meus) {
+        var texto = ""
+        if (meus.openRequest != null) {
+            var pedido = meus.openRequest
+            texto = Tema.destaque("pedido aberto") + "\n"
+            if (pedido.goal != null) { texto = texto + pedido.goal + "\n" }
+        }
+        if (meus.pairs == null || meus.pairs.size() == 0) {
+            return texto + Tema.mudo("nenhuma dupla ativa")
+        }
+        for (var i = 0; i < meus.pairs.size(); i = i + 1) {
+            var dupla = meus.pairs.get(i)
+            var linha = "\n"
+            if (dupla.goal != null) { linha = linha + dupla.goal }
+            if (dupla.partner != null && dupla.partner.username != null) {
+                linha = linha + " · @" + dupla.partner.username
+            }
+            if (dupla.weekKey != null) { linha = linha + Tema.mudo(" · " + dupla.weekKey) }
+            texto = texto + linha
+        }
+        return texto
+    }
+
+    void buscar(ParesEstudoApi api) {
+        var termo = Entrada.texto("objetivo (enter para todos)")
+        var achados = ParesEstudoApi.buscaDe(api.buscar(termo, 20))
+        if (achados.size() == 0) {
+            println(Caixa.simples(Lista.vazia("ninguém procurando isso agora")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < achados.size(); i = i + 1) {
+            var item = achados.get(i)
+            var rotulo = ""
+            if (item.goal != null) { rotulo = item.goal }
+            if (item.topic != null) { rotulo = rotulo + " · " + item.topic }
+            opcoes.add(rotulo)
+        }
+        Entrada.menu("procurando", opcoes, "voltar")
+    }
+
+    void metas(ParesEstudoApi api) {
+        var metas = ParesEstudoApi.metasDe(api.metasPopulares())
+        if (metas.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem metas populares agora")))
+            Entrada.pausar()
+            return
+        }
+        for (var i = 0; i < metas.size(); i = i + 1) {
+            var meta = metas.get(i)
+            var objetivo = ""
+            if (meta.goal != null) { objetivo = meta.goal }
+            var contagem = ""
+            if (meta.openRequests != null) {
+                contagem = String.valueOf(meta.openRequests) + " procurando"
+            }
+            println(Lista.item(objetivo, contagem))
+        }
+        Entrada.pausar()
+    }
+
+    void pedir(ParesEstudoApi api) {
+        var objetivo = Entrada.textoObrigatorio("o que você quer estudar")
+        var assunto = Entrada.texto("assunto (opcional)")
+        var r = api.pedir(objetivo, assunto)
+        if (r.ok()) {
+            println(Tema.ok("pedido aberto"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void checkin(MeusPares meus) {
+        if (meus.pairs == null || meus.pairs.size() == 0) {
+            println(Tema.mudo("nenhuma dupla para marcar"))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < meus.pairs.size(); i = i + 1) {
+            var dupla = meus.pairs.get(i)
+            var rotulo = dupla.id
+            if (dupla.goal != null) { rotulo = dupla.goal }
+            opcoes.add(rotulo)
+        }
+        var escolha = Entrada.menu("check-in", opcoes, "voltar")
+        if (escolha < 0) { return }
+        var nota = Entrada.texto("como foi a semana")
+        var r = ParesEstudoApi(this.cliente).checkin(meus.pairs.get(escolha).id, nota)
+        if (r.ok()) {
+            println(Tema.ok("check-in feito"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void encerrar(MeusPares meus) {
+        if (meus.pairs == null || meus.pairs.size() == 0) {
+            println(Tema.mudo("nenhuma dupla para encerrar"))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < meus.pairs.size(); i = i + 1) {
+            var dupla = meus.pairs.get(i)
+            var rotulo = dupla.id
+            if (dupla.goal != null) { rotulo = dupla.goal }
+            opcoes.add(rotulo)
+        }
+        var escolha = Entrada.menu("encerrar", opcoes, "voltar")
+        if (escolha < 0) { return }
+        if (!Entrada.confirmar("encerrar essa dupla?")) { return }
+        var r = ParesEstudoApi(this.cliente).encerrar(meus.pairs.get(escolha).id)
+        if (r.ok()) {
+            println(Tema.ok("dupla encerrada"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void cancelar(ParesEstudoApi api) {
+        if (!Entrada.confirmar("cancelar seu pedido aberto?")) { return }
+        var r = api.cancelarPedido()
+        if (r.ok()) {
+            println(Tema.ok("pedido cancelado"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+}

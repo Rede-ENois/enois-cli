@@ -1,0 +1,143 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaColagem {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var fotos = this.fotos()
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("colagem"))
+            println(Tema.mudo("o feed de fotos do explorar"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < fotos.size(); i = i + 1) {
+                println(Lista.item(this.autor(fotos.get(i)), this.legenda(fotos.get(i))))
+                opcoes.add(this.autor(fotos.get(i)))
+            }
+            if (fotos.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma foto pregada ainda")))
+            }
+            opcoes.add("publicar foto")
+            var escolha = Entrada.menu("colagem", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < fotos.size()) {
+                this.abrir(fotos.get(escolha))
+            } else {
+                this.publicar()
+            }
+        }
+    }
+
+    List<PostColagem> fotos() {
+        var pagina = ColagemApi.pagina(ColagemApi(this.cliente).feed(null, 24))
+        var itens = listOf<PostColagem>()
+        if (pagina.items != null) { itens = pagina.items }
+        return itens
+    }
+
+    void abrir(PostColagem foto) {
+        var api = ColagemApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartao(foto)))
+            var pagina = ColagemApi.comentariosDe(api.comentarios(foto.id, null, 24))
+            var comentarios = listOf<ComentarioColagem>()
+            if (pagina.items != null) { comentarios = pagina.items }
+            for (var i = 0; i < comentarios.size(); i = i + 1) {
+                println(Lista.item(this.autorComentario(comentarios.get(i)),
+                    this.texto(comentarios.get(i).content)))
+            }
+            if (comentarios.size() == 0) {
+                println(Tema.mudo("ninguém comentou ainda"))
+            }
+            var escolha = Entrada.menu("foto",
+                listOf("comentar", "reagir", "apagar reação", "apagar foto"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                var conteudo = Entrada.textoObrigatorio("comentário")
+                this.avisar(api.comentar(foto.id, conteudo, "", ""), "comentário enviado")
+            } else if (escolha == 1) {
+                var reacao = Entrada.textoObrigatorio("reação")
+                this.avisar(api.reagir(foto.id, reacao), "reação registrada")
+            } else if (escolha == 2) {
+                this.avisar(api.desreagir(foto.id), "reação removida")
+            } else {
+                this.avisar(api.apagarPost(foto.id), "foto apagada")
+                rodando = false
+            }
+        }
+    }
+
+    void publicar() {
+        var media = Entrada.textoObrigatorio("mediaId da foto")
+        var legenda = Entrada.texto("legenda")
+        this.avisar(ColagemApi(this.cliente).publicar(media, legenda, null), "foto publicada")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String autor(PostColagem p) {
+        if (p.author != null && p.author.name != null) { return p.author.name }
+        return this.texto(p.mediaUrl)
+    }
+
+    String autorComentario(ComentarioColagem c) {
+        if (c.author != null && c.author.name != null) { return c.author.name }
+        return "anônimo"
+    }
+
+    String legenda(PostColagem p) {
+        var texto = this.texto(p.description)
+        if (texto.length == 0) { texto = this.texto(p.mediaUrl) }
+        var rodape = ""
+        if (p.reactions != null) { rodape = String.valueOf(p.reactions) + " reações" }
+        if (p.comments != null) {
+            if (rodape.length > 0) { rodape = rodape + " · " }
+            rodape = rodape + String.valueOf(p.comments) + " comentários"
+        }
+        if (rodape.length > 0) { texto = texto + " · " + rodape }
+        return texto
+    }
+
+    String cartao(PostColagem p) {
+        var texto = this.autor(p)
+        if (p.description != null) { texto = texto + "\n" + p.description }
+        texto = texto + "\n" + Tema.mudo(this.texto(p.mediaUrl))
+        if (p.createdAt != null) { texto = texto + "\n" + Tema.mudo(p.createdAt) }
+        return texto
+    }
+}

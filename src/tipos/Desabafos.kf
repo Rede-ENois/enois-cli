@@ -1,0 +1,13 @@
+package tipos
+
+record PostAnonimo(
+    String id,
+    String? content,
+    String? createdAt,
+    Int? reactions,
+    Int? comments,
+    String? currentUserReaction,
+    Troolean? mine
+)
+
+record PaginaAnonimos(List<PostAnonimo>? items, String? nextCursor)

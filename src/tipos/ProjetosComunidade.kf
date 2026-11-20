@@ -1,0 +1,9 @@
+package tipos
+
+record ProjetoComunidade(String id, String? userId, String? username, String? slug, String? title,
+                        String? description, String? shortDescription, String? cover, String? url,
+                        String? repoUrl, String? tags, String? category, String? status,
+                        String? reviewNote, String? submittedAt, String? publishedAt,
+                        Troolean? owned)
+
+record PaginaProjetosComunidade(List<ProjetoComunidade>? items, String? nextCursor)

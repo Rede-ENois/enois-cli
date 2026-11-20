@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,10 +14,10 @@ class FreelancesApi {
     }
 
     Resposta listar(String? termo, String? cursor, Int limite) {
-        return this.cliente.get("/freelances" + Consulta.query(listOf(
-            Consulta.par("q", termo),
-            Consulta.par("cursor", cursor),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/freelances" + Cliente.query(listOf(
+            Cliente.par("q", termo),
+            Cliente.par("cursor", cursor),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta meus() {
@@ -29,20 +30,20 @@ class FreelancesApi {
     }
 
     Resposta editar(String freelaId, String titulo, String descricao) {
-        return this.cliente.patch("/freelances/" + ConsultaTextos.caminho(freelaId),
+        return this.cliente.patch("/freelances/" + Cliente.caminho(freelaId),
             json.encode(mapOf("title", titulo, "description", descricao)))
     }
 
     Resposta apagar(String freelaId) {
-        return this.cliente.delete("/freelances/" + ConsultaTextos.caminho(freelaId))
+        return this.cliente.delete("/freelances/" + Cliente.caminho(freelaId))
     }
 
     Resposta encerrar(String freelaId) {
-        return this.cliente.post("/freelances/" + ConsultaTextos.caminho(freelaId) + "/close", "{}")
+        return this.cliente.post("/freelances/" + Cliente.caminho(freelaId) + "/close", "{}")
     }
 
     Resposta propor(String freelaId, String mensagem) {
-        return this.cliente.post("/freelances/" + ConsultaTextos.caminho(freelaId) + "/proposals",
+        return this.cliente.post("/freelances/" + Cliente.caminho(freelaId) + "/proposals",
             json.encode(mapOf("message", mensagem)))
     }
 

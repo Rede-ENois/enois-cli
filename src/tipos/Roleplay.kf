@@ -1,0 +1,28 @@
+package tipos
+
+record SistemaRoleplay(String id, String? label, String? family, String? author, String? license,
+                       String? officialUrl, Troolean? builtIn)
+
+record MembroRoleplay(String? userId, String? username, String? name, String? avatar, String? role,
+                      String? joinedAt)
+
+record PedidoRoleplay(String? id, String? userId, String? username, String? name, String? avatar,
+                      String? message, String? createdAt)
+
+record MesaRoleplay(String? id, String? campaignId, String? name, String? ownerId,
+                    Troolean? open, String? createdAt)
+
+record PaginaMembrosRoleplay(List<MembroRoleplay>? items, String? nextCursor)
+
+record PaginaPedidosRoleplay(List<PedidoRoleplay>? items, String? nextCursor)
+
+record PaginaMesasRoleplay(List<MesaRoleplay>? items, String? nextCursor)
+
+record Campanha(String id, String? slug, String? name, String? description, String? setting,
+                String? gameSystem, String? systemFamily, String? visibility, String? status,
+                Int? members, String? viewerRole, Troolean? joined, String? createdAt)
+
+record PaginaCampanhas(List<Campanha>? items, String? nextCursor)
+
+record MaquinaEstado(String? gameId, Int? estado, String? resultado, String? proximaJogada,
+                     Int? tentativas, Troolean? terminou)

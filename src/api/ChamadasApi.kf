@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,23 +14,23 @@ class ChamadasApi {
     }
 
     Resposta obter(String chamadaId) {
-        return this.cliente.get("/calls/" + ConsultaTextos.caminho(chamadaId))
+        return this.cliente.get("/calls/" + Cliente.caminho(chamadaId))
     }
 
     Resposta atender(String chamadaId) {
-        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/answer", "{}")
+        return this.cliente.post("/calls/" + Cliente.caminho(chamadaId) + "/answer", "{}")
     }
 
     Resposta recusar(String chamadaId) {
-        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/decline", "{}")
+        return this.cliente.post("/calls/" + Cliente.caminho(chamadaId) + "/decline", "{}")
     }
 
     Resposta cancelar(String chamadaId) {
-        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/cancel", "{}")
+        return this.cliente.post("/calls/" + Cliente.caminho(chamadaId) + "/cancel", "{}")
     }
 
     Resposta encerrar(String chamadaId) {
-        return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/end", "{}")
+        return this.cliente.post("/calls/" + Cliente.caminho(chamadaId) + "/end", "{}")
     }
 
     static List<Chamada> abertasDe(Resposta r) {

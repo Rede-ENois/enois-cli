@@ -1,0 +1,21 @@
+package tipos
+
+record Desafio(
+    String id,
+    String? title,
+    String? description,
+    AutorSimples? author,
+    String? createdAt,
+    String? endsAt,
+    String? status,
+    String? destaqueId,
+    Int? participacoes,
+    Troolean? mine
+)
+
+record PaginaDesafios(List<Desafio>? items, String? nextCursor)
+
+record ParticipacaoDesafio(String id, String? desafioId, AutorSimples? author, String? content,
+                           String? createdAt, Int? cheers, Troolean? cheered, Troolean? mine)
+
+record PaginaParticipacoes(List<ParticipacaoDesafio>? items)

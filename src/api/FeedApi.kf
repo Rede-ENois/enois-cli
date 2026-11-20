@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,34 +14,34 @@ class FeedApi {
     }
 
     Resposta listar(String? cursor, Int limite) {
-        return this.cliente.get("/feed" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/feed" + Cliente.pagina(cursor, limite))
     }
 
     Resposta corporativo(String? cursor, Int limite) {
-        return this.cliente.get("/feed/corporate" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/feed/corporate" + Cliente.pagina(cursor, limite))
     }
 
     Resposta porUsuario(String usuario, String? cursor, Int limite) {
-        var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/posts"
-        return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
+        var caminho = "/users/" + Cliente.caminho(usuario) + "/posts"
+        return this.cliente.get(caminho + Cliente.pagina(cursor, limite))
     }
 
     Resposta corporativoPorUsuario(String usuario, String? cursor, Int limite) {
-        var caminho = "/corporate/" + ConsultaTextos.caminho(usuario) + "/posts"
-        return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
+        var caminho = "/corporate/" + Cliente.caminho(usuario) + "/posts"
+        return this.cliente.get(caminho + Cliente.pagina(cursor, limite))
     }
 
     Resposta respostas(String usuario, String? cursor, Int limite) {
-        var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/replies"
-        return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
+        var caminho = "/users/" + Cliente.caminho(usuario) + "/replies"
+        return this.cliente.get(caminho + Cliente.pagina(cursor, limite))
     }
 
     Resposta salvos(String? cursor, Int limite) {
-        return this.cliente.get("/feed/saved" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/feed/saved" + Cliente.pagina(cursor, limite))
     }
 
     Resposta obter(String id) {
-        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(id))
+        return this.cliente.get("/feed/posts/" + Cliente.caminho(id))
     }
 
     Resposta publicar(String conteudo) {
@@ -52,7 +53,7 @@ class FeedApi {
 
     Resposta votarEnquete(String id, Int opcao) {
         var corpo = json.encode(mapOf("option", opcao))
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/poll/vote", corpo)
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(id) + "/poll/vote", corpo)
     }
 
     Resposta marcarVisto(String vistoAte) {
@@ -61,20 +62,20 @@ class FeedApi {
     }
 
     Resposta apagar(String id) {
-        return this.cliente.delete("/feed/posts/" + ConsultaTextos.caminho(id))
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(id))
     }
 
     Resposta restaurar(String id) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/restore", "")
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(id) + "/restore", "")
     }
 
     Resposta editar(String id, String conteudo) {
         var corpo = json.encode(mapOf("content", conteudo))
-        return this.cliente.patch("/feed/posts/" + ConsultaTextos.caminho(id), corpo)
+        return this.cliente.patch("/feed/posts/" + Cliente.caminho(id), corpo)
     }
 
     Resposta salvar(String id) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/save", "")
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(id) + "/save", "")
     }
 
     static PaginaPost paginaPost(Resposta r) {

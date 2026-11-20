@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,35 +14,39 @@ class EmpresasApi {
     }
 
     Resposta diretorio(String? termo, String? setor, Int limite) {
-        return this.cliente.get("/empresas/diretorio" + Consulta.query(listOf(
-            Consulta.par("query", termo),
-            Consulta.par("sector", setor),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/empresas/diretorio" + Cliente.query(listOf(
+            Cliente.par("query", termo),
+            Cliente.par("sector", setor),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta obter(String empresaId) {
-        return this.cliente.get("/empresas/" + ConsultaTextos.caminho(empresaId))
+        return this.cliente.get("/empresas/" + Cliente.caminho(empresaId))
     }
 
     Resposta pagina(String slug) {
-        return this.cliente.get("/empresa/" + ConsultaTextos.caminho(slug))
+        return this.cliente.get("/empresa/" + Cliente.caminho(slug))
+    }
+
+    Resposta minhas() {
+        return this.cliente.get("/empresas/mine")
     }
 
     Resposta seguir(String empresaId) {
-        return this.cliente.post("/empresas/" + ConsultaTextos.caminho(empresaId)
+        return this.cliente.post("/empresas/" + Cliente.caminho(empresaId)
             + "/follow", "{}")
     }
 
     Resposta deixarDeSeguir(String empresaId) {
-        return this.cliente.delete("/empresas/" + ConsultaTextos.caminho(empresaId) + "/follow")
+        return this.cliente.delete("/empresas/" + Cliente.caminho(empresaId) + "/follow")
     }
 
     Resposta membros(String empresaId) {
-        return this.cliente.get("/empresas/" + ConsultaTextos.caminho(empresaId) + "/members")
+        return this.cliente.get("/empresas/" + Cliente.caminho(empresaId) + "/members")
     }
 
     Resposta microprojetos(String empresaId) {
-        return this.cliente.get("/empresas/" + ConsultaTextos.caminho(empresaId)
+        return this.cliente.get("/empresas/" + Cliente.caminho(empresaId)
             + "/microprojetos")
     }
 
@@ -50,28 +55,51 @@ class EmpresasApi {
     }
 
     Resposta microprojeto(String projetoId) {
-        return this.cliente.get("/microprojetos/" + ConsultaTextos.caminho(projetoId))
+        return this.cliente.get("/microprojetos/" + Cliente.caminho(projetoId))
     }
 
-    Resposta concluirMicroprojeto(String projetoId) {
-        return this.cliente.post("/microprojetos/"
-            + ConsultaTextos.caminho(projetoId) + "/complete", "{}")
+    Resposta publicarMicroprojeto(String empresaId, String corpo) {
+        return this.cliente.post("/empresas/" + Cliente.caminho(empresaId)
+            + "/microprojetos", corpo)
+    }
+
+    Resposta editarMicroprojeto(String projetoId, String corpo) {
+        return this.cliente.put("/microprojetos/" + Cliente.caminho(projetoId), corpo)
+    }
+
+    Resposta removerMicroprojeto(String projetoId) {
+        return this.cliente.delete("/microprojetos/" + Cliente.caminho(projetoId))
+    }
+
+    Resposta concluirMicroprojeto(String projetoId, String avaliacao, String texto) {
+        return this.cliente.post("/microprojetos/" + Cliente.caminho(projetoId) + "/complete",
+            json.encode(mapOf("rating", avaliacao, "text", texto)))
     }
 
     Resposta propostasDoMicroprojeto(String projetoId) {
         return this.cliente.get("/microprojetos/"
-            + ConsultaTextos.caminho(projetoId) + "/proposals")
+            + Cliente.caminho(projetoId) + "/proposals")
     }
 
     Resposta escolherProposta(String projetoId, String propostaId) {
-        return this.cliente.post("/microprojetos/" + ConsultaTextos.caminho(projetoId)
-            + "/proposals/" + ConsultaTextos.caminho(propostaId) + "/select", "{}")
+        return this.cliente.post("/microprojetos/" + Cliente.caminho(projetoId)
+            + "/proposals/" + Cliente.caminho(propostaId) + "/select", "{}")
     }
 
-    Resposta propor(String projetoId, String mensagem, Int valor) {
-        return this.cliente.post("/microprojetos/" + ConsultaTextos.caminho(projetoId)
-            + "/proposals", json.encode(mapOf("message", mensagem,
-                "price", Consulta.numero(valor))))
+    Resposta propor(String projetoId, String mensagem) {
+        return this.cliente.post("/microprojetos/" + Cliente.caminho(projetoId)
+            + "/proposals", json.encode(mapOf("message", mensagem)))
+    }
+
+    static String corpoMicroprojeto(String titulo, String problema, String escopo,
+        String entregaveis, String criterios, String prazo, String orcamento) {
+        return "{\"title\":" + json.encode(titulo)
+            + ",\"problem\":" + json.encode(problema)
+            + ",\"scope\":" + json.encode(escopo)
+            + ",\"deliverables\":" + json.encode(entregaveis)
+            + ",\"acceptanceCriteria\":" + json.encode(criterios)
+            + ",\"deadline\":" + json.encode(prazo)
+            + ",\"budget\":" + json.encode(orcamento) + "}"
     }
 
     static List<EmpresaResumo> listaDe(Resposta r) {
@@ -107,6 +135,16 @@ class EmpresasApi {
             return json.decode<List<PropostaMicroProjeto>>(r.corpo)
         } catch (String e) {
             return listOf<PropostaMicroProjeto>()
+        }
+    }
+
+    static DetalheMicroProjeto detalheDe(Resposta r) {
+        var vazio = DetalheMicroProjeto(null, listOf<PropostaMicroProjeto>())
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<DetalheMicroProjeto>(r.corpo)
+        } catch (String e) {
+            return vazio
         }
     }
 }

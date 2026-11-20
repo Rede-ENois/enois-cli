@@ -1,0 +1,21 @@
+package tipos
+
+record Mural(
+    String id,
+    String? title,
+    String? description,
+    AutorSimples? owner,
+    Int? contributions,
+    String? createdAt
+)
+
+record PaginaMurais(List<Mural>? items, String? nextCursor)
+
+record Contribuicao(String? postId, PostResumo? post, AutorSimples? addedBy, String? addedAt)
+
+record PaginaContribuicoes(List<Contribuicao>? items, String? nextCursor)
+
+record MuralDoPost(String id, String? title, String? description, Int? contributions,
+                   Troolean? tem, String? createdAt)
+
+record MeusMurais(List<MuralDoPost>? items)

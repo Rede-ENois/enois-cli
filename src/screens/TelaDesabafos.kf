@@ -1,0 +1,107 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaDesabafos {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var posts = this.posts()
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("desabafos"))
+            println(Tema.mudo("ninguém sabe quem escreveu"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < posts.size(); i = i + 1) {
+                println(Lista.item(this.resumo(posts.get(i)), this.texto(posts.get(i).content)))
+                opcoes.add(this.resumo(posts.get(i)))
+            }
+            if (posts.size() == 0) {
+                println(Caixa.simples(Lista.vazia("silêncio por aqui")))
+            }
+            opcoes.add("desabafar")
+            var escolha = Entrada.menu("desabafos", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < posts.size()) {
+                this.abrir(posts.get(escolha))
+            } else {
+                var conteudo = Entrada.textoObrigatorio("seu desabafo")
+                this.avisar(DesabafosApi(this.cliente).publicar(conteudo), "desabafo publicado")
+            }
+        }
+    }
+
+    List<PostAnonimo> posts() {
+        var pagina = DesabafosApi.pagina(DesabafosApi(this.cliente).listar(null, 20))
+        var itens = listOf<PostAnonimo>()
+        if (pagina.items != null) { itens = pagina.items }
+        return itens
+    }
+
+    void abrir(PostAnonimo p) {
+        var api = DesabafosApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.texto(p.content)))
+            println(Tema.mudo(this.resumo(p)))
+            var escolha = Entrada.menu("desabafo", listOf("reagir", "comentar", "apagar"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                var reacao = Entrada.textoObrigatorio("reação")
+                this.avisar(api.reagir(p.id, reacao), "reação registrada")
+            } else if (escolha == 1) {
+                var comentario = Entrada.textoObrigatorio("comentário")
+                this.avisar(api.comentar(p.id, comentario), "comentário enviado")
+            } else {
+                this.avisar(api.apagar(p.id), "desabafo apagado")
+                rodando = false
+            }
+        }
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String resumo(PostAnonimo p) {
+        var partes = listOf<String>()
+        if (p.reactions != null) { partes.add(String.valueOf(p.reactions) + " reações") }
+        if (p.comments != null) { partes.add(String.valueOf(p.comments) + " comentários") }
+        var texto = ""
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + partes.get(i)
+        }
+        return texto
+    }
+}

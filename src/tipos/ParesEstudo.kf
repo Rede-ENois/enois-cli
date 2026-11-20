@@ -1,0 +1,21 @@
+package tipos
+
+record ParPedido(String id, String? goal, String? goalKey, String? topic, String? createdAt)
+
+record ParSocio(String? id, String? username, String? name, String? avatar)
+
+record ParCheckin(String? userId, String? weekKey, String? note, String? createdAt, String? updatedAt)
+
+record ParDupla(String id, String? goal, String? goalKey, String? topic, String? startedAt,
+                String? weekKey, ParSocio? partner, Troolean? myCheckinThisWeek,
+                Troolean? partnerCheckinThisWeek, List<ParCheckin>? checkins)
+
+record MeusPares(ParPedido? openRequest, List<ParDupla>? pairs)
+
+record ResultadoPar(String? goal, String? topic, String? createdAt)
+
+record ListaPares(List<ResultadoPar>? items)
+
+record MetaPopular(String? goalKey, String? goal, String? topic, Int? openRequests)
+
+record MetasPopulares(List<MetaPopular>? items)

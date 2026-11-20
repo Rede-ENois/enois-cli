@@ -1,5 +1,6 @@
 package screens
 
+import tipos.*
 import api.*
 import core.Ansi
 import core.Cliente
@@ -20,7 +21,7 @@ class TelaPapoReto {
     void executar() {
         var rodando = true
         while (rodando && Entrada.ativa) {
-            var itens = PapoRetoApi.assuntosDe(PapoRetoApi(this.cliente).publicacoes("", "24h"))
+            var itens = PapoRetoApi.assuntosDe(PapoRetoApi(this.cliente).assuntos(null))
             print(Ansi.LIMPAR)
             println(Menu.topo("énois", ""))
             println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))

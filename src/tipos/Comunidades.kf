@@ -1,0 +1,25 @@
+package tipos
+
+record Comunidade(
+    String id,
+    String? name,
+    String? description,
+    Int? members,
+    String? topic,
+    String? cover,
+    String? avatar,
+    String? bannerHtml,
+    Troolean? joined,
+    String? city,
+    String? state
+)
+
+record PaginaComunidades(List<Comunidade>? items, String? nextCursor)
+
+record MembroComunidade(String? userId, String? username, String? name, String? avatar, String? role)
+
+record PaginaMembrosComunidade(List<MembroComunidade>? items, String? nextCursor)
+
+record CanalComunidade(String? id, String? name, String? slug, String? topic, String? description, String? createdAt)
+
+record ListaCanais(List<CanalComunidade>? items)

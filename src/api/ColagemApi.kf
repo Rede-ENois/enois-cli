@@ -1,0 +1,84 @@
+package api
+
+import tipos.*
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ColagemApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta feed(String? cursor, Int limite) {
+        return this.cliente.get("/colagem" + Cliente.pagina(cursor, limite))
+    }
+
+    Resposta post(String postId) {
+        return this.cliente.get("/colagem/posts/" + Cliente.caminho(postId))
+    }
+
+    Resposta publicar(String mediaId, String descricao, Troolean? veu) {
+        var corpo = "{\"mediaId\":" + json.encode(mediaId)
+            + ",\"description\":" + json.encode(descricao)
+            + ",\"mediaSpoiler\":" + PreferenciasApi.booleanos(veu) + "}"
+        return this.cliente.post("/colagem/posts", corpo)
+    }
+
+    Resposta apagarPost(String postId) {
+        return this.cliente.delete("/colagem/posts/" + Cliente.caminho(postId))
+    }
+
+    Resposta comentarios(String postId, String? cursor, Int limite) {
+        return this.cliente.get("/colagem/posts/" + Cliente.caminho(postId)
+            + "/comments" + Cliente.query(listOf(
+                Cliente.par("after", cursor),
+                Cliente.par("limit", Cliente.numero(limite)))))
+    }
+
+    Resposta comentar(String postId, String conteudo, String mediaId, String pai) {
+        var corpo = "{\"content\":" + json.encode(conteudo)
+            + ",\"mediaId\":" + json.encode(mediaId)
+            + ",\"mediaSpoiler\":false"
+            + ",\"parentCommentId\":" + json.encode(pai) + "}"
+        return this.cliente.post("/colagem/posts/" + Cliente.caminho(postId)
+            + "/comments", corpo)
+    }
+
+    Resposta apagarComentario(String postId, String comentarioId) {
+        return this.cliente.delete("/colagem/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId))
+    }
+
+    Resposta reagir(String postId, String reacao) {
+        return this.cliente.post("/colagem/posts/" + Cliente.caminho(postId)
+            + "/reactions", json.encode(mapOf("reaction", reacao)))
+    }
+
+    Resposta desreagir(String postId) {
+        return this.cliente.delete("/colagem/posts/" + Cliente.caminho(postId) + "/reactions")
+    }
+
+    static PaginaColagem pagina(Resposta r) {
+        var vazio = PaginaColagem(listOf<PostColagem>(), null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<PaginaColagem>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static PaginaComentariosColagem comentariosDe(Resposta r) {
+        var vazio = PaginaComentariosColagem(listOf<ComentarioColagem>(), null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<PaginaComentariosColagem>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+}

@@ -1,0 +1,64 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class PreferenciasApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta minhas() {
+        return this.cliente.get("/me/preferences")
+    }
+
+    Resposta salvar(String corpo) {
+        return this.cliente.put("/me/preferences", corpo)
+    }
+
+    Resposta dispensarAvisoNoturno(String noite) {
+        return this.cliente.post("/me/preferences/night-rest/dismissed",
+            json.encode(mapOf("night", noite)))
+    }
+
+    static String corpoPreferencias(List<String>? gostos, List<String>? bloqueados,
+        List<String>? modulos, String noite, String leve, String batata, String reposts,
+        String novidades) {
+        return "{\"likedTopics\":" + listaJson(gostos)
+            + ",\"blockedTopics\":" + listaJson(bloqueados)
+            + ",\"disabledModules\":" + listaJson(modulos)
+            + ",\"nightRestReminder\":" + noite
+            + ",\"liteMode\":" + leve
+            + ",\"batataMode\":" + batata
+            + ",\"hideReposts\":" + reposts
+            + ",\"whatsNewEnabled\":" + novidades + "}"
+    }
+
+    static String listaJson(List<String>? itens) {
+        var lista = listOf<String>()
+        if (itens != null) { lista = itens }
+        return json.encode(lista)
+    }
+
+    static Preferencias de(Resposta r) {
+        var vazio = Preferencias(listOf<String>(), listOf<String>(), listOf<String>(), null,
+            null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<Preferencias>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static String booleanos(Troolean? valor) {
+        var texto = "" + valor
+        if (texto == "true" || texto == "false") { return texto }
+        return "null"
+    }
+}

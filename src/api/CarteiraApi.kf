@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -17,18 +18,18 @@ class CarteiraApi {
     }
 
     Resposta extrato(Int pagina, Int tamanho) {
-        return this.cliente.get("/carteira/extrato" + Consulta.query(listOf(
-            Consulta.par("page", Consulta.numero(pagina)),
-            Consulta.par("size", Consulta.numero(tamanho)))))
+        return this.cliente.get("/carteira/extrato" + Cliente.query(listOf(
+            Cliente.par("page", Cliente.numero(pagina)),
+            Cliente.par("size", Cliente.numero(tamanho)))))
     }
 
     Resposta cotacao(Int historico) {
-        return this.cliente.get("/coin/cotacao" + Consulta.par("historico", Consulta.numero(historico)))
+        return this.cliente.get("/coin/cotacao" + Cliente.par("historico", Cliente.numero(historico)))
     }
 
     Resposta transferir(String usuario, Int valor) {
         return this.cliente.post("/carteira/transferencias",
-            json.encode(mapOf("toUsername", usuario, "amount", Consulta.numero(valor))))
+            json.encode(mapOf("toUsername", usuario, "amount", Cliente.numero(valor))))
     }
 
     static Carteira carteiraDe(Resposta r) {

@@ -1,5 +1,6 @@
 package screens
 
+import tipos.*
 import api.*
 import core.Ansi
 import core.Cliente
@@ -68,12 +69,16 @@ class TelaDesafios {
                 println(Lista.item(autor, aplausos))
             }
             var escolha = Entrada.menu(this.titulo(atual),
-                listOf("participar", "aplaudir participação"), "voltar")
+                listOf("participar", "aplaudir participação", "encerrar"), "voltar")
             if (escolha < 0) {
                 rodando = false
             } else if (escolha == 0) {
                 var conteudo = Entrada.textoObrigatorio("sua participação")
                 this.avisar(api.participar(atual.id, conteudo), "participação enviada")
+            } else if (escolha == 2) {
+                var destaque = Entrada.texto("id da participação destaque")
+                this.avisar(api.encerrar(atual.id, destaque), "desafio encerrado")
+                rodando = false
             } else {
                 if (itens.size() == 0) {
                     println(Tema.mudo("sem participações para aplaudir"))

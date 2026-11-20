@@ -1,0 +1,147 @@
+package api
+
+import tipos.*
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class JogosDiariosApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta palavraHoje(String? data) {
+        return this.cliente.get("/daily-games/words/today" + Cliente.query(listOf(
+            Cliente.par("date", data))))
+    }
+
+    Resposta iniciarPalavra() {
+        return this.cliente.post("/daily-games/words/today/start", "{}")
+    }
+
+    Resposta adivinhar(String palpite, String requisisao, String? data) {
+        return this.cliente.post("/daily-games/words/today/guesses"
+            + Cliente.query(listOf(Cliente.par("date", data))),
+            json.encode(mapOf("guess", palpite, "requestId", requisisao)))
+    }
+
+    Resposta rankingPalavras() {
+        return this.cliente.get("/daily-games/words/leaderboard")
+    }
+
+    Resposta labirintoHoje(String? data) {
+        return this.cliente.get("/daily-games/maze/today" + Cliente.query(listOf(
+            Cliente.par("date", data))))
+    }
+
+    Resposta iniciarLabirinto() {
+        return this.cliente.post("/daily-games/maze/today/start", "{}")
+    }
+
+    Resposta mover(String direcao, String requisicao, String? data) {
+        return this.cliente.post("/daily-games/maze/today/moves"
+            + Cliente.query(listOf(Cliente.par("date", data))),
+            json.encode(mapOf("direction", direcao, "requestId", requisicao)))
+    }
+
+    Resposta rankingLabirinto() {
+        return this.cliente.get("/daily-games/maze/leaderboard")
+    }
+
+    Resposta blocosHoje(String? data) {
+        return this.cliente.get("/daily-games/blocks/today" + Cliente.query(listOf(
+            Cliente.par("date", data))))
+    }
+
+    Resposta iniciarBlocos() {
+        return this.cliente.post("/daily-games/blocks/today/start", "{}")
+    }
+
+    Resposta agir(String acao, String requisicao, String? data) {
+        return this.cliente.post("/daily-games/blocks/today/actions"
+            + Cliente.query(listOf(Cliente.par("date", data))),
+            json.encode(mapOf("action", acao, "requestId", requisicao)))
+    }
+
+    Resposta rankingBlocos() {
+        return this.cliente.get("/daily-games/blocks/leaderboard")
+    }
+
+    Resposta premios() {
+        return this.cliente.get("/daily-games/rewards/prizes")
+    }
+
+    static EstadoPalavra palavraDe(Resposta r) {
+        var vazio = EstadoPalavra(null, "NOT_STARTED", listOf<TentativaPalavra>(), 0L)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<EstadoPalavra>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static EstadoLabirinto labirintoDe(Resposta r) {
+        var vazio = EstadoLabirinto(null, "NOT_STARTED", null, 0L, 0L, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<EstadoLabirinto>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static EstadoBlocos blocosDe(Resposta r) {
+        var vazio = EstadoBlocos(null, "NOT_STARTED", 0L, 0L, 0L, listOf<String>(),
+            listOf<CelulaBlocos>(), listOf<CelulaBlocos>(), listOf<Long>(), 0L)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<EstadoBlocos>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static RankingPalavras rankingPalavrasDe(Resposta r) {
+        var vazio = RankingPalavras(listOf<PosicaoPalavra>())
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<RankingPalavras>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static RankingLabirinto rankingLabirintoDe(Resposta r) {
+        var vazio = RankingLabirinto(listOf<PosicaoLabirinto>())
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<RankingLabirinto>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static RankingBlocos rankingBlocosDe(Resposta r) {
+        var vazio = RankingBlocos(listOf<PosicaoBlocos>())
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<RankingBlocos>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static PremiosJogos premiosDe(Resposta r) {
+        var vazio = PremiosJogos(listOf<PremioJogo>())
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<PremiosJogos>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+}

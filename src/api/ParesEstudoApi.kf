@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -16,8 +17,10 @@ class ParesEstudoApi {
         return this.cliente.get("/study-pairs/me")
     }
 
-    Resposta buscar(String? objetivo) {
-        return this.cliente.get("/study-pairs/requests" + Consulta.par("goal", objetivo))
+    Resposta buscar(String? termo, Int limite) {
+        return this.cliente.get("/study-pairs/search" + Cliente.query(listOf(
+            Cliente.par("q", termo),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta metasPopulares() {
@@ -34,11 +37,43 @@ class ParesEstudoApi {
     }
 
     Resposta checkin(String duplaId, String nota) {
-        return this.cliente.post("/study-pairs/" + ConsultaTextos.caminho(duplaId) + "/checkins",
+        return this.cliente.post("/study-pairs/" + Cliente.caminho(duplaId) + "/checkins",
             json.encode(mapOf("note", nota)))
     }
 
     Resposta encerrar(String duplaId) {
-        return this.cliente.post("/study-pairs/" + ConsultaTextos.caminho(duplaId) + "/end", "{}")
+        return this.cliente.post("/study-pairs/" + Cliente.caminho(duplaId) + "/end", "{}")
+    }
+
+    static MeusPares meusDe(Resposta r) {
+        var vazio = MeusPares(null, listOf<ParDupla>())
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<MeusPares>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<ResultadoPar> buscaDe(Resposta r) {
+        if (!r.ok()) { return listOf<ResultadoPar>() }
+        try {
+            var lista = json.decode<ListaPares>(r.corpo)
+            if (lista.items == null) { return listOf<ResultadoPar>() }
+            return lista.items
+        } catch (String e) {
+            return listOf<ResultadoPar>()
+        }
+    }
+
+    static List<MetaPopular> metasDe(Resposta r) {
+        if (!r.ok()) { return listOf<MetaPopular>() }
+        try {
+            var lista = json.decode<MetasPopulares>(r.corpo)
+            if (lista.items == null) { return listOf<MetaPopular>() }
+            return lista.items
+        } catch (String e) {
+            return listOf<MetaPopular>()
+        }
     }
 }

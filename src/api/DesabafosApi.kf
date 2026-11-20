@@ -1,0 +1,60 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class DesabafosApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? cursor, Int limite) {
+        return this.cliente.get("/desabafos" + Cliente.pagina(cursor, limite))
+    }
+
+    Resposta obter(String postId) {
+        return this.cliente.get("/desabafos/posts/" + Cliente.caminho(postId))
+    }
+
+    Resposta publicar(String conteudo) {
+        return this.cliente.post("/desabafos/posts",
+            json.encode(mapOf("content", conteudo)))
+    }
+
+    Resposta apagar(String postId) {
+        return this.cliente.delete("/desabafos/posts/" + Cliente.caminho(postId))
+    }
+
+    Resposta comentarios(String postId) {
+        return this.cliente.get("/desabafos/posts/" + Cliente.caminho(postId) + "/comments")
+    }
+
+    Resposta comentar(String postId, String conteudo) {
+        return this.cliente.post("/desabafos/posts/" + Cliente.caminho(postId)
+            + "/comments", json.encode(mapOf("content", conteudo)))
+    }
+
+    Resposta reagir(String postId, String tipo) {
+        return this.cliente.post("/desabafos/posts/" + Cliente.caminho(postId)
+            + "/reactions", json.encode(mapOf("type", tipo)))
+    }
+
+    Resposta desreagir(String postId) {
+        return this.cliente.delete("/desabafos/posts/"
+            + Cliente.caminho(postId) + "/reactions")
+    }
+
+    static PaginaAnonimos pagina(Resposta r) {
+        if (!r.ok()) { return PaginaAnonimos(listOf<PostAnonimo>(), null) }
+        try {
+            return json.decode<PaginaAnonimos>(r.corpo)
+        } catch (String e) {
+            return PaginaAnonimos(listOf<PostAnonimo>(), null)
+        }
+    }
+}

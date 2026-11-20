@@ -1,0 +1,41 @@
+package tipos
+
+record Vaga(
+    String id,
+    String? title,
+    String? company,
+    String? logo,
+    String? location,
+    String? type,
+    String? level,
+    String? salaryLabel,
+    List<String>? skills,
+    String? postedAt,
+    Int? matchScore,
+    Troolean? applied,
+    Troolean? saved,
+    Troolean? owner,
+    String? description,
+    String? status,
+    Int? applicationsCount,
+    String? companySlug,
+    Long? salaryMin,
+    Long? salaryMax,
+    String? salaryPeriod,
+    Troolean? salaryNotInformed,
+    String? applicationDeadline,
+    String? sourceType,
+    String? sourceUrl
+)
+
+record PaginaVagas(List<Vaga>? items, String? nextCursor)
+
+record Candidatura(String id, String? jobId, String? jobTitle, String? jobCompany, String? status,
+                   String? stageName, String? feedback, String? reviewedAt, String? appliedAt)
+
+record CandidatoResumo(String? userId, String? username, String? name, String? headline,
+                       String? avatar, Int? experienceYears, Int? reputation)
+
+record InscricaoVaga(String id, String? jobId, String? status, String? appliedAt,
+                     Int? answersCount, CandidatoResumo? candidate, String? message,
+                     String? feedback)

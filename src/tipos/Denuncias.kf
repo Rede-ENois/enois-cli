@@ -1,0 +1,21 @@
+package tipos
+
+record Denuncia(String id, String? reporterId, String? targetType, String? targetId, String? reason,
+                String? description, String? status, String? createdAt)
+
+record DenunciaPainel(String? reportId, String? targetType, String? targetId, String? reason,
+                      String? description, String? createdAt, String? reporter, String? authorId,
+                      String? author, String? content, Int? punishVotes, Int? dismissVotes,
+                      String? myVote, Int? quorum)
+
+record Sancao(String id, String? userId, String? reportId, String? type, String? reason,
+              String? status, String? createdAt, String? removedAt, String? dueAt)
+
+record Recurso(String id, String? sanctionId, String? userId, String? message, String? status,
+               String? createdAt, String? reviewedBy, String? reviewedAt)
+
+record MinhasSancoes(List<Sancao>? sanctions, List<Recurso>? appeals)
+
+record SancaoAdmin(String id, String? userId, String? username, String? name, String? reportId,
+                   String? type, String? reason, String? status, String? createdAt,
+                   String? removedAt)

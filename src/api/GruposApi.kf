@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,19 +14,19 @@ class GruposApi {
     }
 
     Resposta listar(String? termo, String? cursor, Int limite) {
-        return this.cliente.get("/groups" + Consulta.query(listOf(
-            Consulta.par("query", termo),
-            Consulta.par("cursor", cursor),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/groups" + Cliente.query(listOf(
+            Cliente.par("query", termo),
+            Cliente.par("cursor", cursor),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta meus(Int limite) {
-        return this.cliente.get("/groups/mine" + Consulta.query(listOf(
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/groups/mine" + Cliente.query(listOf(
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta obter(String slugOuId) {
-        return this.cliente.get("/groups/" + ConsultaTextos.caminho(slugOuId))
+        return this.cliente.get("/groups/" + Cliente.caminho(slugOuId))
     }
 
     Resposta criar(String nome, String? descricao) {
@@ -34,71 +35,71 @@ class GruposApi {
     }
 
     Resposta editar(String grupoId, String nome, String descricao) {
-        return this.cliente.patch("/groups/" + ConsultaTextos.caminho(grupoId),
+        return this.cliente.patch("/groups/" + Cliente.caminho(grupoId),
             json.encode(mapOf("name", nome, "description", descricao)))
     }
 
     Resposta entrar(String grupoId) {
-        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId) + "/join", "{}")
+        return this.cliente.post("/groups/" + Cliente.caminho(grupoId) + "/join", "{}")
     }
 
     Resposta sair(String grupoId) {
-        return this.cliente.delete("/groups/" + ConsultaTextos.caminho(grupoId) + "/members/me")
+        return this.cliente.delete("/groups/" + Cliente.caminho(grupoId) + "/members/me")
     }
 
     Resposta membros(String grupoId) {
-        return this.cliente.get("/groups/" + ConsultaTextos.caminho(grupoId) + "/members")
+        return this.cliente.get("/groups/" + Cliente.caminho(grupoId) + "/members")
     }
 
     Resposta pedidos(String grupoId) {
-        return this.cliente.get("/groups/" + ConsultaTextos.caminho(grupoId) + "/requests")
+        return this.cliente.get("/groups/" + Cliente.caminho(grupoId) + "/requests")
     }
 
     Resposta aprovar(String grupoId, String pedidoId) {
-        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId)
-            + "/requests/" + ConsultaTextos.caminho(pedidoId) + "/approve", "{}")
+        return this.cliente.post("/groups/" + Cliente.caminho(grupoId)
+            + "/requests/" + Cliente.caminho(pedidoId) + "/approve", "{}")
     }
 
     Resposta recusar(String grupoId, String pedidoId) {
-        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId)
-            + "/requests/" + ConsultaTextos.caminho(pedidoId) + "/reject", "{}")
+        return this.cliente.post("/groups/" + Cliente.caminho(grupoId)
+            + "/requests/" + Cliente.caminho(pedidoId) + "/reject", "{}")
     }
 
     Resposta topicos(String grupoId) {
-        return this.cliente.get("/groups/" + ConsultaTextos.caminho(grupoId) + "/topics")
+        return this.cliente.get("/groups/" + Cliente.caminho(grupoId) + "/topics")
     }
 
     Resposta posts(String grupoId, String? topicoId, String? cursor, Int limite) {
-        return this.cliente.get("/groups/" + ConsultaTextos.caminho(grupoId) + "/posts"
-            + Consulta.query(listOf(
-                Consulta.par("topicId", topicoId),
-                Consulta.par("cursor", cursor),
-                Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/groups/" + Cliente.caminho(grupoId) + "/posts"
+            + Cliente.query(listOf(
+                Cliente.par("topicId", topicoId),
+                Cliente.par("cursor", cursor),
+                Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta publicar(String grupoId, String topicoId, String conteudo) {
-        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId) + "/posts",
+        return this.cliente.post("/groups/" + Cliente.caminho(grupoId) + "/posts",
             json.encode(mapOf("topicId", topicoId, "content", conteudo)))
     }
 
     Resposta apagarPost(String grupoId, String postId) {
-        return this.cliente.delete("/groups/" + ConsultaTextos.caminho(grupoId)
-            + "/posts/" + ConsultaTextos.caminho(postId))
+        return this.cliente.delete("/groups/" + Cliente.caminho(grupoId)
+            + "/posts/" + Cliente.caminho(postId))
     }
 
     Resposta reagir(String grupoId, String postId, String tipo) {
-        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId)
-            + "/posts/" + ConsultaTextos.caminho(postId) + "/reactions",
+        return this.cliente.post("/groups/" + Cliente.caminho(grupoId)
+            + "/posts/" + Cliente.caminho(postId) + "/reactions",
             json.encode(mapOf("type", tipo)))
     }
 
     Resposta desreagir(String grupoId, String postId) {
-        return this.cliente.delete("/groups/" + ConsultaTextos.caminho(grupoId)
-            + "/posts/" + ConsultaTextos.caminho(postId) + "/reactions")
+        return this.cliente.delete("/groups/" + Cliente.caminho(grupoId)
+            + "/posts/" + Cliente.caminho(postId) + "/reactions")
     }
 
     Resposta encerrar(String grupoId) {
-        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId) + "/close", "{}")
+        return this.cliente.post("/groups/" + Cliente.caminho(grupoId) + "/close", "{}")
     }
 
     static List<MembroGrupo> membrosDe(Resposta r) {

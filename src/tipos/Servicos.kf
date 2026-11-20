@@ -1,0 +1,25 @@
+package tipos
+
+record Servico(String id, String? username, String? slug, String? title, String? description,
+               String? link, String? category, String? status, String? reviewNote, Troolean? owned)
+
+record OfertaServico(String id, String? sellerId, String? sellerName, String? sellerAvatar,
+                     String? category, String? title, String? description, String? deliverables,
+                     Long? price, String? currency, Int? deliveryDays, String? status,
+                     String? createdAt)
+
+record PedidoServico(String id, String? category, String? title, String? description,
+                     String? deliverables, Long? budgetMin, Long? budgetMax, String? deadline,
+                     String? status, String? createdAt)
+
+record ContratoServico(String id, String? listingId, String? requestId, String? buyerId,
+                       String? sellerId, Long? price, String? escrowState, String? deliverableNote,
+                       String? createdAt, String? acceptedAt)
+
+record VitrineServico(List<OfertaServico>? ofertas, List<PedidoServico>? pedidos)
+
+record PropostaServico(String id, String? requestId, String? userId, String? message, Long? price,
+                       String? status, String? createdAt)
+
+record MeusServicos(List<OfertaServico>? ofertas, List<ContratoServico>? contratosComoComprador,
+                    List<ContratoServico>? contratosComoVendedor)

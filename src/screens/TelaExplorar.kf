@@ -1,17 +1,22 @@
 package screens
 
+import tipos.*
+import api.*
 import core.Ansi
 import core.Cliente
 import core.Entrada
+import core.Sessao
 import core.Tema
 import ui.Menu
 
 class TelaExplorar {
 
     Cliente cliente
+    Sessao sessao
 
-    public constructor(Cliente cliente) {
+    public constructor(Cliente cliente, Sessao sessao) {
         this.cliente = cliente
+        this.sessao = sessao
     }
 
     void executar() {
@@ -21,22 +26,89 @@ class TelaExplorar {
             println(Menu.topo("énois", ""))
             println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
             println(Tema.destaque("explorar"))
-            println(Tema.mudo("o que você quer descobrir hoje?"))
-            var escolha = Entrada.menu("descobrir",
-                listOf("buscar", "comunidades", "grupos", "eventos", "coleções"), "voltar")
+            println(Tema.mudo("as salas que não cabem no dia a dia"))
+            var escolha = Entrada.menu("seções",
+                listOf("comunidade", "brincar", "construir", "trabalho"), "voltar")
             if (escolha < 0) {
                 rodando = false
             } else if (escolha == 0) {
-                TelaBusca(this.cliente).executar()
+                this.comunidade()
             } else if (escolha == 1) {
-                TelaComunidades(this.cliente).executar()
+                this.brincar()
             } else if (escolha == 2) {
-                TelaGrupos(this.cliente).executar()
-            } else if (escolha == 3) {
-                TelaEventos(this.cliente).executar()
-            } else if (escolha == 4) {
-                TelaColecoes(this.cliente).executar()
+                this.construir()
+            } else {
+                this.trabalho()
             }
+        }
+    }
+
+    void comunidade() {
+        var escolha = Entrada.menu("comunidade",
+            listOf("colagem", "desabafos", "confessionário", "murais", "coleções", "selos",
+                "éroleplay", "agenda", "termômetro", "papo reto", "sugestões", "moderador"),
+            "voltar")
+        if (escolha == 0) {
+            TelaColagem(this.cliente).executar()
+        } else if (escolha == 1) {
+            TelaDesabafos(this.cliente).executar()
+        } else if (escolha == 2) {
+            TelaConfessionario(this.cliente).executar()
+        } else if (escolha == 3) {
+            TelaMurais(this.cliente).executar()
+        } else if (escolha == 4) {
+            TelaColecoes(this.cliente).executar()
+        } else if (escolha == 5) {
+            TelaSelos(this.cliente, this.sessao).executar()
+        } else if (escolha == 6) {
+            TelaRoleplay(this.cliente).executar()
+        } else if (escolha == 7) {
+            TelaAgenda(this.cliente).executar()
+        } else if (escolha == 8) {
+            TelaTermometro(this.cliente).executar()
+        } else if (escolha == 9) {
+            TelaPapoReto(this.cliente).executar()
+        } else if (escolha == 10) {
+            TelaSugestoes(this.cliente).executar()
+        } else if (escolha == 11) {
+            TelaModeracao(this.cliente).executar()
+        }
+    }
+
+    void brincar() {
+        var escolha = Entrada.menu("brincar", listOf("jogos", "jogos diários"), "voltar")
+        if (escolha == 0) {
+            TelaJogos(this.cliente).executar()
+        } else if (escolha == 1) {
+            TelaJogosDiarios(this.cliente).executar()
+        }
+    }
+
+    void construir() {
+        var escolha = Entrada.menu("construir",
+            listOf("projetos", "marketplace", "desenvolvedores"), "voltar")
+        if (escolha == 0) {
+            TelaProjetos(this.cliente, this.sessao).executar()
+        } else if (escolha == 1) {
+            TelaMarketplace(this.cliente).executar()
+        } else if (escolha == 2) {
+            TelaDevelopers(this.cliente).executar()
+        }
+    }
+
+    void trabalho() {
+        var escolha = Entrada.menu("trabalho",
+            listOf("vagas", "freelances", "serviços", "empresas", "mentoria"), "voltar")
+        if (escolha == 0) {
+            TelaVagas(this.cliente).executar()
+        } else if (escolha == 1) {
+            TelaFreelances(this.cliente).executar()
+        } else if (escolha == 2) {
+            TelaServicos(this.cliente).executar()
+        } else if (escolha == 3) {
+            TelaEmpresas(this.cliente).executar()
+        } else if (escolha == 4) {
+            TelaMentoria(this.cliente).executar()
         }
     }
 }

@@ -1,0 +1,39 @@
+package tipos
+
+record Jogo(
+    String id,
+    String? username,
+    String? slug,
+    String? title,
+    String? description,
+    String? shortDescription,
+    String? cover,
+    String? icon,
+    String? url,
+    String? status,
+    List<String>? genres,
+    Int? plays,
+    Int? favorites,
+    String? publishedAt,
+    Troolean? owned,
+    Troolean? favorited,
+    String? stage,
+    Int? priceCoins,
+    String? version
+)
+
+record PaginaJogos(List<Jogo>? items, String? nextCursor)
+
+record AvaliacaoJogo(String id, String? userId, String? username, String? name, String? avatar,
+                     Int? rating, String? body, String? createdAt, String? updatedAt)
+
+record ResumoNotasJogo(Double? average, Long? reviews, Long? comments)
+
+record ComentarioJogo(String id, String? authorId, String? authorName, String? authorUsername,
+                      String? content, String? createdAt, Int? reactions)
+
+record ComentariosJogo(Long? count, List<ComentarioJogo>? items)
+
+record Ranking(String? jogo, List<Posicao>? entradas, String? minhaPuntuacao)
+
+record Posicao(String? usuario, String? nome, Int? pontos, Int? colocacao)

@@ -1,0 +1,21 @@
+package tipos
+
+record Comentario(
+    String id,
+    String? postId,
+    String? authorId,
+    String? authorName,
+    String? authorUsername,
+    String? authorAvatar,
+    String? authorBadge,
+    String? parentCommentId,
+    String? content,
+    String? createdAt,
+    String? editedAt,
+    String? currentUserReaction,
+    Int? reactionCount,
+    Troolean? pinned,
+    Troolean? accepted
+)
+
+record PaginaComentarios(List<Comentario>? items, String? nextCursor)

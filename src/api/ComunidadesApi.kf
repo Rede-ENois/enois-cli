@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -14,22 +15,22 @@ class ComunidadesApi {
 
     Resposta listar(String? assunto, String? termo, String? cidade, String? estado,
                     String? cursor, Int limite) {
-        return this.cliente.get("/communities" + Consulta.query(listOf(
-            Consulta.par("topic", assunto),
-            Consulta.par("q", termo),
-            Consulta.par("city", cidade),
-            Consulta.par("state", estado),
-            Consulta.par("cursor", cursor),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/communities" + Cliente.query(listOf(
+            Cliente.par("topic", assunto),
+            Cliente.par("q", termo),
+            Cliente.par("city", cidade),
+            Cliente.par("state", estado),
+            Cliente.par("cursor", cursor),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta locais(Int limite) {
-        return this.cliente.get("/communities/local" + Consulta.query(listOf(
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/communities/local" + Cliente.query(listOf(
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta obter(String comunidadeId) {
-        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId))
+        return this.cliente.get("/communities/" + Cliente.caminho(comunidadeId))
     }
 
     Resposta criar(String nome, String? descricao) {
@@ -38,73 +39,73 @@ class ComunidadesApi {
     }
 
     Resposta editar(String comunidadeId, String descricao) {
-        return this.cliente.patch("/communities/" + ConsultaTextos.caminho(comunidadeId),
+        return this.cliente.patch("/communities/" + Cliente.caminho(comunidadeId),
             json.encode(mapOf("description", descricao)))
     }
 
     Resposta entrar(String comunidadeId) {
-        return this.cliente.post("/communities/" + ConsultaTextos.caminho(comunidadeId)
+        return this.cliente.post("/communities/" + Cliente.caminho(comunidadeId)
             + "/members", "{}")
     }
 
     Resposta sair(String comunidadeId) {
-        return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId)
+        return this.cliente.delete("/communities/" + Cliente.caminho(comunidadeId)
             + "/members")
     }
 
     Resposta mural(String comunidadeId, String? cursor, Int limite) {
-        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId)
-            + "/feed" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/communities/" + Cliente.caminho(comunidadeId)
+            + "/feed" + Cliente.pagina(cursor, limite))
     }
 
     Resposta fixado(String comunidadeId) {
-        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/pin")
+        return this.cliente.get("/communities/" + Cliente.caminho(comunidadeId) + "/pin")
     }
 
     Resposta fixar(String comunidadeId, String postId) {
-        return this.cliente.post("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/pin",
+        return this.cliente.post("/communities/" + Cliente.caminho(comunidadeId) + "/pin",
             json.encode(mapOf("postId", postId)))
     }
 
     Resposta desafixar(String comunidadeId) {
-        return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/pin")
+        return this.cliente.delete("/communities/" + Cliente.caminho(comunidadeId) + "/pin")
     }
 
     Resposta canais(String comunidadeId) {
-        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/channels")
+        return this.cliente.get("/communities/" + Cliente.caminho(comunidadeId) + "/channels")
     }
 
     Resposta favoritar(String comunidadeId) {
-        return this.cliente.post("/communities/" + ConsultaTextos.caminho(comunidadeId)
+        return this.cliente.post("/communities/" + Cliente.caminho(comunidadeId)
             + "/favorite", "{}")
     }
 
     Resposta desfavoritar(String comunidadeId) {
-        return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId)
+        return this.cliente.delete("/communities/" + Cliente.caminho(comunidadeId)
             + "/favorite")
     }
 
     Resposta favoritas(Int limite) {
-        return this.cliente.get("/communities/favorites" + Consulta.query(listOf(
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/communities/favorites" + Cliente.query(listOf(
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta minhas(Int limite) {
-        return this.cliente.get("/communities/mine" + Consulta.query(listOf(
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/communities/mine" + Cliente.query(listOf(
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta membros(String comunidadeId) {
-        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/members")
+        return this.cliente.get("/communities/" + Cliente.caminho(comunidadeId) + "/members")
     }
 
     Resposta transferir(String comunidadeId, String novoDonoId) {
-        return this.cliente.post("/communities/" + ConsultaTextos.caminho(comunidadeId)
+        return this.cliente.post("/communities/" + Cliente.caminho(comunidadeId)
             + "/transfer", json.encode(mapOf("newOwnerId", novoDonoId)))
     }
 
     Resposta apagar(String comunidadeId) {
-        return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId))
+        return this.cliente.delete("/communities/" + Cliente.caminho(comunidadeId))
     }
 
     static List<MembroComunidade> membrosDe(Resposta r) {

@@ -1,0 +1,14 @@
+package tipos
+
+record ResultadoBusca(
+    String id,
+    String? type,
+    String? title,
+    String? subtitle,
+    String? image,
+    String? href
+)
+
+record PaginaBusca(List<ResultadoBusca>? items, String? nextCursor)
+
+record UsuarioBusca(String id, String? name, String? username, String? avatar)

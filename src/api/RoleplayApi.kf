@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -17,19 +18,19 @@ class RoleplayApi {
     }
 
     Resposta listar(String? termo, String? cursor, Int limite) {
-        return this.cliente.get("/roleplay/campaigns" + Consulta.query(listOf(
-            Consulta.par("query", termo),
-            Consulta.par("cursor", cursor),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/roleplay/campaigns" + Cliente.query(listOf(
+            Cliente.par("query", termo),
+            Cliente.par("cursor", cursor),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta minhas(Int limite) {
-        return this.cliente.get("/roleplay/campaigns/mine" + Consulta.par("limit",
-            Consulta.numero(limite)))
+        return this.cliente.get("/roleplay/campaigns/mine" + Cliente.par("limit",
+            Cliente.numero(limite)))
     }
 
     Resposta obter(String slugOuId) {
-        return this.cliente.get("/roleplay/campaigns/" + ConsultaTextos.caminho(slugOuId))
+        return this.cliente.get("/roleplay/campaigns/" + Cliente.caminho(slugOuId))
     }
 
     Resposta criar(String nome, String? descricao) {
@@ -38,58 +39,58 @@ class RoleplayApi {
     }
 
     Resposta editar(String campanhaId, String nome, String descricao) {
-        return this.cliente.patch("/roleplay/campaigns/" + ConsultaTextos.caminho(campanhaId),
+        return this.cliente.patch("/roleplay/campaigns/" + Cliente.caminho(campanhaId),
             json.encode(mapOf("name", nome, "description", descricao)))
     }
 
     Resposta entrar(String campanhaId) {
         return this.cliente.post("/roleplay/campaigns/"
-            + ConsultaTextos.caminho(campanhaId) + "/join", "{}")
+            + Cliente.caminho(campanhaId) + "/join", "{}")
     }
 
     Resposta convidar(String campanhaId, String usuarioId) {
-        return this.cliente.post("/roleplay/campaigns/" + ConsultaTextos.caminho(campanhaId)
+        return this.cliente.post("/roleplay/campaigns/" + Cliente.caminho(campanhaId)
             + "/invite", json.encode(mapOf("userId", usuarioId)))
     }
 
     Resposta sair(String campanhaId) {
         return this.cliente.delete("/roleplay/campaigns/"
-            + ConsultaTextos.caminho(campanhaId) + "/members/me")
+            + Cliente.caminho(campanhaId) + "/members/me")
     }
 
     Resposta membros(String campanhaId) {
         return this.cliente.get("/roleplay/campaigns/"
-            + ConsultaTextos.caminho(campanhaId) + "/members")
+            + Cliente.caminho(campanhaId) + "/members")
     }
 
     Resposta pedidos(String campanhaId) {
         return this.cliente.get("/roleplay/campaigns/"
-            + ConsultaTextos.caminho(campanhaId) + "/requests")
+            + Cliente.caminho(campanhaId) + "/requests")
     }
 
     Resposta aprovar(String campanhaId, String pedidoId) {
-        return this.cliente.post("/roleplay/campaigns/" + ConsultaTextos.caminho(campanhaId)
-            + "/requests/" + ConsultaTextos.caminho(pedidoId) + "/approve", "{}")
+        return this.cliente.post("/roleplay/campaigns/" + Cliente.caminho(campanhaId)
+            + "/requests/" + Cliente.caminho(pedidoId) + "/approve", "{}")
     }
 
     Resposta recusar(String campanhaId, String pedidoId) {
-        return this.cliente.post("/roleplay/campaigns/" + ConsultaTextos.caminho(campanhaId)
-            + "/requests/" + ConsultaTextos.caminho(pedidoId) + "/reject", "{}")
+        return this.cliente.post("/roleplay/campaigns/" + Cliente.caminho(campanhaId)
+            + "/requests/" + Cliente.caminho(pedidoId) + "/reject", "{}")
     }
 
     Resposta arquivar(String campanhaId) {
         return this.cliente.post("/roleplay/campaigns/"
-            + ConsultaTextos.caminho(campanhaId) + "/archive", "{}")
+            + Cliente.caminho(campanhaId) + "/archive", "{}")
     }
 
     Resposta mesas(String campanhaId) {
         return this.cliente.get("/roleplay/campaigns/"
-            + ConsultaTextos.caminho(campanhaId) + "/tables")
+            + Cliente.caminho(campanhaId) + "/tables")
     }
 
     Resposta fichaModelo(String campanhaId) {
         return this.cliente.get("/roleplay/campaigns/"
-            + ConsultaTextos.caminho(campanhaId) + "/sheets/template")
+            + Cliente.caminho(campanhaId) + "/sheets/template")
     }
 
     static PaginaCampanhas pagina(Resposta r) {

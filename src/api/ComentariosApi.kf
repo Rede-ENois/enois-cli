@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,8 +14,8 @@ class ComentariosApi {
     }
 
     Resposta listar(String postId, String? cursor, Int limite) {
-        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(postId)
-            + "/comments" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments" + Cliente.pagina(cursor, limite))
     }
 
     Resposta comentar(String postId, String conteudo, String? comentarioPai) {
@@ -23,74 +24,74 @@ class ComentariosApi {
             corpo = json.encode(mapOf("content", conteudo,
                 "parentCommentId", comentarioPai))
         }
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/comments", corpo)
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/comments", corpo)
     }
 
     Resposta editar(String postId, String comentarioId, String conteudo) {
         var corpo = json.encode(mapOf("content", conteudo))
-        return this.cliente.patch("/feed/posts/" + ConsultaTextos.caminho(postId)
-            + "/comments/" + ConsultaTextos.caminho(comentarioId), corpo)
+        return this.cliente.patch("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId), corpo)
     }
 
     Resposta apagar(String postId, String comentarioId) {
-        return this.cliente.delete("/feed/posts/" + ConsultaTextos.caminho(postId)
-            + "/comments/" + ConsultaTextos.caminho(comentarioId))
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId))
     }
 
     Resposta fixar(String postId, String comentarioId) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId)
-            + "/comments/" + ConsultaTextos.caminho(comentarioId) + "/pin", "{}")
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId) + "/pin", "{}")
     }
 
     Resposta desafixar(String postId, String comentarioId) {
-        return this.cliente.delete("/feed/posts/" + ConsultaTextos.caminho(postId)
-            + "/comments/" + ConsultaTextos.caminho(comentarioId) + "/pin")
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId) + "/pin")
     }
 
     Resposta reagir(String postId, String tipo) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/reactions",
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/reactions",
             json.encode(mapOf("type", tipo)))
     }
 
     Resposta desreagir(String postId) {
-        return this.cliente.delete("/feed/posts/" + ConsultaTextos.caminho(postId) + "/reactions")
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/reactions")
     }
 
     Resposta reagirComentario(String postId, String comentarioId, String tipo) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId)
-            + "/comments/" + ConsultaTextos.caminho(comentarioId) + "/reactions",
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId) + "/reactions",
             json.encode(mapOf("type", tipo)))
     }
 
     Resposta reacoes(String postId) {
-        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(postId) + "/reactions")
+        return this.cliente.get("/feed/posts/" + Cliente.caminho(postId) + "/reactions")
     }
 
     Resposta salvar(String postId) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/saves", "{}")
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/saves", "{}")
     }
 
     Resposta dessalvar(String postId) {
-        return this.cliente.delete("/feed/posts/" + ConsultaTextos.caminho(postId) + "/saves")
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/saves")
     }
 
     Resposta compartilhar(String postId) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/shares", "{}")
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/shares", "{}")
     }
 
     Resposta republicar(String postId, String? opiniao) {
         var corpo = "{}"
         if (opiniao != null) { corpo = json.encode(mapOf("opinion", opiniao)) }
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/repost", corpo)
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/repost", corpo)
     }
 
     Resposta republicarNaComunidade(String postId, String comunidadeId, String opiniao) {
-        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/repost",
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/repost",
             json.encode(mapOf("communityId", comunidadeId, "opinion", opiniao)))
     }
 
     Resposta desfazerRepost(String postId) {
-        return this.cliente.delete("/feed/posts/" + ConsultaTextos.caminho(postId) + "/repost")
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/repost")
     }
 
     static PaginaComentarios pagina(Resposta r) {

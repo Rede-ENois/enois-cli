@@ -1,0 +1,36 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class DenunciasApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta minhas() {
+        return this.cliente.get("/reports/mine")
+    }
+
+    Resposta denunciar(String alvoTipo, String alvoId, String motivo, String descricao) {
+        return this.cliente.post("/reports", json.encode(mapOf(
+            "targetType", alvoTipo,
+            "targetId", alvoId,
+            "reason", motivo,
+            "description", descricao)))
+    }
+
+    static List<Denuncia> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<Denuncia>() }
+        try {
+            return json.decode<List<Denuncia>>(r.corpo)
+        } catch (String e) {
+            return listOf<Denuncia>()
+        }
+    }
+}

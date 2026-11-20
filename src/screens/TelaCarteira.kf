@@ -1,5 +1,6 @@
 package screens
 
+import tipos.*
 import api.*
 import core.Ansi
 import core.Cliente

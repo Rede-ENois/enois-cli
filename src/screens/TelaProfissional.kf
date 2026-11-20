@@ -1,0 +1,150 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaProfissional {
+
+    Cliente cliente
+    String usuario
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+        this.usuario = ""
+    }
+
+    public constructor(Cliente cliente, String usuario) {
+        this.cliente = cliente
+        this.usuario = usuario
+    }
+
+    void executar() {
+        if (this.usuario.length > 0) {
+            this.exibir()
+            return
+        }
+        this.meu()
+    }
+
+    void meu() {
+        var api = CorporateApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var perfil = CorporateApi.unico(api.meu())
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("perfil profissional"))
+            if (perfil == null) {
+                println(Tema.erro("não deu para ler o perfil profissional"))
+                Entrada.pausar()
+                rodando = false
+            } else {
+                println(Caixa.simples(this.cartao(perfil)))
+                var escolha = Entrada.menu("perfil profissional",
+                    listOf("criar", "editar", "renomear", "trocar @", "ativar", "desativar",
+                        "importar do social"), "voltar")
+                if (escolha < 0) {
+                    rodando = false
+                } else if (escolha == 0) {
+                    var usuario = Entrada.textoObrigatorio("@ profissional")
+                    var nome = Entrada.textoObrigatorio("nome")
+                    this.avisar(api.criar(usuario, nome), "perfil criado")
+                } else if (escolha == 1) {
+                    this.editar(api)
+                } else if (escolha == 2) {
+                    var nome = Entrada.textoObrigatorio("novo nome")
+                    this.avisar(api.renomear(nome), "nome trocado")
+                } else if (escolha == 3) {
+                    var usuario = Entrada.textoObrigatorio("novo @ profissional")
+                    this.avisar(api.trocarUsuario(usuario), "@ trocado")
+                } else if (escolha == 4) {
+                    this.avisar(api.ativar(), "perfil ativado")
+                } else if (escolha == 5) {
+                    this.avisar(api.desativar(), "perfil desativado")
+                } else {
+                    this.importar(api)
+                }
+            }
+        }
+    }
+
+    void editar(CorporateApi api) {
+        var headline = Entrada.texto("headline")
+        var bio = Entrada.texto("bio")
+        var local = Entrada.texto("local")
+        var setor = Entrada.texto("setor")
+        var links = Entrada.texto("links externos")
+        this.avisar(api.atualizar(headline, bio, local, setor, links), "perfil atualizado")
+    }
+
+    void importar(CorporateApi api) {
+        var previa = CorporateApi.previa(api.previaImportacao())
+        if (previa != null) {
+            print(Ansi.LIMPAR)
+            println(Tema.destaque("o social oferece"))
+            println(Lista.item("nome", this.texto(previa.name)))
+            println(Lista.item("headline", this.texto(previa.headline)))
+            println(Lista.item("bio", this.texto(previa.bio)))
+            println(Lista.item("local", this.texto(previa.location)))
+        }
+        var campos = listOf<String>()
+        if (Entrada.confirmar("importar nome?")) { campos.add("name") }
+        if (Entrada.confirmar("importar headline?")) { campos.add("headline") }
+        if (Entrada.confirmar("importar bio?")) { campos.add("bio") }
+        if (Entrada.confirmar("importar local?")) { campos.add("location") }
+        this.avisar(api.importar(campos), "campos importados")
+    }
+
+    void exibir() {
+        var perfil = CorporateApi.unico(CorporateApi(this.cliente).deUsuario(this.usuario))
+        print(Ansi.LIMPAR)
+        if (perfil == null) {
+            println(Tema.erro("perfil profissional não encontrado"))
+        } else {
+            println(Caixa.simples(this.cartao(perfil)))
+        }
+        Entrada.pausar()
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String cartao(PerfilCorporate p) {
+        var texto = this.texto(p.name)
+        if (texto.length == 0) { texto = this.texto(p.username) }
+        if (p.headline != null) { texto = texto + "\n" + p.headline }
+        if (p.bio != null) { texto = texto + "\n" + p.bio }
+        var rodape = listOf<String>()
+        if (p.location != null) { rodape.add(p.location) }
+        if (p.industry != null) { rodape.add(p.industry) }
+        if (p.status != null) { rodape.add(p.status) }
+        if (p.reputation != null) { rodape.add(String.valueOf(p.reputation) + " de reputação") }
+        var linha = ""
+        for (var i = 0; i < rodape.size(); i = i + 1) {
+            if (linha.length > 0) { linha = linha + " · " }
+            linha = linha + rodape.get(i)
+        }
+        if (linha.length > 0) { texto = texto + "\n" + Tema.mudo(linha) }
+        return texto
+    }
+}

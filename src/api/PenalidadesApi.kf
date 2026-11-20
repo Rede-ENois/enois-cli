@@ -1,0 +1,80 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class PenalidadesApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta minhas() {
+        return this.cliente.get("/me/sanctions")
+    }
+
+    Resposta recorrer(String mensagem) {
+        return this.cliente.post("/me/sanctions/appeals",
+            json.encode(mapOf("message", mensagem)))
+    }
+
+    Resposta recursos() {
+        return this.cliente.get("/admin/appeals")
+    }
+
+    Resposta deferirRecurso(String recursoId) {
+        return this.cliente.post("/admin/appeals/" + Cliente.caminho(recursoId) + "/approve", "{}")
+    }
+
+    Resposta indeferirRecurso(String recursoId) {
+        return this.cliente.post("/admin/appeals/" + Cliente.caminho(recursoId) + "/deny", "{}")
+    }
+
+    Resposta aplicadas(String estado, Int limite) {
+        return this.cliente.get("/admin/sanctions" + Cliente.query(listOf(
+            Cliente.par("status", estado),
+            Cliente.par("limit", Cliente.numero(limite)))))
+    }
+
+    Resposta editar(String penalidadeId, String tipo, String motivo) {
+        return this.cliente.post("/admin/sanctions/" + Cliente.caminho(penalidadeId)
+            + "/edit", json.encode(mapOf("type", tipo, "reason", motivo)))
+    }
+
+    Resposta revogar(String penalidadeId, String motivo) {
+        return this.cliente.post("/admin/sanctions/" + Cliente.caminho(penalidadeId)
+            + "/revoke", json.encode(mapOf("reason", motivo)))
+    }
+
+    static MinhasSancoes minhasDe(Resposta r) {
+        var vazio = MinhasSancoes(listOf<Sancao>(), listOf<Recurso>())
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<MinhasSancoes>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<Recurso> recursosDe(Resposta r) {
+        if (!r.ok()) { return listOf<Recurso>() }
+        try {
+            return json.decode<List<Recurso>>(r.corpo)
+        } catch (String e) {
+            return listOf<Recurso>()
+        }
+    }
+
+    static List<SancaoAdmin> aplicadasDe(Resposta r) {
+        if (!r.ok()) { return listOf<SancaoAdmin>() }
+        try {
+            return json.decode<List<SancaoAdmin>>(r.corpo)
+        } catch (String e) {
+            return listOf<SancaoAdmin>()
+        }
+    }
+}

@@ -1,0 +1,36 @@
+package api
+
+import tipos.*
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class IdentidadeApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta estado() {
+        return this.cliente.get("/identity")
+    }
+
+    Resposta iniciarVerificacao(String consentimento) {
+        return this.cliente.post("/identity/verification",
+            json.encode(mapOf("consentVersion", consentimento)))
+    }
+
+    Resposta conferirVerificacao() {
+        return this.cliente.post("/identity/verification/refresh", "{}")
+    }
+
+    Resposta desvincular() {
+        return this.cliente.delete("/identity/verification")
+    }
+
+    Resposta elegibilidade() {
+        return this.cliente.get("/identity/eligibility")
+    }
+}

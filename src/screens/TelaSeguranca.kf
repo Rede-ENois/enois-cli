@@ -1,0 +1,130 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaSeguranca {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var estado = SegurancaApi.estadoDe(SegurancaApi(this.cliente).estado())
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("segurança"))
+            println(this.cartao(estado))
+            var opcoes = listOf("ativar aplicativo autenticador", "desativar autenticador",
+                "ativar código por e-mail", "desativar código por e-mail", "reenviar verificação",
+                "verificar identidade")
+            var escolha = Entrada.menu("segurança", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.ativarTotp()
+            } else if (escolha == 1) {
+                var senha = Entrada.secreta("senha")
+                this.avisar(SegurancaApi(this.cliente).desativarTotp(senha), "autenticador desligado")
+            } else if (escolha == 2) {
+                this.avisar(SegurancaApi(this.cliente).pedirCodigoEmail(), "código enviado")
+                var codigo = Entrada.textoObrigatorio("código recebido")
+                this.avisar(SegurancaApi(this.cliente).confirmarCodigoEmail(codigo), "código ativado")
+            } else if (escolha == 3) {
+                var senha = Entrada.secreta("senha")
+                this.avisar(SegurancaApi(this.cliente).desativarCodigoEmail(senha),
+                    "código por e-mail desligado")
+            } else if (escolha == 4) {
+                var email = Entrada.textoObrigatorio("e-mail")
+                this.avisar(SegurancaApi(this.cliente).reenviarVerificacao(email),
+                    "verificação reenviada")
+            } else {
+                this.identidade()
+            }
+        }
+    }
+
+    void ativarTotp() {
+        var senha = Entrada.secreta("senha")
+        var api = SegurancaApi(this.cliente)
+        var config = SegurancaApi.configuracaoDe(api.iniciarTotp(senha))
+        if (config == null) {
+            println(Tema.erro("não deu para começar a configuração"))
+            Entrada.pausar()
+            return
+        }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("adicione no aplicativo autenticador"))
+        println(Caixa.simples(this.texto(config.secret) + "\n" + this.texto(config.otpauthUri)))
+        var codigo = Entrada.textoObrigatorio("código de 6 dígitos")
+        var ativacao = SegurancaApi.ativacaoDe(api.ativarTotp(codigo, senha))
+        if (ativacao == null) {
+            println(Tema.erro("código recusado"))
+            Entrada.pausar()
+            return
+        }
+        println(Tema.ok("autenticador ativo"))
+        var codigos = listOf<String>()
+        if (ativacao.backupCodes != null) { codigos = ativacao.backupCodes }
+        println(Tema.suave("guarde os códigos de recuperação agora:"))
+        for (var i = 0; i < codigos.size(); i = i + 1) {
+            println("  " + codigos.get(i))
+        }
+        Entrada.pausar()
+    }
+
+    void identidade() {
+        var api = IdentidadeApi(this.cliente)
+        var estado = SegurancaApi.estadoDe(SegurancaApi(this.cliente).estado())
+        if (PreferenciasApi.booleanos(estado.identityVerified) == "true") {
+            this.avisar(api.conferirVerificacao(), "identidade conferida")
+            return
+        }
+        var consentimento = Entrada.textoObrigatorio("versão do consentimento")
+        this.avisar(api.iniciarVerificacao(consentimento), "verificação iniciada")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String cartao(EstadoDoisFatores e) {
+        var texto = "verificação em duas etapas"
+        texto = texto + "\n" + Lista.item("e-mail confirmado",
+            PreferenciasApi.booleanos(e.emailVerified))
+        texto = texto + "\n" + Lista.item("autenticador",
+            PreferenciasApi.booleanos(e.totpEnabled))
+        texto = texto + "\n" + Lista.item("código por e-mail",
+            PreferenciasApi.booleanos(e.emailOtpEnabled))
+        texto = texto + "\n" + Lista.item("identidade verificada",
+            PreferenciasApi.booleanos(e.identityVerified))
+        if (e.backupCodesLeft != null) {
+            texto = texto + "\n" + Lista.item("códigos de recuperação",
+                String.valueOf(e.backupCodesLeft))
+        }
+        return texto
+    }
+}

@@ -1,0 +1,50 @@
+package tipos
+
+record Grupo(
+    String id,
+    String? slug,
+    String? name,
+    String? description,
+    String? topic,
+    String? avatar,
+    String? banner,
+    String? joinMode,
+    String? status,
+    Int? members,
+    String? viewerRole,
+    Troolean? joined,
+    Troolean? requestPending,
+    String? createdAt
+)
+
+record PaginaGrupos(List<Grupo>? items, String? nextCursor)
+
+record MembroGrupo(String? userId, String? username, String? name, String? avatar, String? role, String? joinedAt)
+
+record PaginaMembrosGrupo(List<MembroGrupo>? items, String? nextCursor)
+
+record PedidoGrupo(String? id, String? userId, String? username, String? name, String? avatar, String? message, String? createdAt)
+
+record PaginaPedidosGrupo(List<PedidoGrupo>? items, String? nextCursor)
+
+record TopicoGrupo(String? id, String? name, String? description, Int? position, String? status)
+
+record ListaTopicos(List<TopicoGrupo>? items)
+
+record PaginaTopicos(List<TopicoGrupo>? items, String? nextCursor)
+
+record PostGrupo(
+    String id,
+    String? groupId,
+    String? topicId,
+    String? authorName,
+    String? authorUsername,
+    String? authorAvatar,
+    String? content,
+    Troolean? pinned,
+    Int? reactions,
+    Int? comments,
+    String? createdAt
+)
+
+record PaginaPostsGrupo(List<PostGrupo>? items, String? nextCursor)
