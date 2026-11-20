@@ -1,0 +1,43 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+/**
+ * Lista de itens do DS (linhas de conteúdo separadas por divisor): cada item
+ * é uma linha com marcador, título em cor de texto e descrição suave.
+ */
+class Lista {
+
+    /** Item visual: marcador "▸", título em destaque, descrição em suave. */
+    static String item(String titulo, String descricao) {
+        var tituloLargura = Ansi.largura(titulo)
+        var disponivel = Ansi.LARGURA_CONTEUDO - tituloLargura - 6
+        var cortada = Ansi.cortar(descricao, disponivel)
+        var linha = Tema.pinta(Tema.PRIMARIO, "▸ ") + Tema.texto(titulo)
+        if (descricao.length > 0) {
+            var suave = Tema.suave(cortada)
+            linha = linha + "  " + suave
+        }
+        return linha
+    }
+
+    /** Lista numerada (para escolha): `01. título — descrição`. */
+    static String numerada(Int numero, String titulo, String descricao) {
+        var num = Ansi.padEsquerda(String.valueOf(numero), 2)
+        var tituloLargura = Ansi.largura(titulo)
+        var disponivel = Ansi.LARGURA_CONTEUDO - tituloLargura - 8
+        var cortada = Ansi.cortar(descricao, disponivel)
+        var muda = Tema.mudo("— " + cortada)
+        var linha = Tema.suave(num + ". ") + Tema.texto(titulo)
+        if (descricao.length > 0) {
+            linha = linha + " " + muda
+        }
+        return linha
+    }
+
+    /** Lista vazia: estado vazio do DS ("nada por aqui ainda"). */
+    static String vazia(String mensagem) {
+        return Tema.mudo("  ~ " + mensagem)
+    }
+}

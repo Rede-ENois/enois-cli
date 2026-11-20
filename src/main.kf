@@ -1,0 +1,20 @@
+import core.*
+import ui.*
+
+main() {
+    var cfg = Config.carregar()
+    var s = Sessao.carregar()
+    var estado = "nao"
+    if (s.logado()) { estado = "sim" }
+    print(Ansi.LIMPAR)
+    println(Menu.topo("énois", ""))
+    println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+    var nome = Tema.mudo("verificando núcleo e componentes do terminal…")
+    Caixa.desenhar(Caixa.card("bem-vinde", "Núcleo compilando. Alvo: " + cfg.alvo + " · sessão ativa: " + estado + " · " + nome))
+    println(Lista.item("feed", "linha do tempo do Explorar"))
+    println(Lista.numerada(1, "entrar", "conectar à sua conta enois"))
+    println(Lista.vazia("nenhuma notificação"))
+    println(Badge.primaria("novo") + " " + Badge.sucesso("ok") + " " + Badge.alerta("pendente") + " " + Badge.neutra("rascunho"))
+    println(Campo.rotulo("email") + " " + Campo.valor("mel@enois.ia.br", false))
+    println(Campo.dica("o token nunca aparece na tela"))
+}

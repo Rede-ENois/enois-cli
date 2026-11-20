@@ -1,0 +1,169 @@
+package core
+
+import kof.json
+
+/**
+ * Sessão autenticada do terminal.
+ *
+ * O backend entrega os tokens em cookies HttpOnly e aceita o header
+ * `X-Session-Token` para clientes que não são navegador — é esse o caminho do
+ * CLI: guarda o valor do `enois_session` e o manda em cada chamada, junto do
+ * `enois_refresh` para renovar a sessão em `/auth/refresh`.
+ */
+record Usuario(
+    String id,
+    String nome,
+    String usuario,
+    String email,
+    String avatar,
+    Int faisca
+)
+
+/** Estado da sessão tal como gravado em ~/.config/enois-cli/sessao.json. */
+record EstadoSessao(
+    String token,
+    String renova,
+    String? id,
+    String? nome,
+    String? usuario,
+    String? email,
+    String? avatar,
+    Int? faisca
+)
+
+class Sessao {
+
+    /** Token de sessão ativo (valor do cookie enois_session). */
+    String token
+    /** Token de renovação (valor do cookie enois_refresh). */
+    String renova
+    /** Usuário logado; vazio quando deslogado. */
+    Usuario? usuario
+
+    public constructor() {
+        this.token = ""
+        this.renova = ""
+        this.usuario = Sessao.nenhum()
+    }
+
+    public constructor(String token, String renova) {
+        this.token = token
+        this.renova = renova
+        this.usuario = Sessao.nenhum()
+    }
+
+    Bool logado() {
+        return this.token.length > 0
+    }
+
+    String nomeDeExibicao() {
+        if (this.usuario == null) { return "visitante" }
+        if (this.usuario.nome.length > 0) { return this.usuario.nome }
+        return "@" + this.usuario.usuario
+    }
+
+    /** Nenhum usuário: única forma de obter um `Usuario?` vazio (SEM048). */
+    static Usuario? nenhum() {
+        return null
+    }
+
+    /** Extrai o valor de um cookie de um header Set-Cookie (ou bloco de headers). */
+    static String cookieDe(String bruto, String nome) {
+        if (bruto == null || bruto.length == 0) { return "" }
+        for (var linha in bruto.split("\n")) {
+            var l = linha.trim()
+            var minusculo = l.toLowerCase()
+            if (minusculo.startsWith(nome.toLowerCase() + "=")) {
+                return valorDoCookie(l)
+            }
+            // linha completa de Set-Cookie: "set-cookie: enois_session=abc; Path=/; ..."
+            var prefixo = "set-cookie: " + nome.toLowerCase() + "="
+            if (minusculo.startsWith(prefixo)) {
+                return valorDoCookie(l.substring(prefixo.length))
+            }
+        }
+        return ""
+    }
+
+    /** Valor até o primeiro atributo do cookie (`;`). */
+    static String valorDoCookie(String parte) {
+        var valor = parte
+        var p = valor.indexOf(";")
+        if (p >= 0) { valor = valor.substring(0, p) }
+        return valor.trim()
+    }
+
+    /** Monta o registro da sessão a partir dos Set-Cookie do login/refresh. */
+    static Sessao deResposta(String brutoCookies) {
+        var s = Sessao()
+        var t = cookieDe(brutoCookies, "enois_session")
+        var r = cookieDe(brutoCookies, "enois_refresh")
+        if (t.length > 0) { s.token = t }
+        if (r.length > 0) { s.renova = r }
+        return s
+    }
+
+    String comoJson() {
+        var id = Sessao.texto(null)
+        var nome = Sessao.texto(null)
+        var login = Sessao.texto(null)
+        var email = Sessao.texto(null)
+        var avatar = Sessao.texto(null)
+        var faisca = Sessao.numero(null)
+        if (this.usuario != null) {
+            id = this.usuario.id
+            nome = this.usuario.nome
+            login = this.usuario.usuario
+            email = this.usuario.email
+            avatar = this.usuario.avatar
+            faisca = this.usuario.faisca
+        }
+        var estado = EstadoSessao(this.token, this.renova, id, nome, login, email, avatar, faisca)
+        return json.encode(estado)
+    }
+
+    /** Nulo vira texto vazio: o resto do código só lida com String cheia. */
+    static String texto(String? bruto) {
+        if (bruto == null) { return "" }
+        return bruto
+    }
+
+    /** Nulo vira zero (faisca ausente no arquivo). */
+    static Int numero(Int? bruto) {
+        if (bruto == null) { return 0 }
+        return bruto
+    }
+
+    static Sessao deEstado(EstadoSessao e) {
+        var s = Sessao(e.token, e.renova)
+        if (e.nome != null && e.nome.length > 0) {
+            s.usuario = Usuario(
+                texto(e.id), e.nome, texto(e.usuario), texto(e.email),
+                texto(e.avatar), numero(e.faisca))
+        }
+        return s
+    }
+
+    static String caminhoArquivo() {
+        return Config.dirEstado() + "/sessao.json"
+    }
+
+    static Sessao carregar() {
+        var bruto = File(caminhoArquivo()).readText()
+        if (bruto == null) { return Sessao() }
+        var e = json.decode<EstadoSessao>(bruto)
+        return deEstado(e)
+    }
+
+    Bool salvar() {
+        File(Config.dirEstado()).mkdirs()
+        return File(caminhoArquivo()).writeText(this.comoJson())
+    }
+
+    Bool limpar() {
+        this.token = ""
+        this.renova = ""
+        this.usuario = Sessao.nenhum()
+        return File(caminhoArquivo()).writeText("{}")
+    }
+}

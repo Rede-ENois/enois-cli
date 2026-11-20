@@ -1,0 +1,82 @@
+package core
+
+import kof.json
+
+/**
+ * Configuração persistida do cliente: qual backend usar e a origem declarada.
+ *
+ * A API do Énóis recusa requisições sem `X-Client-Origin` com uma origem
+ * cadastrada (o navegador manda `Origin`; chamadas de servidor e o terminal
+ * mandam esse header). O CLI usa a origem oficial do app por padrão e permite
+ * trocar o alvo entre produção e QA pela linha de comando.
+ */
+class Config {
+
+    static String URL_PRODUCAO = "https://api.enois.ia.br/api"
+    static String URL_QA = "https://enois-api-qa.b7cloud.tech/api"
+
+    /** Origem que a API espera ver no X-Client-Origin. */
+    static String ORIGEM_PADRAO = "https://enois.ia.br"
+
+    /** Diretório de estado do CLI (mesmo padrão do `~/.config`). */
+    static String dirEstado() {
+        return "/home/mel/.config/enois-cli"
+    }
+
+    /** Alvo ativo: "producao" (padrão) ou "qa". */
+    String alvo
+    String urlApi
+    String origem
+
+    public constructor() {
+        this.alvo = "producao"
+        this.urlApi = URL_PRODUCAO
+        this.origem = ORIGEM_PADRAO
+    }
+
+    /** Troca de alvo e rederiva a URL da API. */
+    void usaAlvo(String novo) {
+        this.alvo = novo
+        if (novo == "qa") {
+            this.urlApi = URL_QA
+        } else {
+            this.urlApi = URL_PRODUCAO
+        }
+    }
+
+    /** Representação serializável (JSON) do estado. */
+    String comoJson() {
+        return json.encode(mapOf(
+            "alvo", this.alvo,
+            "urlApi", this.urlApi,
+            "origem", this.origem))
+    }
+
+    /** Restaura de um mapa decodificado; campos ausentes ficam com o padrão. */
+    static Config deMapa(Map<String, String> m) {
+        var c = Config()
+        var alvo = m.get("alvo")
+        if (alvo != null) { c.alvo = alvo }
+        var url = m.get("urlApi")
+        if (url != null) { c.urlApi = url }
+        var origem = m.get("origem")
+        if (origem != null) { c.origem = origem }
+        return c
+    }
+
+    /** Carrega o arquivo de configuração, se existir. */
+    static Config carregar() {
+        var c = Config()
+        var caminho = dirEstado() + "/config.json"
+        var bruto = readFile(caminho)
+        if (bruto == null) { return c }
+        var m = json.decode<Map>(bruto)
+        return deMapa(m)
+    }
+
+    /** Salva o arquivo de configuração (cria o diretório quando falta). */
+    Bool salvar() {
+        File(dirEstado()).mkdirs()
+        return File(dirEstado() + "/config.json").writeText(this.comoJson())
+    }
+}

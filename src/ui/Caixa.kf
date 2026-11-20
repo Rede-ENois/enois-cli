@@ -1,0 +1,89 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+/**
+ * Card do DS: fundo `card`, canto arredondado simulado por bordas finas na
+ * cor `border-soft`, título em `primary` e conteúdo com quebra de linha.
+ *
+ * O DS usa radius 1rem e sombra suave; no terminal, o card é uma caixa de
+ * "╭╮╰╯│─" com o fundo colorido — superfície sem borda dura.
+ */
+class Caixa {
+
+    /** Largura padrão dos cards: a coluna de conteúdo do DS (100 colunas). */
+    static Int larguraPadrao() {
+        return Ansi.LARGURA_CONTEUDO
+    }
+
+    /** Card com título e um bloco de texto livre. */
+    static List<String> card(String titulo, String corpo) {
+        var largura = Caixa.larguraPadrao()
+        var linhas = listOf<String>()
+        var interna = largura - 4
+        linhas.add(Caixa.linhaSuperior(largura))
+        var rotulo = " " + titulo + " "
+        linhas.add(Tema.pinta(Tema.BORDA_SUAVE, "│ ") + Tema.destaque(rotulo) + Ansi.padDireita("", interna - Ansi.largura(rotulo)) + Tema.pinta(Tema.BORDA_SUAVE, "│"))
+        linhas.add(Caixa.linhaMeio(largura))
+        for (var parte in Ansi.quebrar(corpo, interna)) {
+            linhas.add(Caixa.conteudo(parte, interna))
+        }
+        linhas.add(Caixa.linhaInferior(largura))
+        return linhas
+    }
+
+    /** Card simples, sem título: só o corpo dentro da borda. */
+    static List<String> simples(String corpo) {
+        var largura = Caixa.larguraPadrao()
+        var interna = largura - 4
+        var linhas = listOf<String>()
+        linhas.add(Caixa.linhaSuperior(largura))
+        for (var parte in Ansi.quebrar(corpo, interna)) {
+            linhas.add(Caixa.conteudo(parte, interna))
+        }
+        linhas.add(Caixa.linhaInferior(largura))
+        return linhas
+    }
+
+    /** Desenha a lista de linhas na saída padrão. */
+    static void desenhar(List<String> linhas) {
+        for (var l in linhas) {
+            println(l)
+        }
+    }
+
+    static String linhaSuperior(Int largura) {
+        var meio = ""
+        for (var i = 0; i < largura - 2; i = i + 1) {
+            meio = meio + "─"
+        }
+        return Tema.pinta(Tema.BORDA_SUAVE, "╭" + meio + "╮")
+    }
+
+    static String linhaMeio(Int largura) {
+        var meio = ""
+        for (var i = 0; i < largura - 2; i = i + 1) {
+            meio = meio + "─"
+        }
+        return Tema.pinta(Tema.BORDA_SUAVE, "├" + meio + "┤")
+    }
+
+    static String linhaInferior(Int largura) {
+        var meio = ""
+        for (var i = 0; i < largura - 2; i = i + 1) {
+            meio = meio + "─"
+        }
+        return Tema.pinta(Tema.BORDA_SUAVE, "╰" + meio + "╯")
+    }
+
+    /** Uma linha de conteúdo: texto à esquerda, padding colorido, borda. */
+    static String conteudo(String texto, Int interna) {
+        var restante = interna - Ansi.largura(texto)
+        var espacos = ""
+        for (var i = 0; i < restante; i = i + 1) {
+            espacos = espacos + " "
+        }
+        return Tema.pinta(Tema.BORDA_SUAVE, "│ ") + texto + espacos + Tema.pinta(Tema.BORDA_SUAVE, " │")
+    }
+}
