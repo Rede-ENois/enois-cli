@@ -69,4 +69,63 @@ class ModeracaoApi {
         return this.cliente.post("/admin/blocked-ips/"
             + ConsultaTextos.caminho(ip) + "/unblock", "{}")
     }
+
+    Resposta meuEstado() {
+        return this.cliente.get("/moderation/me")
+    }
+
+    Resposta meusRelatos() {
+        return this.cliente.get("/moderation/reports")
+    }
+
+    Resposta votarDenuncia(String denunciaId, Bool punir, String nota) {
+        var voto = "DISMISS"
+        if (punir) { voto = "PUNISH" }
+        return this.cliente.post("/moderation/reports/" + ConsultaTextos.caminho(denunciaId)
+            + "/vote", json.encode(mapOf("vote", voto, "note", nota)))
+    }
+
+    Resposta denunciasPendentes(Int limite) {
+        return this.cliente.get("/admin/reports" + Consulta.par("limit",
+            Consulta.numero(limite)))
+    }
+
+    Resposta revisarDenuncia(String denunciaId) {
+        return this.cliente.get("/admin/reports/" + ConsultaTextos.caminho(denunciaId))
+    }
+
+    Resposta decidirDenuncia(String denunciaId, String acao, String nota) {
+        return this.cliente.post("/admin/reports/" + ConsultaTextos.caminho(denunciaId)
+            + "/" + ConsultaTextos.caminho(acao), json.encode(mapOf("note", nota)))
+    }
+
+    Resposta minhasDenuncias() {
+        return this.cliente.get("/reports/mine")
+    }
+
+    Resposta denunciar(String alvoTipo, String alvoId, String motivo, String descricao) {
+        return this.cliente.post("/reports", json.encode(mapOf(
+            "targetType", alvoTipo,
+            "targetId", alvoId,
+            "reason", motivo,
+            "description", descricao)))
+    }
+
+    static List<Denuncia> denunciasDe(Resposta r) {
+        if (!r.ok()) { return listOf<Denuncia>() }
+        try {
+            return json.decode<List<Denuncia>>(r.corpo)
+        } catch (String e) {
+            return listOf<Denuncia>()
+        }
+    }
+
+    static List<DenunciaPainel> painelDe(Resposta r) {
+        if (!r.ok()) { return listOf<DenunciaPainel>() }
+        try {
+            return json.decode<List<DenunciaPainel>>(r.corpo)
+        } catch (String e) {
+            return listOf<DenunciaPainel>()
+        }
+    }
 }

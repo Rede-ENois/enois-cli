@@ -112,4 +112,42 @@ class JogosApi {
     Resposta premios() {
         return this.cliente.get("/daily-games/rewards/prizes")
     }
+
+    static PaginaJogos pagina(Resposta r) {
+        if (!r.ok()) { return PaginaJogos(listOf<Jogo>(), null) }
+        try {
+            return json.decode<PaginaJogos>(r.corpo)
+        } catch (String e) {
+            return PaginaJogos(listOf<Jogo>(), null)
+        }
+    }
+
+    static List<Jogo> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<Jogo>() }
+        try {
+            return json.decode<List<Jogo>>(r.corpo)
+        } catch (String e) {
+            return listOf<Jogo>()
+        }
+    }
+
+    static List<AvaliacaoJogo> avaliacoesDe(Resposta r) {
+        if (!r.ok()) { return listOf<AvaliacaoJogo>() }
+        try {
+            return json.decode<List<AvaliacaoJogo>>(r.corpo)
+        } catch (String e) {
+            return listOf<AvaliacaoJogo>()
+        }
+    }
+
+    static List<ComentarioJogo> comentariosDe(Resposta r) {
+        if (!r.ok()) { return listOf<ComentarioJogo>() }
+        try {
+            var v = json.decode<ComentariosJogo>(r.corpo)
+            if (v.items == null) { return listOf<ComentarioJogo>() }
+            return v.items
+        } catch (String e) {
+            return listOf<ComentarioJogo>()
+        }
+    }
 }

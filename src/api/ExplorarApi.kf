@@ -153,6 +153,11 @@ class DesafiosApi {
             json.encode(mapOf("content", conteudo)))
     }
 
+    Resposta aplaudir(String participacaoId) {
+        return this.cliente.post("/desafios/participacoes/" + ConsultaTextos.caminho(participacaoId)
+            + "/cheers", "{}")
+    }
+
     static PaginaDesafios pagina(Resposta r) {
         if (!r.ok()) { return PaginaDesafios(listOf<Desafio>(), null) }
         try {

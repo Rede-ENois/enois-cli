@@ -1,0 +1,195 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaEmpresas {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = EmpresasApi.diretorioDe(
+                EmpresasApi(this.cliente).diretorio(null, null, 20))
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("empresas"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(Lista.item(this.titulo(itens.get(i)), this.resumo(itens.get(i))))
+                opcoes.add(this.titulo(itens.get(i)))
+            }
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma empresa no diretório")))
+            }
+            opcoes.add("microprojetos")
+            var escolha = Entrada.menu("diretório", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < itens.size()) {
+                this.abrir(itens.get(escolha))
+            } else {
+                this.microprojetos()
+            }
+        }
+    }
+
+    void abrir(EmpresaDiretorio e) {
+        var api = EmpresasApi(this.cliente)
+        print(Ansi.LIMPAR)
+        var texto = this.titulo(e)
+        if (e.sector != null) { texto = texto + "\n" + Tema.suave(e.sector) }
+        if (e.location != null) { texto = texto + "\n" + Tema.mudo(e.location) }
+        if (e.openJobs != null) {
+            texto = texto + "\n" + Tema.mudo(String.valueOf(e.openJobs) + " vagas abertas")
+        }
+        if (e.openProjects != null) {
+            texto = texto + "\n" + Tema.mudo(String.valueOf(e.openProjects) + " microprojetos")
+        }
+        if (e.followers != null) {
+            texto = texto + "\n" + Tema.mudo(String.valueOf(e.followers) + " seguidores")
+        }
+        println(Caixa.simples(texto))
+        var escolha = Entrada.menu(this.titulo(e),
+            listOf("microprojetos", "seguir"), "voltar")
+        if (escolha == 0) {
+            this.projetosDaEmpresa(e)
+        } else if (escolha == 1) {
+            this.avisar(api.seguir(this.chave(e)), "seguindo a empresa")
+        }
+    }
+
+    void projetosDaEmpresa(EmpresaDiretorio e) {
+        var itens = EmpresasApi.projetosDe(EmpresasApi(this.cliente).microprojetos(this.chave(e)))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("microprojetos · " + this.titulo(e)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum microprojeto aberto")))
+            Entrada.pausar()
+            return
+        }
+        this.listaProjetos(itens)
+    }
+
+    void microprojetos() {
+        var itens = EmpresasApi.projetosDe(EmpresasApi(this.cliente).abertos())
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("microprojetos"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum microprojeto aberto")))
+            Entrada.pausar()
+            return
+        }
+        this.listaProjetos(itens)
+    }
+
+    void listaProjetos(List<MicroProjeto> itens) {
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            println(Lista.item(this.tituloProjeto(itens.get(i)),
+                this.resumoProjeto(itens.get(i))))
+            opcoes.add(this.tituloProjeto(itens.get(i)))
+        }
+        var escolha = Entrada.menu("microprojetos", opcoes, "voltar")
+        if (escolha >= 0) { this.projeto(itens.get(escolha)) }
+    }
+
+    void projeto(MicroProjeto p) {
+        var api = EmpresasApi(this.cliente)
+        print(Ansi.LIMPAR)
+        var texto = this.tituloProjeto(p)
+        if (p.problem != null) { texto = texto + "\n" + p.problem }
+        if (p.scope != null) { texto = texto + "\n" + Tema.suave(p.scope) }
+        if (p.deliverables != null) { texto = texto + "\n" + p.deliverables }
+        texto = texto + "\n" + this.resumoProjeto(p)
+        println(Caixa.simples(texto))
+        var escolha = Entrada.menu(this.tituloProjeto(p),
+            listOf("ver propostas", "propor"), "voltar")
+        if (escolha == 0) {
+            var propostas = EmpresasApi.propostasDe(api.propostasDoMicroprojeto(p.id))
+            print(Ansi.LIMPAR)
+            println(Tema.destaque("propostas"))
+            if (propostas.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma proposta")))
+            }
+            for (var i = 0; i < propostas.size(); i = i + 1) {
+                var proposta = propostas.get(i)
+                var valor = ""
+                if (proposta.price != null) { valor = String.valueOf(proposta.price) }
+                println(Lista.item(valor, this.texto(proposta.message)))
+            }
+            Entrada.pausar()
+        } else if (escolha == 1) {
+            var mensagem = Entrada.textoObrigatorio("sua proposta")
+            var valor = Entrada.numero("valor em faíscas", 1, 100000000)
+            this.avisar(api.propor(p.id, mensagem, valor), "proposta enviada")
+        }
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String titulo(EmpresaDiretorio e) {
+        if (e.name != null) { return e.name }
+        return this.texto(e.slug)
+    }
+
+    String chave(EmpresaDiretorio e) {
+        if (e.slug != null) { return e.slug }
+        if (e.name != null) { return e.name }
+        return ""
+    }
+
+    String resumo(EmpresaDiretorio e) {
+        var texto = ""
+        if (e.sector != null) { texto = e.sector }
+        if (e.location != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + e.location
+        }
+        return texto
+    }
+
+    String tituloProjeto(MicroProjeto p) {
+        if (p.title != null) { return p.title }
+        return p.id
+    }
+
+    String resumoProjeto(MicroProjeto p) {
+        var texto = ""
+        if (p.budget != null) { texto = String.valueOf(p.budget) + " faíscas" }
+        if (p.deadline != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "até " + p.deadline
+        }
+        if (p.proposalCount != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(p.proposalCount) + " propostas"
+        }
+        return texto
+    }
+}

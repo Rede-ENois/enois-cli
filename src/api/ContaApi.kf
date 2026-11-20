@@ -1,0 +1,95 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ContaApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta preferencias() {
+        return this.cliente.get("/me/preferences")
+    }
+
+    Resposta salvarPreferencias(String corpo) {
+        return this.cliente.put("/me/preferences", corpo)
+    }
+
+    Resposta avisos() {
+        return this.cliente.get("/me/notification-preferences")
+    }
+
+    Resposta salvarAvisos(String corpo) {
+        return this.cliente.put("/me/notification-preferences", corpo)
+    }
+
+    Resposta trocarSenha(String atual, String nova) {
+        return this.cliente.post("/password/change",
+            json.encode(mapOf("currentPassword", atual, "newPassword", nova)))
+    }
+
+    Resposta excluir(String senha) {
+        return this.cliente.post("/account/delete", json.encode(mapOf("password", senha)))
+    }
+
+    static String corpoPreferencias(List<String>? gostos, List<String>? bloqueados,
+        List<String>? modulos, String noite, String leve, String batata, String reposts,
+        String novidades) {
+        return "{\"likedTopics\":" + listaJson(gostos)
+            + ",\"blockedTopics\":" + listaJson(bloqueados)
+            + ",\"disabledModules\":" + listaJson(modulos)
+            + ",\"nightRestReminder\":" + noite
+            + ",\"liteMode\":" + leve
+            + ",\"batataMode\":" + batata
+            + ",\"hideReposts\":" + reposts
+            + ",\"whatsNewEnabled\":" + novidades + "}"
+    }
+
+    static String corpoAvisos(String resumo, String social, String mensagens, String grupos,
+        String vagas, String sistema, String projetos) {
+        return "{\"weeklyDigest\":" + resumo
+            + ",\"pushSocial\":" + social
+            + ",\"pushMessages\":" + mensagens
+            + ",\"pushGroups\":" + grupos
+            + ",\"pushJobs\":" + vagas
+            + ",\"pushSystem\":" + sistema
+            + ",\"communityProjects\":" + projetos + "}"
+    }
+
+    static String listaJson(List<String>? itens) {
+        var lista = listOf<String>()
+        if (itens != null) { lista = itens }
+        return json.encode(lista)
+    }
+
+    static Preferencias preferenciasDe(Resposta r) {
+        var vazio = Preferencias(listOf<String>(), listOf<String>(), listOf<String>(), null,
+            null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<Preferencias>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static PreferenciasAviso avisosDe(Resposta r) {
+        if (!r.ok()) { return PreferenciasAviso(null, null, null, null, null, null, null, null) }
+        try {
+            return json.decode<PreferenciasAviso>(r.corpo)
+        } catch (String e) {
+            return PreferenciasAviso(null, null, null, null, null, null, null, null)
+        }
+    }
+
+    static String booleanos(Troolean? valor) {
+        var texto = "" + valor
+        if (texto == "true" || texto == "false") { return texto }
+        return "null"
+    }
+}

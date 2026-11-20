@@ -31,4 +31,24 @@ class ChamadasApi {
     Resposta encerrar(String chamadaId) {
         return this.cliente.post("/calls/" + ConsultaTextos.caminho(chamadaId) + "/end", "{}")
     }
+
+    static List<Chamada> abertasDe(Resposta r) {
+        if (!r.ok()) { return listOf<Chamada>() }
+        try {
+            return json.decode<List<Chamada>>(r.corpo)
+        } catch (String e) {
+            return listOf<Chamada>()
+        }
+    }
+
+    static Chamada unica(Resposta r) {
+        var vazia = Chamada("", null, null, null, null, null, null, null, null, null, null,
+            null, null, null)
+        if (!r.ok()) { return vazia }
+        try {
+            return json.decode<Chamada>(r.corpo)
+        } catch (String e) {
+            return vazia
+        }
+    }
 }

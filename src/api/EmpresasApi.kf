@@ -45,6 +45,10 @@ class EmpresasApi {
             + "/microprojetos")
     }
 
+    Resposta abertos() {
+        return this.cliente.get("/microprojetos")
+    }
+
     Resposta microprojeto(String projetoId) {
         return this.cliente.get("/microprojetos/" + ConsultaTextos.caminho(projetoId))
     }
@@ -62,5 +66,47 @@ class EmpresasApi {
     Resposta escolherProposta(String projetoId, String propostaId) {
         return this.cliente.post("/microprojetos/" + ConsultaTextos.caminho(projetoId)
             + "/proposals/" + ConsultaTextos.caminho(propostaId) + "/select", "{}")
+    }
+
+    Resposta propor(String projetoId, String mensagem, Int valor) {
+        return this.cliente.post("/microprojetos/" + ConsultaTextos.caminho(projetoId)
+            + "/proposals", json.encode(mapOf("message", mensagem,
+                "price", Consulta.numero(valor))))
+    }
+
+    static List<EmpresaResumo> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<EmpresaResumo>() }
+        try {
+            return json.decode<List<EmpresaResumo>>(r.corpo)
+        } catch (String e) {
+            return listOf<EmpresaResumo>()
+        }
+    }
+
+    static List<EmpresaDiretorio> diretorioDe(Resposta r) {
+        if (!r.ok()) { return listOf<EmpresaDiretorio>() }
+        try {
+            return json.decode<List<EmpresaDiretorio>>(r.corpo)
+        } catch (String e) {
+            return listOf<EmpresaDiretorio>()
+        }
+    }
+
+    static List<MicroProjeto> projetosDe(Resposta r) {
+        if (!r.ok()) { return listOf<MicroProjeto>() }
+        try {
+            return json.decode<List<MicroProjeto>>(r.corpo)
+        } catch (String e) {
+            return listOf<MicroProjeto>()
+        }
+    }
+
+    static List<PropostaMicroProjeto> propostasDe(Resposta r) {
+        if (!r.ok()) { return listOf<PropostaMicroProjeto>() }
+        try {
+            return json.decode<List<PropostaMicroProjeto>>(r.corpo)
+        } catch (String e) {
+            return listOf<PropostaMicroProjeto>()
+        }
     }
 }

@@ -23,4 +23,17 @@ class SelosApi {
     Resposta selar(String postId) {
         return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(postId) + "/seals", "{}")
     }
+
+    Resposta selosDeUsuario(String usuario) {
+        return this.cliente.get("/users/" + ConsultaTextos.caminho(usuario) + "/seals")
+    }
+
+    static List<Selo> selosDe(Resposta r) {
+        if (!r.ok()) { return listOf<Selo>() }
+        try {
+            return json.decode<List<Selo>>(r.corpo)
+        } catch (String e) {
+            return listOf<Selo>()
+        }
+    }
 }

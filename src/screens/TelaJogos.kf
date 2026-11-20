@@ -1,0 +1,170 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaJogos {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = JogosApi.pagina(JogosApi(this.cliente).listar(null, null, 20)).items
+            var jogos = listOf<Jogo>()
+            if (itens != null) { jogos = itens }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("jogos"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < jogos.size(); i = i + 1) {
+                println(Lista.item(this.titulo(jogos.get(i)), this.resumo(jogos.get(i))))
+                opcoes.add(this.titulo(jogos.get(i)))
+            }
+            if (jogos.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhum jogo publicado")))
+            }
+            opcoes.add("minha biblioteca")
+            var escolha = Entrada.menu("arcade", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < jogos.size()) {
+                this.abrir(jogos.get(escolha))
+            } else {
+                this.biblioteca()
+            }
+        }
+    }
+
+    void biblioteca() {
+        var itens = JogosApi.listaDe(JogosApi(this.cliente).biblioteca())
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sua biblioteca está vazia")))
+            Entrada.pausar()
+            return
+        }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("biblioteca"))
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            println(Lista.item(this.titulo(itens.get(i)), this.resumo(itens.get(i))))
+        }
+        Entrada.pausar()
+    }
+
+    void abrir(Jogo j) {
+        var api = JogosApi(this.cliente)
+        print(Ansi.LIMPAR)
+        println(Caixa.simples(this.cartao(j)))
+        var escolha = Entrada.menu(this.titulo(j),
+            listOf("avaliações", "comentários", "avaliar", "enviar comentário"), "voltar")
+        if (escolha == 0) {
+            this.avaliacoes(j)
+        } else if (escolha == 1) {
+            this.comentarios(j)
+        } else if (escolha == 2) {
+            var nota = Entrada.numero("nota", 1, 5)
+            var texto = Entrada.texto("comentário (opcional)")
+            this.avisar(api.avaliar(j.id, nota, texto), "avaliação enviada")
+        } else if (escolha == 3) {
+            var texto = Entrada.textoObrigatorio("comentário")
+            this.avisar(api.comentar(j.id, texto), "comentário enviado")
+        }
+    }
+
+    void avaliacoes(Jogo j) {
+        var itens = JogosApi.avaliacoesDe(JogosApi(this.cliente).avaliacoes(j.id, 20))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("avaliações · " + this.titulo(j)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("ninguém avaliou ainda")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var a = itens.get(i)
+            var nota = ""
+            if (a.rating != null) { nota = String.valueOf(a.rating) + "★" }
+            var nome = ""
+            if (a.name != null) { nome = a.name }
+            println(Lista.item(nome + " " + nota, this.texto(a.body)))
+        }
+        Entrada.pausar()
+    }
+
+    void comentarios(Jogo j) {
+        var itens = JogosApi.comentariosDe(JogosApi(this.cliente).comentarios(j.id, 20))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("comentários · " + this.titulo(j)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum comentário")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var c = itens.get(i)
+            println(Lista.item(this.texto(c.authorName), this.texto(c.content)))
+        }
+        Entrada.pausar()
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String titulo(Jogo j) {
+        if (j.title != null) { return j.title }
+        return j.id
+    }
+
+    String resumo(Jogo j) {
+        var texto = ""
+        if (j.username != null) { texto = "@" + j.username }
+        if (j.plays != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(j.plays) + " partidas"
+        }
+        if (j.status != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + j.status
+        }
+        return texto
+    }
+
+    String cartao(Jogo j) {
+        var texto = this.titulo(j)
+        var rodape = this.resumo(j)
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.suave(rodape) }
+        var descricao = this.texto(j.shortDescription)
+        if (descricao.length == 0) { descricao = this.texto(j.description) }
+        if (descricao.length > 0) { texto = texto + "\n" + descricao }
+        if (j.genres != null && j.genres.size() > 0) {
+            var generos = ""
+            for (var i = 0; i < j.genres.size(); i = i + 1) {
+                if (i > 0) { generos = generos + " · " }
+                generos = generos + j.genres.get(i)
+            }
+            texto = texto + "\n" + Tema.mudo(generos)
+        }
+        var endereco = this.texto(j.url)
+        if (endereco.length > 0) { texto = texto + "\n" + Tema.pinta(Tema.INFO, endereco) }
+        return texto
+    }
+}

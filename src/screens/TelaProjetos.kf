@@ -1,0 +1,54 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Sessao
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaProjetos {
+
+    Cliente cliente
+    Sessao sessao
+
+    public constructor(Cliente cliente, Sessao sessao) {
+        this.cliente = cliente
+        this.sessao = sessao
+    }
+
+    void executar() {
+        var itens = ProjetosApi.listaDe(ProjetosApi(this.cliente).meus())
+        print(Ansi.LIMPAR)
+        println(Menu.topo("énois", ""))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Tema.destaque("projetos"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum projeto no seu diário")))
+            Entrada.pausar()
+            return
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var p = itens.get(i)
+            var titulo = ""
+            if (p.title != null) { titulo = p.title }
+            println(Lista.item(titulo, this.stack(p)))
+            if (p.description != null) { println("  " + Tema.suave(p.description)) }
+            if (p.repoUrl != null) { println("  " + Tema.mudo(p.repoUrl)) }
+        }
+        Entrada.pausar()
+    }
+
+    String stack(ProjetoUsuario p) {
+        if (p.stack == null || p.stack.size() == 0) { return "" }
+        var texto = ""
+        for (var i = 0; i < p.stack.size(); i = i + 1) {
+            if (i > 0) { texto = texto + " · " }
+            texto = texto + p.stack.get(i)
+        }
+        return texto
+    }
+}

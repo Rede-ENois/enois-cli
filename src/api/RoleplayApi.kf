@@ -82,6 +82,11 @@ class RoleplayApi {
             + ConsultaTextos.caminho(campanhaId) + "/archive", "{}")
     }
 
+    Resposta mesas(String campanhaId) {
+        return this.cliente.get("/roleplay/campaigns/"
+            + ConsultaTextos.caminho(campanhaId) + "/tables")
+    }
+
     Resposta fichaModelo(String campanhaId) {
         return this.cliente.get("/roleplay/campaigns/"
             + ConsultaTextos.caminho(campanhaId) + "/sheets/template")
@@ -93,6 +98,58 @@ class RoleplayApi {
             return json.decode<PaginaCampanhas>(r.corpo)
         } catch (String e) {
             return PaginaCampanhas(listOf<Campanha>(), null)
+        }
+    }
+
+    static Campanha unica(Resposta r) {
+        var vazia = Campanha("", null, null, null, null, null, null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazia }
+        try {
+            return json.decode<Campanha>(r.corpo)
+        } catch (String e) {
+            return vazia
+        }
+    }
+
+    static List<SistemaRoleplay> sistemasDe(Resposta r) {
+        if (!r.ok()) { return listOf<SistemaRoleplay>() }
+        try {
+            return json.decode<List<SistemaRoleplay>>(r.corpo)
+        } catch (String e) {
+            return listOf<SistemaRoleplay>()
+        }
+    }
+
+    static List<MembroRoleplay> membrosDe(Resposta r) {
+        if (!r.ok()) { return listOf<MembroRoleplay>() }
+        try {
+            var v = json.decode<PaginaMembrosRoleplay>(r.corpo)
+            if (v.items == null) { return listOf<MembroRoleplay>() }
+            return v.items
+        } catch (String e) {
+            return listOf<MembroRoleplay>()
+        }
+    }
+
+    static List<PedidoRoleplay> pedidosDe(Resposta r) {
+        if (!r.ok()) { return listOf<PedidoRoleplay>() }
+        try {
+            var v = json.decode<PaginaPedidosRoleplay>(r.corpo)
+            if (v.items == null) { return listOf<PedidoRoleplay>() }
+            return v.items
+        } catch (String e) {
+            return listOf<PedidoRoleplay>()
+        }
+    }
+
+    static List<MesaRoleplay> mesasDe(Resposta r) {
+        if (!r.ok()) { return listOf<MesaRoleplay>() }
+        try {
+            var v = json.decode<PaginaMesasRoleplay>(r.corpo)
+            if (v.items == null) { return listOf<MesaRoleplay>() }
+            return v.items
+        } catch (String e) {
+            return listOf<MesaRoleplay>()
         }
     }
 }

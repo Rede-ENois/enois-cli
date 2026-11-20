@@ -1,0 +1,209 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Sessao
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaConta {
+
+    Cliente cliente
+    Sessao sessao
+
+    public constructor(Cliente cliente, Sessao sessao) {
+        this.cliente = cliente
+        this.sessao = sessao
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("conta"))
+            if (this.sessao.usuario != null) {
+                println(Tema.mudo("@" + this.sessao.usuario.usuario))
+            }
+            var opcoes = listOf("preferências", "avisos e notificações", "moderação",
+                "trocar senha", "excluir conta")
+            var escolha = Entrada.menu("ajustes", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.preferencias()
+            } else if (escolha == 1) {
+                this.avisos()
+            } else if (escolha == 2) {
+                TelaModeracao(this.cliente).executar()
+            } else if (escolha == 3) {
+                this.trocarSenha()
+            } else {
+                this.excluir()
+            }
+        }
+    }
+
+    void preferencias() {
+        var api = ContaApi(this.cliente)
+        var p = ContaApi.preferenciasDe(api.preferencias())
+        var gostos = p.likedTopics
+        var bloqueados = p.blockedTopics
+        var modulos = p.disabledModules
+        var noite = ContaApi.booleanos(p.nightRestReminder)
+        var leve = ContaApi.booleanos(p.liteMode)
+        var batata = ContaApi.booleanos(p.batataMode)
+        var reposts = ContaApi.booleanos(p.hideReposts)
+        var novidades = ContaApi.booleanos(p.whatsNewEnabled)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Tema.destaque("preferências"))
+            println(Lista.item("temas do gosto", this.juntar(gostos)))
+            println(Lista.item("temas bloqueados", this.juntar(bloqueados)))
+            println(Lista.item("módulos desligados", this.juntar(modulos)))
+            println(Lista.item("soneca da madrugada", noite))
+            println(Lista.item("modo leve", leve))
+            println(Lista.item("modo batata", batata))
+            println(Lista.item("esconder reposts", reposts))
+            println(Lista.item("novidades", novidades))
+            var opcoes = listOf("editar temas do gosto", "editar temas bloqueados",
+                "editar módulos desligados", "alternar modo leve", "alternar modo batata",
+                "alternar esconder reposts", "alternar soneca da madrugada")
+            var escolha = Entrada.menu("ajustar", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else {
+                if (escolha == 0) { gostos = this.lista() }
+                if (escolha == 1) { bloqueados = this.lista() }
+                if (escolha == 2) { modulos = this.lista() }
+                if (escolha == 3) { leve = this.inverter(leve) }
+                if (escolha == 4) { batata = this.inverter(batata) }
+                if (escolha == 5) { reposts = this.inverter(reposts) }
+                if (escolha == 6) { noite = this.inverter(noite) }
+                var corpo = ContaApi.corpoPreferencias(gostos, bloqueados, modulos, noite, leve,
+                    batata, reposts, novidades)
+                var r = api.salvarPreferencias(corpo)
+                if (r.ok()) {
+                    println(Tema.ok("preferências salvas"))
+                    p = ContaApi.preferenciasDe(api.preferencias())
+                } else {
+                    println(Tema.erro(r.mensagem()))
+                    Entrada.pausar()
+                }
+            }
+        }
+    }
+
+    List<String> lista() {
+        var bruto = Entrada.texto("itens separados por vírgula (vazio limpa)")
+        var itens = listOf<String>()
+        if (bruto.length == 0) { return itens }
+        for (var parte in bruto.split(",")) {
+            var limpo = parte.trim()
+            if (limpo.length > 0) { itens.add(limpo) }
+        }
+        return itens
+    }
+
+    String inverter(String valor) {
+        if (valor == "true") { return "false" }
+        return "true"
+    }
+
+    void avisos() {
+        var api = ContaApi(this.cliente)
+        var a = ContaApi.avisosDe(api.avisos())
+        var resumo = ContaApi.booleanos(a.weeklyDigest)
+        var social = ContaApi.booleanos(a.pushSocial)
+        var mensagens = ContaApi.booleanos(a.pushMessages)
+        var grupos = ContaApi.booleanos(a.pushGroups)
+        var vagas = ContaApi.booleanos(a.pushJobs)
+        var sistema = ContaApi.booleanos(a.pushSystem)
+        var projetos = ContaApi.booleanos(a.communityProjects)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Tema.destaque("avisos"))
+            println(Lista.item("resumo semanal", resumo))
+            println(Lista.item("rede social", social))
+            println(Lista.item("mensagens", mensagens))
+            println(Lista.item("grupos", grupos))
+            println(Lista.item("vagas", vagas))
+            println(Lista.item("sistema", sistema))
+            println(Lista.item("projetos da comunidade", projetos))
+            var opcoes = listOf("resumo semanal", "rede social", "mensagens", "grupos", "vagas",
+                "sistema", "projetos da comunidade")
+            var escolha = Entrada.menu("alternar", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else {
+                if (escolha == 0) { resumo = this.inverter(resumo) }
+                if (escolha == 1) { social = this.inverter(social) }
+                if (escolha == 2) { mensagens = this.inverter(mensagens) }
+                if (escolha == 3) { grupos = this.inverter(grupos) }
+                if (escolha == 4) { vagas = this.inverter(vagas) }
+                if (escolha == 5) { sistema = this.inverter(sistema) }
+                if (escolha == 6) { projetos = this.inverter(projetos) }
+                var corpo = ContaApi.corpoAvisos(resumo, social, mensagens, grupos, vagas,
+                    sistema, projetos)
+                var r = api.salvarAvisos(corpo)
+                if (r.ok()) {
+                    println(Tema.ok("avisos salvos"))
+                    a = ContaApi.avisosDe(api.avisos())
+                } else {
+                    println(Tema.erro(r.mensagem()))
+                    Entrada.pausar()
+                }
+            }
+        }
+    }
+
+    void trocarSenha() {
+        var atual = Entrada.secreta("senha atual")
+        var nova = Entrada.secreta("nova senha")
+        if (nova.length < 8) {
+            println(Tema.erro("a senha precisa de pelo menos 8 caracteres"))
+            Entrada.pausar()
+            return
+        }
+        var r = ContaApi(this.cliente).trocarSenha(atual, nova)
+        if (r.ok()) {
+            println(Tema.ok("senha trocada"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void excluir() {
+        println(Caixa.simples("a conta some junto com tudo que é seu. não tem volta."))
+        if (!Entrada.confirmar("tem certeza?")) { return }
+        var senha = Entrada.secreta("senha")
+        var r = ContaApi(this.cliente).excluir(senha)
+        if (r.ok()) {
+            println(Tema.ok("conta excluída"))
+            this.sessao.limpar()
+            Entrada.pausar()
+            return
+        }
+        println(Tema.erro(r.mensagem()))
+        Entrada.pausar()
+    }
+
+    String juntar(List<String>? itens) {
+        if (itens == null) { return "" }
+        if (itens.size() == 0) { return "" }
+        var texto = ""
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            if (i > 0) { texto = texto + ", " }
+            texto = texto + itens.get(i)
+        }
+        return texto
+    }
+}

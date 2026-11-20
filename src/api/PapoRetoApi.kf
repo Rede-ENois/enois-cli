@@ -21,4 +21,22 @@ class PapoRetoApi {
         return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
             + "/timeline" + Consulta.par("janela", janela))
     }
+
+    static List<ReclameAssunto> assuntosDe(Resposta r) {
+        if (!r.ok()) { return listOf<ReclameAssunto>() }
+        try {
+            return json.decode<List<ReclameAssunto>>(r.corpo)
+        } catch (String e) {
+            return listOf<ReclameAssunto>()
+        }
+    }
+
+    static List<IntervaloFalas> timelineDe(Resposta r) {
+        if (!r.ok()) { return listOf<IntervaloFalas>() }
+        try {
+            return json.decode<List<IntervaloFalas>>(r.corpo)
+        } catch (String e) {
+            return listOf<IntervaloFalas>()
+        }
+    }
 }
