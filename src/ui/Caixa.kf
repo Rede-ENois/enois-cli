@@ -54,6 +54,15 @@ class Caixa {
         return saida
     }
 
+    static String juntar(List<String> linhas) {
+        var saida = ""
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            if (i > 0) { saida = saida + "\n" }
+            saida = saida + linhas.get(i)
+        }
+        return saida
+    }
+
     static List<String> simples(String corpo) {
         var largura = Caixa.larguraPadrao()
         var interna = largura - 4

@@ -29,21 +29,32 @@ class Config {
     String alvo
     String urlApi
     String origem
+    String contexto
 
     public constructor() {
         this.alvo = "producao"
         this.urlApi = URL_PRODUCAO
         this.origem = ORIGEM_PRODUCAO
+        this.contexto = "social"
     }
 
     void usaAlvo(String novo) {
-        this.alvo = novo
         if (novo == "qa") {
+            this.alvo = "qa"
             this.urlApi = URL_QA
             this.origem = ORIGEM_QA
         } else {
+            this.alvo = "producao"
             this.urlApi = URL_PRODUCAO
             this.origem = ORIGEM_PRODUCAO
+        }
+    }
+
+    void usaContexto(String novo) {
+        if (novo == "profissional") {
+            this.contexto = "profissional"
+        } else {
+            this.contexto = "social"
         }
     }
 
@@ -51,17 +62,16 @@ class Config {
         return json.encode(mapOf(
             "alvo", this.alvo,
             "urlApi", this.urlApi,
-            "origem", this.origem))
+            "origem", this.origem,
+            "contexto", this.contexto))
     }
 
-    static Config deMapa(Map<String, String> m) {
+    static Config deMapa(Map<String, Object> m) {
         var c = Config()
-        var alvo = m.get("alvo")
-        if (alvo != null) { c.alvo = alvo }
-        var url = m.get("urlApi")
-        if (url != null) { c.urlApi = url }
-        var origem = m.get("origem")
-        if (origem != null) { c.origem = origem }
+        var bruto = Json.texto(m, "alvo")
+        if (bruto.length == 0) { bruto = "producao" }
+        c.usaAlvo(bruto)
+        c.usaContexto(Json.texto(m, "contexto"))
         return c
     }
 
@@ -70,8 +80,12 @@ class Config {
         var caminho = dirEstado() + "/config.json"
         var bruto = readFile(caminho)
         if (bruto == null) { return c }
-        var m = json.decode<Map>(bruto)
-        return deMapa(m)
+        try {
+            var m = json.decode<Map<String, Object>>(bruto)
+            return deMapa(m)
+        } catch (String erro) {
+            return c
+        }
     }
 
     Bool salvar() {

@@ -23,8 +23,7 @@ class TelaModeracao {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("moderação"))
             var estado = ModeracaoApi(this.cliente).meuEstado()
             if (estado.ok()) {

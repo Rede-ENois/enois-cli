@@ -27,8 +27,7 @@ class TelaVagas {
             var vagas = listOf<Vaga>()
             if (itens != null) { vagas = itens }
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("vagas"))
             var opcoes = listOf<String>()
             for (var i = 0; i < vagas.size(); i = i + 1) {

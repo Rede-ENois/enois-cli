@@ -21,8 +21,7 @@ class TelaSalvos {
     void executar() {
         var r = FeedApi(this.cliente).salvos(null, 20)
         print(Ansi.LIMPAR)
-        println(Menu.topo("énois", ""))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Menu.topo("Énóis", ""))
         println(Tema.destaque("salvos"))
         if (!r.ok()) {
             println(Tema.erro(r.mensagem()))

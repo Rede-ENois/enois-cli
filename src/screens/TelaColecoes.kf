@@ -24,8 +24,7 @@ class TelaColecoes {
             var r = ColecoesApi(this.cliente).listar(null, 24)
             var itens = ColecoesApi.pagina(r).items
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("coleções"))
             if (itens == null || itens.size() == 0) {
                 println(Caixa.simples(Lista.vazia("nenhuma coleção — crie uma para organizar seus salvos")))

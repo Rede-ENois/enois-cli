@@ -1,0 +1,132 @@
+package ui
+
+import core.*
+import ui.Abas
+import ui.Menu
+
+class Seletor {
+
+    static List<String> DIGITOS = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9")
+
+    Teclado teclado
+    String contexto
+    Int cursor
+    List<ItemNavegacao> itens
+
+    public constructor(String contexto) {
+        this.teclado = Teclado()
+        this.contexto = contexto
+        this.cursor = 0
+        this.itens = Navegacao.visiveis(contexto)
+    }
+
+    static Int digito(String caractere) {
+        for (var i = 0; i < Seletor.DIGITOS.size(); i = i + 1) {
+            if (Seletor.DIGITOS.get(i) == caractere) { return i }
+        }
+        return -1
+    }
+
+    static Bool encerra(Tecla tecla) {
+        if (tecla.nome == "escape" || tecla.nome == "ctrl-c") { return true }
+        return tecla.nome == "texto" && (tecla.caractere == "q" || tecla.caractere == "0")
+    }
+
+    String escolher(String topo, String dica) {
+        if (!this.teclado.entrar()) { return "" }
+        print(Ansi.OCULTAR_CURSOR)
+        print(Ansi.ALTERNATIVO)
+        var rota = ""
+        var seguindo = true
+        while (seguindo) {
+            this.desenhar(topo, dica)
+            var tecla = this.teclado.ler()
+            if (tecla.nome == "cima" || (tecla.nome == "texto" && tecla.caractere == "k")) {
+                this.mover(-1)
+            } else if (tecla.nome == "baixo" || (tecla.nome == "texto" && tecla.caractere == "j")) {
+                this.mover(1)
+            } else if (tecla.nome == "tab" || tecla.nome == "voltar-aba") {
+                this.alternarContexto()
+            } else if (tecla.nome == "enter") {
+                seguindo = this.confirmar(this.cursor, rota)
+                if (!seguindo) { rota = this.rotaDo(this.cursor) }
+            } else if (tecla.nome == "texto") {
+                var atalho = Seletor.digito(tecla.caractere)
+                if (atalho >= 0) {
+                    this.cursor = atalho
+                    seguindo = this.confirmar(this.cursor, rota)
+                    if (!seguindo) { rota = this.rotaDo(this.cursor) }
+                } else if (Seletor.encerra(tecla)) {
+                    seguindo = false
+                }
+            } else if (Seletor.encerra(tecla)) {
+                seguindo = false
+            }
+        }
+        print(Ansi.NORMAL)
+        print(Ansi.MOSTRAR_CURSOR)
+        this.teclado.sair()
+        return rota
+    }
+
+    Bool confirmar(Int indice, String rota) {
+        if (indice < 0 || indice >= this.itens.size()) { return true }
+        if (this.itens.get(indice).rota == "trocar contexto") {
+            this.alternarContexto()
+            return true
+        }
+        return false
+    }
+
+    String rotaDo(Int indice) {
+        if (indice < 0 || indice >= this.itens.size()) { return "" }
+        return this.itens.get(indice).rota
+    }
+
+    void mover(Int passo) {
+        var novo = this.cursor + passo
+        if (novo < 0) { novo = this.itens.size() - 1 }
+        if (novo >= this.itens.size()) { novo = 0 }
+        this.cursor = novo
+    }
+
+    void alternarContexto() {
+        this.contexto = Navegacao.proximoContexto(this.contexto)
+        this.itens = Navegacao.visiveis(this.contexto)
+        this.cursor = 0
+    }
+
+    void desenhar(String topo, String dica) {
+        print(Ansi.LIMPAR)
+        println(topo)
+        println("")
+        println(Abas.lista(Navegacao.CONTEXTOS, this.contexto))
+        println("")
+        var secao = ""
+        var numero = 1
+        for (var i = 0; i < this.itens.size(); i = i + 1) {
+            var item = this.itens.get(i)
+            if (item.secao != secao) {
+                secao = item.secao
+                println(Abas.grupo(secao))
+            }
+            var rotulo = this.rotulo(numero, item, i == this.cursor)
+            if (i == this.cursor) {
+                println(Tema.selecionado(Ansi.padDireita(rotulo, Ansi.LARGURA_CONTEUDO)))
+            } else {
+                println(rotulo)
+            }
+            numero = numero + 1
+        }
+        println("")
+        println(Menu.rodape(dica))
+    }
+
+    String rotulo(Int numero, ItemNavegacao item, Bool ativo) {
+        var texto = "  " + Ansi.padEsquerda(String.valueOf(numero), 2) + ". " + item.rotulo
+        if (item.descricao.length > 0) {
+            texto = texto + "  " + Tema.mudo(item.descricao)
+        }
+        return texto
+    }
+}

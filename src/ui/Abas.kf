@@ -1,0 +1,32 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+class Abas {
+
+    static String lista(List<String> itens, String ativa) {
+        var linha = "  "
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var item = itens.get(i)
+            if (item == ativa) {
+                linha = linha + Abas.ativa(item) + " "
+            } else {
+                linha = linha + Abas.inativa(item) + " "
+            }
+        }
+        return linha
+    }
+
+    static String ativa(String texto) {
+        return Tema.comFundo(Tema.FUNDO_PRIMARIO_SUAVE, Tema.TEXTO, " " + texto + " ")
+    }
+
+    static String inativa(String texto) {
+        return Tema.mudo(texto)
+    }
+
+    static String grupo(String titulo) {
+        return "  " + Tema.mudo(titulo.toUpperCase())
+    }
+}

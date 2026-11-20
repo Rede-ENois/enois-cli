@@ -5,6 +5,7 @@ import api.*
 import core.Ansi
 import core.Cliente
 import core.Entrada
+import core.Faisca
 import core.Resposta
 import core.Tema
 import ui.Caixa
@@ -25,8 +26,7 @@ class TelaCarteira {
         while (rodando && Entrada.ativa) {
             var carteira = CarteiraApi.carteiraDe(api.saldo())
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Caixa.simples(this.cartao(carteira)))
             var escolha = Entrada.menu("carteira",
                 listOf("extrato", "cotação", "transferir"), "voltar")
@@ -52,7 +52,7 @@ class TelaCarteira {
         for (var i = 0; i < itens.size(); i = i + 1) {
             var l = itens.get(i)
             var valor = ""
-            if (l.amount != null) { valor = String.valueOf(l.amount) }
+            if (l.amount != null) { valor = Faisca.texto(l.amount) }
             var texto = ""
             if (l.message != null) { texto = l.message }
             if (texto.length == 0 && l.kind != null) { texto = l.kind }
@@ -87,7 +87,13 @@ class TelaCarteira {
 
     void transferir(CarteiraApi api) {
         var usuario = Entrada.textoObrigatorio("usuário destino")
-        var valor = Entrada.numero("valor em faíscas", 1, 100000000)
+        var digitado = Entrada.texto("valor em faíscas (ex.: 1.234,56)")
+        var valor = Faisca.deTexto(digitado)
+        if (valor <= 0) {
+            println(Tema.erro("valor inválido"))
+            Entrada.pausar()
+            return
+        }
         var r = api.transferir(usuario, valor)
         if (r.ok()) {
             println(Tema.ok("transferência enviada"))
@@ -109,7 +115,7 @@ class TelaCarteira {
     String cartao(Carteira c) {
         var texto = ""
         if (c.balance != null) {
-            texto = "saldo " + Tema.destaque(String.valueOf(c.balance)) + " faíscas"
+            texto = "saldo " + Tema.destaque(Faisca.texto(c.balance))
         } else {
             texto = Tema.mudo("saldo indisponível")
         }

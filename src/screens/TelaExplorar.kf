@@ -23,8 +23,7 @@ class TelaExplorar {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("explorar"))
             println(Tema.mudo("as salas que não cabem no dia a dia"))
             var escolha = Entrada.menu("seções",

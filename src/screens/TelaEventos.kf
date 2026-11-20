@@ -26,8 +26,7 @@ class TelaEventos {
             var eventos = listOf<Evento>()
             if (itens != null) { eventos = itens }
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("eventos"))
             var total = eventos.size()
             var opcoes = listOf<String>()

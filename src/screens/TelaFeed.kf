@@ -13,13 +13,29 @@ import ui.Menu
 class TelaFeed {
 
     Cliente cliente
+    String contexto
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
+        this.contexto = "social"
+    }
+
+    public constructor(Cliente cliente, String contexto) {
+        this.cliente = cliente
+        this.contexto = contexto
+    }
+
+    Bool corporativo() {
+        return this.contexto == "profissional"
+    }
+
+    Resposta carregar(String? cursor, Int limite) {
+        if (this.corporativo()) { return FeedApi(this.cliente).corporativo(cursor, limite) }
+        return FeedApi(this.cliente).listar(cursor, limite)
     }
 
     void executar() {
-        var r = FeedApi(this.cliente).listar(null, 10)
+        var r = this.carregar(null, 10)
         var rodando = true
         while (rodando && Entrada.ativa) {
             if (!r.ok()) {
@@ -30,10 +46,10 @@ class TelaFeed {
             var pagina = FeedApi.paginaFeed(r)
             var itens = pagina.items
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
+            println(Menu.cabecalho(this.titulo(), this.subtitulo()))
             if (itens == null || itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("feed vazio — siga alguém pelo Explorar")))
+                println(Caixa.simples(Lista.vazia(this.vazio())))
                 Entrada.pausar()
                 return
             }
@@ -47,16 +63,31 @@ class TelaFeed {
                 opcoes.add(this.resumo(itens.get(i)))
             }
             if (proximo.length > 0) { opcoes.add("carregar mais") }
-            var escolha = Entrada.menu("feed", opcoes, "voltar")
+            var escolha = Entrada.menu(this.titulo(), opcoes, "voltar")
             if (escolha < 0) {
                 rodando = false
             } else if (escolha == itens.size()) {
-                r = FeedApi(this.cliente).listar(proximo, 10)
+                r = this.carregar(proximo, 10)
             } else {
                 TelaPost(this.cliente).executar(itens.get(escolha))
-                r = FeedApi(this.cliente).listar(null, 10)
+                r = this.carregar(null, 10)
             }
         }
+    }
+
+    String titulo() {
+        if (this.corporativo()) { return "feed profissional" }
+        return "feed"
+    }
+
+    String subtitulo() {
+        if (this.corporativo()) { return "o que o lado profissional está publicando" }
+        return "o que a rede está postando agora"
+    }
+
+    String vazio() {
+        if (this.corporativo()) { return "nada no feed profissional por aqui" }
+        return "feed vazio — siga alguém pelo Explorar"
     }
 
     String resumo(PostResumo p) {

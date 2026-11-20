@@ -24,8 +24,7 @@ class TelaLoja {
         while (rodando && Entrada.ativa) {
             var itens = LojaApi.itensDe(LojaApi(this.cliente).catalogo("new"))
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("loja"))
             var opcoes = listOf<String>()
             for (var i = 0; i < itens.size(); i = i + 1) {

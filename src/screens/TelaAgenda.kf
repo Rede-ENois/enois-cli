@@ -24,8 +24,7 @@ class TelaAgenda {
         while (rodando && Entrada.ativa) {
             var itens = AgendaApi.listaDe(AgendaApi(this.cliente).agenda("", ""))
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("agenda"))
             var opcoes = listOf<String>()
             for (var i = 0; i < itens.size(); i = i + 1) {

@@ -26,8 +26,7 @@ class TelaRoleplay {
             var campanhas = listOf<Campanha>()
             if (itens != null) { campanhas = itens }
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("mesa de rpg"))
             var opcoes = listOf<String>()
             for (var i = 0; i < campanhas.size(); i = i + 1) {

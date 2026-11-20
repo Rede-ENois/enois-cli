@@ -40,8 +40,7 @@ class TelaProfissional {
         while (rodando && Entrada.ativa) {
             var perfil = CorporateApi.unico(api.meu())
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("perfil profissional"))
             if (perfil == null) {
                 println(Tema.erro("não deu para ler o perfil profissional"))

@@ -26,8 +26,7 @@ class TelaSelos {
         if (this.sessao.usuario != null) { usuario = this.sessao.usuario.usuario }
         var itens = SelosContribuicaoApi.selosDe(SelosContribuicaoApi(this.cliente).deUsuario(usuario))
         print(Ansi.LIMPAR)
-        println(Menu.topo("énois", ""))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Menu.topo("Énóis", ""))
         println(Tema.destaque("selos"))
         if (itens.size() == 0) {
             println(Caixa.simples(Lista.vazia("nenhum selo conquistado ainda")))

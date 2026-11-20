@@ -24,8 +24,7 @@ class TelaComunidades {
         while (rodando && Entrada.ativa) {
             var itens = this.descoberta()
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("comunidades"))
             if (itens.size() == 0) {
                 println(Caixa.simples(Lista.vazia("nenhuma comunidade encontrada")))

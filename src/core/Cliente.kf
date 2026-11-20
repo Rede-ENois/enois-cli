@@ -18,15 +18,22 @@ class Cliente {
             + "X-Client-Origin: " + this.config.origem
     }
 
-    String cabecalhos(Bool escrita) {
+    String cabecalhos(String metodo, String chaveIdempotencia) {
         var h = this.cabecalhosBase()
         if (this.sessao.logado()) {
             h = h + "\nX-Session-Token: " + this.sessao.token
         }
-        if (escrita) {
+        if (Cliente.escreve(metodo)) {
             h = h + "\nX-CSRF-Protection: 1\nContent-Type: application/json"
+            if (chaveIdempotencia.length > 0) {
+                h = h + "\nIdempotency-Key: " + chaveIdempotencia
+            }
         }
         return h
+    }
+
+    static Bool escreve(String metodo) {
+        return metodo == "POST" || metodo == "PUT" || metodo == "PATCH" || metodo == "DELETE"
     }
 
     String url(String caminho) {
@@ -56,21 +63,24 @@ class Cliente {
     }
 
     Resposta enviar(String metodo, String caminho, String corpo, Bool escrita) {
-        var r = this.disparar(metodo, caminho, corpo, escrita)
+        var chave = ""
+        if (escrita) { chave = uuid.v4() }
+        var r = this.disparar(metodo, caminho, corpo, chave)
         if (r.codigo == 401 && this.sessao.renova.length > 0) {
             var renovou = this.renovar()
             if (renovou) {
-                r = this.disparar(metodo, caminho, corpo, escrita)
+                r = this.disparar(metodo, caminho, corpo, chave)
             }
         }
         return r
     }
 
-    Resposta disparar(String metodo, String caminho, String corpo, Bool escrita) {
+    Resposta disparar(String metodo, String caminho, String corpo, String chaveIdempotencia) {
         http.timeout(15)
         http.retry(1)
         try {
-            var res = http.send(metodo, this.url(caminho), corpo, this.cabecalhos(escrita))
+            var res = http.send(metodo, this.url(caminho), corpo,
+                this.cabecalhos(metodo, chaveIdempotencia))
             return Resposta(res.status(), res.body(), res.headers())
         } catch (String e) {
             return Resposta(0, "{\"code\":\"REDE\",\"message\":\"falha de rede: " + e + "\"}", "")
@@ -98,12 +108,18 @@ class Cliente {
 
     String entrar(String email, String senha) {
         var corpo = json.encode(mapOf("email", email, "password", senha))
-        var r = this.disparar("POST", "/auth/login", corpo, true)
+        var r = this.disparar("POST", "/auth/login", corpo, "")
         if (r.codigo == 202) {
             var m = r.comoMapa()
-            var desafio = m.get("challengeId")
-            if (desafio == null) { desafio = "" }
-            return "2fa:" + desafio
+            var desafio = Json.texto(m, "challengeId")
+            var metodo = Json.texto(m, "method")
+            return "2fa:" + desafio + ":" + metodo
+        }
+        if (r.ok()) {
+            var m = r.comoMapa()
+            if (Json.logico(m, "passwordExpired")) {
+                return "senha-expirada:" + Json.texto(m, "resetToken")
+            }
         }
         if (!r.ok()) { return "erro:" + r.mensagem() }
         var nova = Sessao.deResposta(r.headersComoTexto())
@@ -117,7 +133,7 @@ class Cliente {
 
     String verificar2fa(String challengeId, String codigo) {
         var corpo = json.encode(mapOf("challengeId", challengeId, "code", codigo))
-        var r = this.disparar("POST", "/auth/2fa/verify", corpo, true)
+        var r = this.disparar("POST", "/auth/2fa/verify", corpo, "")
         if (!r.ok()) { return "erro:" + r.mensagem() }
         var nova = Sessao.deResposta(r.headersComoTexto())
         if (nova.token.length == 0) { return "erro:servidor não devolveu a sessão" }
@@ -128,30 +144,65 @@ class Cliente {
         return "ok"
     }
 
+    String redefinirSenha(String resetToken, String senha) {
+        var corpo = json.encode(mapOf("token", resetToken, "password", senha))
+        var r = this.enviar("POST", "/auth/password/reset", corpo, true)
+        if (!r.ok()) { return "erro:" + r.mensagem() }
+        var nova = Sessao.deResposta(r.headersComoTexto())
+        if (nova.token.length > 0) {
+            this.sessao.token = nova.token
+            this.sessao.renova = nova.renova
+            this.carregarEu()
+            this.sessao.salvar()
+            return "ok"
+        }
+        return "ok"
+    }
+
     void carregarEu() {
         var r = this.get("/auth/me")
         if (!r.ok()) { return }
         var m = r.comoMapa()
-        var nome = valor(m, "name")
-        var login = valor(m, "username")
-        var email = valor(m, "email")
-        var avatar = valor(m, "avatar")
-        var id = valor(m, "id")
-        var faisca = 0
-        var rawFaisca = m.get("spark")
-        if (rawFaisca != null) { faisca = Integer.parseInt(rawFaisca) }
+        var nome = Json.texto(m, "name")
+        var login = Json.texto(m, "username")
+        var email = Json.texto(m, "email")
+        var id = Json.texto(m, "id")
+        var avatar = this.avatar()
+        var faisca = this.saldo()
         this.sessao.usuario = Usuario(id, nome, login, email, avatar, faisca)
     }
 
-    static String valor(Map<String, String> m, String chave) {
-        var v = m.get(chave)
-        if (v == null) { return "" }
-        return v
+    String avatar() {
+        var r = this.get("/me")
+        if (!r.ok()) { return "" }
+        return Json.texto(r.comoMapa(), "avatar")
     }
 
-    void sair() {
-        this.post("/auth/logout", "{}")
+    Int saldo() {
+        var r = this.get("/carteira")
+        if (!r.ok()) { return 0 }
+        return Json.numero(r.comoMapa(), "balance")
+    }
+
+    Bool sessaoValida() {
+        if (!this.sessao.logado()) { return false }
+        var r = this.get("/auth/me")
+        if (r.codigo == 401 && this.sessao.renova.length > 0) {
+            if (this.renovar()) {
+                r = this.get("/auth/me")
+            }
+        }
+        if (!r.ok()) { return false }
+        this.carregarEu()
+        this.sessao.salvar()
+        return true
+    }
+
+    Bool sair() {
+        var r = this.enviar("POST", "/auth/logout", "{}", true)
+        if (!r.ok()) { return false }
         this.sessao.limpar()
+        return true
     }
 
     static String par(String chave, String? valor) {
@@ -168,8 +219,11 @@ class Cliente {
         var fora = ""
         for (var p in pares) {
             if (p.length == 0) { continue }
+            var pedaco = p
+            if (pedaco.startsWith("?")) { pedaco = pedaco.substring(1) }
+            if (pedaco.length == 0) { continue }
             if (fora.length > 0) { fora = fora + "&" }
-            fora = fora + p
+            fora = fora + pedaco
         }
         if (fora.length == 0) { return "" }
         return "?" + fora

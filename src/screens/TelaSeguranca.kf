@@ -24,8 +24,7 @@ class TelaSeguranca {
         while (rodando && Entrada.ativa) {
             var estado = SegurancaApi.estadoDe(SegurancaApi(this.cliente).estado())
             print(Ansi.LIMPAR)
-            println(Menu.topo("énois", ""))
-            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Menu.topo("Énóis", ""))
             println(Tema.destaque("segurança"))
             println(this.cartao(estado))
             var opcoes = listOf("ativar aplicativo autenticador", "desativar autenticador",
