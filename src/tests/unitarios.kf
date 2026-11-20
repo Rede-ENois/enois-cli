@@ -1,0 +1,150 @@
+package tests
+
+import api.*
+import core.*
+import screens.*
+
+test "consulta ignora par vazio e nulo" {
+    assert(Consulta.par("limit", "") == "")
+    assert(Consulta.par("limit", "20") == "limit=20")
+}
+
+test "consulta junta pares com e comercial" {
+    var q = Consulta.query(listOf(Consulta.par("a", "1"), Consulta.par("b", "2")))
+    assert(q == "?a=1&b=2")
+}
+
+test "consulta sem pares nao ganha interrogacao" {
+    assert(Consulta.query(listOf("", "")) == "")
+}
+
+test "caminho escapa espaco" {
+    assert(ConsultaTextos.caminho("a b") == "a+b")
+}
+
+test "cookie extraido do cabecalho bruto" {
+    var bruto = "HTTP/1.1 200 OK\nset-cookie: sessao=abc123; Path=/\nset-cookie: renova=xyz"
+    assert(Sessao.cookieDe(bruto, "sessao") == "abc123")
+    assert(Sessao.cookieDe(bruto, "renova") == "xyz")
+}
+
+test "sessao vazia nao esta logada" {
+    assert(!Sessao().logado())
+}
+
+test "largura ignora codigos ansi" {
+    assert(Ansi.largura(Tema.destaque("abc")) == 3)
+}
+
+test "corpo de preferencias leva todas as chaves" {
+    var corpo = ContaApi.corpoPreferencias(listOf<String>("kof"), listOf<String>(),
+        listOf<String>(), "true", "false", "null", "true", "false")
+    assert(corpo.contains("\"likedTopics\":[\"kof\"]"))
+    assert(corpo.contains("\"nightRestReminder\":true"))
+    assert(corpo.contains("\"batataMode\":null"))
+    assert(corpo.contains("\"whatsNewEnabled\":false"))
+}
+
+test "corpo de avisos leva todas as chaves" {
+    var corpo = ContaApi.corpoAvisos("true", "false", "null", "true", "false", "null", "true")
+    assert(corpo.contains("\"weeklyDigest\":true"))
+    assert(corpo.contains("\"pushMessages\":null"))
+    assert(corpo.contains("\"communityProjects\":true"))
+}
+
+test "juntar lista de conta" {
+    var tela = TelaConta(Cliente(Config.carregar(), Sessao()), Sessao())
+    assert(tela.juntar(listOf<String>("a", "b")) == "a, b")
+    assert(tela.juntar(listOf<String>()) == "")
+    assert(tela.juntar(null) == "")
+}
+
+test "inverter alterna texto troolean" {
+    var tela = TelaConta(Cliente(Config.carregar(), Sessao()), Sessao())
+    assert(tela.inverter("true") == "false")
+    assert(tela.inverter("false") == "true")
+    assert(tela.inverter("null") == "true")
+}
+
+test "votos de moderacao somam quorum" {
+    var p = DenunciaPainel("1", "POST", "2", "SPAM", "d", "2026", "r", "a", "mel", "c",
+        2, 1, null, 5)
+    var texto = TelaModeracao(Cliente(Config.carregar(), Sessao())).votos(p)
+    assert(texto.contains("2 punir"))
+    assert(texto.contains("1 arquivar"))
+    assert(texto.contains("quórum 5"))
+}
+
+test "resumo do papo reto" {
+    var a = ReclameAssunto("kof", "quente", 7.5, 1L, 2L, 3L, 4L, 0.5)
+    var texto = TelaPapoReto(Cliente(Config.carregar(), Sessao())).resumo(a)
+    assert(texto.contains("7.5 de calor"))
+    assert(texto.contains("3 pessoas"))
+}
+
+test "cartao de jogo mostra titulo e descricao" {
+    var jogo = Jogo("1", "mel", "jogo", "Meu Jogo", "desc", "curta", "c", "i", "https://x",
+        "PUBLISHED", listOf<String>("rpg"), 10, 2, "2026", null, null, "live", 5, "1.0")
+    var cartao = TelaJogos(Cliente(Config.carregar(), Sessao())).cartao(jogo)
+    assert(cartao.contains("Meu Jogo"))
+    assert(cartao.contains("curta"))
+    assert(cartao.contains("rpg"))
+}
+
+test "chave de empresa prefere slug" {
+    var e = EmpresaDiretorio("company", "enois", "Énois", "l", "tech", "bsb", 2L, 3L, 4L)
+    assert(TelaEmpresas(Cliente(Config.carregar(), Sessao())).chave(e) == "enois")
+}
+
+test "cartao de campanha mostra nome e sistema" {
+    var c = Campanha("1", "camp", "A CAMPANHA", "desc", "setting", "sistema", "familia",
+        "public", "open", 3, "master", null, "2026")
+    var cartao = TelaRoleplay(Cliente(Config.carregar(), Sessao())).cartao(c)
+    assert(cartao.contains("A CAMPANHA"))
+    assert(cartao.contains("sistema"))
+}
+
+test "stack de projeto junta tecnologias" {
+    var p = ProjetoUsuario("1", "P", "d", "b", "i", listOf<String>("kof", "jvm"),
+        "https://g", "ativo", "")
+    assert(TelaProjetos(Cliente(Config.carregar(), Sessao()), Sessao()).stack(p) == "kof · jvm")
+}
+
+test "todas as telas carregam e formatam" {
+    var c = Cliente(Config.carregar(), Sessao())
+    var s = Sessao()
+    TelaEntrar(c, Config.carregar(), s).toString()
+    TelaFeed(c).toString()
+    TelaNotificacoes(c).toString()
+    TelaMensagens(c, s).toString()
+    TelaPerfil(c, s).toString()
+    TelaExplorar(c).toString()
+    TelaBusca(c).toString()
+    TelaComunidades(c).toString()
+    TelaGrupos(c).toString()
+    TelaEventos(c).toString()
+    TelaColecoes(c).toString()
+    TelaTrabalho(c).toString()
+    TelaVagas(c).toString()
+    TelaFreelas(c).toString()
+    TelaServicos(c).toString()
+    TelaMentoria(c).toString()
+    TelaAgenda(c).toString()
+    TelaEconomia(c).toString()
+    TelaCarteira(c).toString()
+    TelaLoja(c).toString()
+    TelaMarketplace(c).toString()
+    TelaSocial(c, s).toString()
+    TelaJogos(c).toString()
+    TelaRoleplay(c).toString()
+    TelaBlogs(c).toString()
+    TelaMurais(c).toString()
+    TelaDesafios(c).toString()
+    TelaPapoReto(c).toString()
+    TelaEmpresas(c).toString()
+    TelaProjetos(c, s).toString()
+    TelaSelos(c, s).toString()
+    TelaModeracao(c).toString()
+    TelaConta(c, s).toString()
+    assert(c != null)
+}

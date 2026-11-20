@@ -15,28 +15,43 @@ O `enois-cli` é o cliente de terminal do Énóis: mesmas telas e funcionalidade
 
 ```
 src/
-  main.kf            ponto de entrada: argumentos, configuração, laço do app
-  core/              motor do TUI (tela, entrada, sessão, renderização)
+  main.kf            ponto de entrada: configuração, sessão, menu raiz
+  core/              motor do TUI
+    Ansi.kf          largura, padding, códigos de escape
     Tema.kf          tokens do design system convertidos para ANSI
-    Tela.kf          abstração de tela: cúpula, layout, navegação
-    Entrada.kf       leitura de linha, atalhos, menus numerados
-    Sessao.kf        sessão autenticada (token, usuário, refresh)
-    Config.kf        configuração persistida (host da API, origem, tema)
+    Entrada.kf       leitura de linha, menus numerados, confirmação
+    Sessao.kf        sessão autenticada (token, usuário, renovação)
+    Config.kf        configuração persistida (alvo, origem, estado)
     Cliente.kf       HTTP + JSON com os headers que a API exige
-    Erros.kf         códigos e mensagens de erro da API
+    Resposta.kf      status, corpo e mensagem de erro da API
   ui/                componentes visuais reutilizáveis
-    Caixa.kf         painéis com borda, cabeçalho
-    Lista.kf         listas paginadas com seleção
-    Campo.kf         entrada de texto
-    Badge.kf         selos, sinais (Hoje, não lidas)
-    Menu.kf          menus de navegação e atalhos
-  api/               um arquivo por domínio da API do backend
-    Feed.kf, Perfil.kf, Mensagens.kf, ...
+    Caixa.kf         painéis com borda e cabeçalho
+    Lista.kf         itens, vazio, agrupamentos
+    Menu.kf          topo da aplicação e blocos de navegação
+    Campo.kf, Badge.kf
+  api/               um arquivo por domínio, com os `record` do contrato
+    Tipos*.kf        os records que espelham os DTOs do backend
+    FeedApi.kf, VagasApi.kf, CarteiraApi.kf, ...
   screens/           uma tela por área do produto
-    Inicio.kf, Entrar.kf, Feed.kf, Post.kf, Perfil.kf, ...
-tests/               testes `kof test`
+    TelaHub*         hubs (explorar, social, trabalho, economia, conta)
+    Tela*            telas de cada área
+  tests/             suíte `kof test` (package tests)
+build/               saída de `kof build` (ignorada pelo git)
 docs/                esta pasta
 ```
+
+## Rodar testes
+
+Os testes ficam em `src/tests` e precisam da raiz do módulo para resolver os
+imports de `api`, `core` e `screens`:
+
+```bash
+kof test --module-root src src/tests/unitarios.kf --target jvm
+```
+
+A suíte cobre formatação de records, montagem de query string e carga de todas
+as telas (o `kof check` não pega `VerifyError` em método compilado; a carga
+pega).
 
 ## Camadas
 
