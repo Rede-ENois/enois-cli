@@ -1,0 +1,197 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaMentoria {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = MentoriasApi.pagina(MentoriasApi(this.cliente).listar(null, null, null, 20)).items
+            var mentores = listOf<Mentor>()
+            if (itens != null) { mentores = itens }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("mentoria"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < mentores.size(); i = i + 1) {
+                println(Lista.item(this.titulo(mentores.get(i)), this.resumo(mentores.get(i))))
+                opcoes.add(this.titulo(mentores.get(i)))
+            }
+            if (mentores.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhum mentor disponível")))
+            }
+            opcoes.add("minhas sessões")
+            var escolha = Entrada.menu("mentores", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < mentores.size()) {
+                this.mentor(mentores.get(escolha))
+            } else {
+                this.sessoes()
+            }
+        }
+    }
+
+    void mentor(Mentor m) {
+        var api = MentoriasApi(this.cliente)
+        print(Ansi.LIMPAR)
+        println(Caixa.simples(this.cartao(m)))
+        var escolha = Entrada.menu(this.titulo(m),
+            listOf("ver horários", "minhas sessões"), "voltar")
+        if (escolha == 0) {
+            this.horarios(m)
+        } else if (escolha == 1) {
+            this.sessoes()
+        }
+    }
+
+    void horarios(Mentor m) {
+        var api = MentoriasApi(this.cliente)
+        var slots = MentoriasApi.vagasDe(api.vagas(m.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("horários · " + this.titulo(m)))
+        var livres = listOf<VagaMentor>()
+        for (var i = 0; i < slots.size(); i = i + 1) {
+            var slot = slots.get(i)
+            if ("" + slot.available == "true") { livres.add(slot) }
+        }
+        if (livres.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem horários livres")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < livres.size(); i = i + 1) {
+            var quando = this.quando(livres.get(i))
+            println(Lista.item(quando, ""))
+            opcoes.add(quando)
+        }
+        var escolha = Entrada.menu("horários", opcoes, "voltar")
+        if (escolha < 0) { return }
+        this.avisar(api.agendar(m.id, livres.get(escolha).id), "sessão agendada")
+    }
+
+    void sessoes() {
+        var itens = MentoriasApi.sessoesDe(MentoriasApi(this.cliente).minhasSessoes())
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("minhas sessões"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhuma sessão agendada")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var sessao = itens.get(i)
+            var linha = this.linhaSessao(sessao)
+            println(Lista.item(linha, this.estadoSessao(sessao)))
+            opcoes.add(linha)
+        }
+        var escolha = Entrada.menu("sessões", opcoes, "voltar")
+        if (escolha < 0) { return }
+        var sessao = itens.get(escolha)
+        var acao = Entrada.menu(this.linhaSessao(sessao), listOf("entrar na sala"), "voltar")
+        if (acao == 0) {
+            var mentorId = ""
+            if (sessao.mentorId != null) { mentorId = sessao.mentorId }
+            this.avisar(MentoriasApi(this.cliente).entrarNaSala(mentorId, sessao.id), "sala aberta")
+        }
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String titulo(Mentor m) {
+        if (m.expertise != null && m.expertise.size() > 0) {
+            var texto = ""
+            for (var i = 0; i < m.expertise.size(); i = i + 1) {
+                if (i > 0) { texto = texto + " · " }
+                texto = texto + m.expertise.get(i)
+            }
+            return texto
+        }
+        if (m.userId != null) { return m.userId }
+        return m.id
+    }
+
+    String resumo(Mentor m) {
+        var texto = ""
+        if (m.rating != null) { texto = String.valueOf(m.rating) + "★" }
+        if (m.sessions != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(m.sessions) + " sessões"
+        }
+        if (m.price != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + m.price
+        }
+        if (m.nextSlot != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "próximo: " + m.nextSlot
+        }
+        return texto
+    }
+
+    String cartao(Mentor m) {
+        var texto = this.titulo(m)
+        var rodape = this.resumo(m)
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.suave(rodape) }
+        if (m.sparksPrice != null) {
+            texto = texto + "\n" + Tema.mudo(String.valueOf(m.sparksPrice) + " faíscas por sessão")
+        }
+        if (m.roomMode != null) { texto = texto + "\n" + Tema.mudo("sala: " + m.roomMode) }
+        return texto
+    }
+
+    String quando(VagaMentor slot) {
+        var texto = ""
+        if (slot.startsAt != null) { texto = slot.startsAt }
+        if (slot.endsAt != null) {
+            if (texto.length > 0) { texto = texto + " → " }
+            texto = texto + slot.endsAt
+        }
+        return texto
+    }
+
+    String linhaSessao(SessaoMentoria s) {
+        var texto = ""
+        if (s.mentorName != null) { texto = s.mentorName }
+        if (s.startsAt != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + s.startsAt
+        }
+        return texto
+    }
+
+    String estadoSessao(SessaoMentoria s) {
+        var texto = ""
+        if (s.status != null) { texto = s.status }
+        if (s.priceSparks != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(s.priceSparks) + " faíscas"
+        }
+        return texto
+    }
+}

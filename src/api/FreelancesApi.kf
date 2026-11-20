@@ -46,6 +46,15 @@ class FreelancesApi {
             json.encode(mapOf("message", mensagem)))
     }
 
+    static List<Freela> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<Freela>() }
+        try {
+            return json.decode<List<Freela>>(r.corpo)
+        } catch (String e) {
+            return listOf<Freela>()
+        }
+    }
+
     static PaginaFreelas pagina(Resposta r) {
         if (!r.ok()) { return PaginaFreelas(listOf<Freela>(), null) }
         try {

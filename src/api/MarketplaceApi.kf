@@ -36,6 +36,10 @@ class MarketplaceApi {
                 "price", Consulta.numero(preco), "description", descricao)))
     }
 
+    Resposta comprar(String anuncioId) {
+        return this.cliente.post("/marketplace/" + ConsultaTextos.caminho(anuncioId) + "/buy", "{}")
+    }
+
     Resposta obterConteudo(String compraId) {
         return this.cliente.get("/marketplace/purchases/"
             + ConsultaTextos.caminho(compraId) + "/content")
@@ -49,5 +53,23 @@ class MarketplaceApi {
     Resposta reembolsar(String compraId) {
         return this.cliente.post("/marketplace/purchases/"
             + ConsultaTextos.caminho(compraId) + "/refund", "{}")
+    }
+
+    static List<Anuncio> anunciosDe(Resposta r) {
+        if (!r.ok()) { return listOf<Anuncio>() }
+        try {
+            return json.decode<List<Anuncio>>(r.corpo)
+        } catch (String e) {
+            return listOf<Anuncio>()
+        }
+    }
+
+    static List<Compra> comprasDe(Resposta r) {
+        if (!r.ok()) { return listOf<Compra>() }
+        try {
+            return json.decode<List<Compra>>(r.corpo)
+        } catch (String e) {
+            return listOf<Compra>()
+        }
     }
 }

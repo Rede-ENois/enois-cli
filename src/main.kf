@@ -13,6 +13,8 @@ main() {
     var mensagens = TelaMensagens(cliente, s)
     var perfil = TelaPerfil(cliente, s)
     var explorar = TelaExplorar(cliente)
+    var trabalho = TelaTrabalho(cliente)
+    var economia = TelaEconomia(cliente)
     var executando = true
     while (executando && Entrada.ativa) {
         print(Ansi.LIMPAR)
@@ -25,7 +27,8 @@ main() {
         println(estado)
         var opcoes = listOf<String>()
         if (s.logado()) {
-            opcoes = listOf("feed", "explorar", "notificações", "mensagens", "perfil", "sair", "trocar alvo")
+            opcoes = listOf("feed", "explorar", "trabalho", "economia", "notificações",
+                "mensagens", "perfil", "sair", "trocar alvo")
         } else {
             opcoes = listOf("entrar", "trocar alvo")
         }
@@ -47,6 +50,10 @@ main() {
             feed.executar()
         } else if (opcoes.get(escolha) == "explorar") {
             explorar.executar()
+        } else if (opcoes.get(escolha) == "trabalho") {
+            trabalho.executar()
+        } else if (opcoes.get(escolha) == "economia") {
+            economia.executar()
         } else if (opcoes.get(escolha) == "trocar alvo") {
             if (cfg.alvo == "qa") {
                 cfg.usaAlvo("producao")

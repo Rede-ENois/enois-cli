@@ -161,6 +161,27 @@ class DesafiosApi {
             return PaginaDesafios(listOf<Desafio>(), null)
         }
     }
+
+    static Desafio unico(Resposta r) {
+        var vazio = Desafio("", null, null, null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<Desafio>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<ParticipacaoDesafio> participacoesDe(Resposta r) {
+        if (!r.ok()) { return listOf<ParticipacaoDesafio>() }
+        try {
+            var pagina = json.decode<PaginaParticipacoes>(r.corpo)
+            if (pagina.items == null) { return listOf<ParticipacaoDesafio>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<ParticipacaoDesafio>()
+        }
+    }
 }
 
 class BlogsApi {
@@ -210,6 +231,25 @@ class BlogsApi {
 
     Resposta desinscrever(String slug) {
         return this.cliente.delete("/blogs/" + ConsultaTextos.caminho(slug) + "/subscription")
+    }
+
+    static List<ResumoBlog> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<ResumoBlog>() }
+        try {
+            return json.decode<List<ResumoBlog>>(r.corpo)
+        } catch (String e) {
+            return listOf<ResumoBlog>()
+        }
+    }
+
+    static BlogTerminal unico(Resposta r) {
+        var vazio = BlogTerminal("", null, null, null, null, null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<BlogTerminal>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
     }
 }
 
@@ -268,6 +308,38 @@ class MuraisApi {
             return json.decode<PaginaMurais>(r.corpo)
         } catch (String e) {
             return PaginaMurais(listOf<Mural>(), null)
+        }
+    }
+
+    static Mural unico(Resposta r) {
+        var vazio = Mural("", null, null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<Mural>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<Contribuicao> contribuicoesDe(Resposta r) {
+        if (!r.ok()) { return listOf<Contribuicao>() }
+        try {
+            var pagina = json.decode<PaginaContribuicoes>(r.corpo)
+            if (pagina.items == null) { return listOf<Contribuicao>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<Contribuicao>()
+        }
+    }
+
+    static List<MuralDoPost> meusDe(Resposta r) {
+        if (!r.ok()) { return listOf<MuralDoPost>() }
+        try {
+            var pagina = json.decode<MeusMurais>(r.corpo)
+            if (pagina.items == null) { return listOf<MuralDoPost>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<MuralDoPost>()
         }
     }
 }

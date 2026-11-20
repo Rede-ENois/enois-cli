@@ -59,4 +59,32 @@ class AgendaApi {
     Resposta pendentes() {
         return this.cliente.get("/calendar/invitations")
     }
+
+    static List<ItemAgenda> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<ItemAgenda>() }
+        try {
+            return json.decode<List<ItemAgenda>>(r.corpo)
+        } catch (String e) {
+            return listOf<ItemAgenda>()
+        }
+    }
+
+    static DetalheAgenda detalheDe(Resposta r) {
+        var vazio = DetalheAgenda(null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<DetalheAgenda>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<ParticipanteAgenda> participantesDe(Resposta r) {
+        if (!r.ok()) { return listOf<ParticipanteAgenda>() }
+        try {
+            return json.decode<List<ParticipanteAgenda>>(r.corpo)
+        } catch (String e) {
+            return listOf<ParticipanteAgenda>()
+        }
+    }
 }

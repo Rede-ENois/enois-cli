@@ -28,7 +28,7 @@ class VagasApi {
     }
 
     Resposta minhasCandidaturas(String? cursor, Int limite) {
-        return this.cliente.get("/jobs/applications" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/jobs/applications/mine")
     }
 
     Resposta criar(String titulo, String empresa, String? descricao) {
@@ -69,6 +69,24 @@ class VagasApi {
 
     Resposta dessalvar(String vagaId) {
         return this.cliente.delete("/jobs/" + ConsultaTextos.caminho(vagaId) + "/saves")
+    }
+
+    static List<InscricaoVaga> inscricoesDe(Resposta r) {
+        if (!r.ok()) { return listOf<InscricaoVaga>() }
+        try {
+            return json.decode<List<InscricaoVaga>>(r.corpo)
+        } catch (String e) {
+            return listOf<InscricaoVaga>()
+        }
+    }
+
+    static List<Candidatura> candidaturasDe(Resposta r) {
+        if (!r.ok()) { return listOf<Candidatura>() }
+        try {
+            return json.decode<List<Candidatura>>(r.corpo)
+        } catch (String e) {
+            return listOf<Candidatura>()
+        }
     }
 
     static PaginaVagas pagina(Resposta r) {

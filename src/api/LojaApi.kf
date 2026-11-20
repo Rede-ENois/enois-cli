@@ -49,4 +49,22 @@ class LojaApi {
     Resposta meuStatus(String texto, String icone) {
         return this.cliente.put("/me/status", json.encode(mapOf("text", texto, "icon", icone)))
     }
+
+    static List<ItemLoja> itensDe(Resposta r) {
+        if (!r.ok()) { return listOf<ItemLoja>() }
+        try {
+            return json.decode<List<ItemLoja>>(r.corpo)
+        } catch (String e) {
+            return listOf<ItemLoja>()
+        }
+    }
+
+    static List<LojaColecao> colecoesDe(Resposta r) {
+        if (!r.ok()) { return listOf<LojaColecao>() }
+        try {
+            return json.decode<List<LojaColecao>>(r.corpo)
+        } catch (String e) {
+            return listOf<LojaColecao>()
+        }
+    }
 }

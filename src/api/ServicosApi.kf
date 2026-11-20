@@ -16,6 +16,10 @@ class ServicosApi {
         return this.cliente.get("/servicos" + Consulta.pagina(cursor, limite))
     }
 
+    Resposta minhasServicos() {
+        return this.cliente.get("/servicos/minhas")
+    }
+
     Resposta criarOferta(String titulo, Int preco) {
         return this.cliente.post("/servicos/ofertas",
             json.encode(mapOf("title", titulo, "price", Consulta.numero(preco))))
@@ -73,5 +77,42 @@ class ServicosApi {
     Resposta reembolsoContrato(String contratoId) {
         return this.cliente.post("/servicos/contratos/"
             + ConsultaTextos.caminho(contratoId) + "/reembolso", "{}")
+    }
+
+    static VitrineServico vitrineDe(Resposta r) {
+        var vazia = VitrineServico(listOf<OfertaServico>(), listOf<PedidoServico>())
+        if (!r.ok()) { return vazia }
+        try {
+            var v = json.decode<VitrineServico>(r.corpo)
+            if (v.ofertas != null && v.pedidos != null) { return v }
+            return vazia
+        } catch (String e) {
+            return vazia
+        }
+    }
+
+    static MeusServicos meusDe(Resposta r) {
+        var vazio = MeusServicos(listOf<OfertaServico>(), listOf<ContratoServico>(),
+            listOf<ContratoServico>())
+        if (!r.ok()) { return vazio }
+        try {
+            var m = json.decode<MeusServicos>(r.corpo)
+            if (m.ofertas != null && m.contratosComoComprador != null
+                && m.contratosComoVendedor != null) {
+                return m
+            }
+            return vazio
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<PropostaServico> propostasDe(Resposta r) {
+        if (!r.ok()) { return listOf<PropostaServico>() }
+        try {
+            return json.decode<List<PropostaServico>>(r.corpo)
+        } catch (String e) {
+            return listOf<PropostaServico>()
+        }
     }
 }

@@ -1,0 +1,183 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaMarketplace {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = MarketplaceApi.anunciosDe(MarketplaceApi(this.cliente).listar(null, 20))
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("marketplace"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(Lista.item(this.titulo(itens.get(i)), this.resumo(itens.get(i))))
+                opcoes.add(this.titulo(itens.get(i)))
+            }
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nada anunciado por aqui")))
+            }
+            opcoes.add("compras")
+            opcoes.add("vendas")
+            opcoes.add("anunciar")
+            var escolha = Entrada.menu("marketplace", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < itens.size()) {
+                this.abrir(itens.get(escolha))
+            } else if (escolha == itens.size()) {
+                this.compras()
+            } else if (escolha == itens.size() + 1) {
+                this.vendas()
+            } else {
+                this.anunciar()
+            }
+        }
+    }
+
+    void abrir(Anuncio a) {
+        var api = MarketplaceApi(this.cliente)
+        print(Ansi.LIMPAR)
+        var texto = this.titulo(a)
+        if (a.sellerName != null) { texto = texto + "\n" + Tema.suave("por " + a.sellerName) }
+        if (a.description != null) { texto = texto + "\n" + a.description }
+        texto = texto + "\n" + this.resumo(a)
+        println(Caixa.simples(texto))
+        if (a.status != null && a.status != "ACTIVE") {
+            println(Tema.mudo("anúncio " + a.status))
+            Entrada.pausar()
+            return
+        }
+        var escolha = Entrada.menu(this.titulo(a), listOf("comprar"), "voltar")
+        if (escolha == 0) {
+            if (Entrada.confirmar("comprar por " + this.resumo(a) + "?")) {
+                this.avisar(api.comprar(a.id), "compra registrada")
+            }
+        }
+    }
+
+    void compras() {
+        var itens = MarketplaceApi.comprasDe(MarketplaceApi(this.cliente).compras())
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("minhas compras"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhuma compra")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var c = itens.get(i)
+            var titulo = ""
+            if (c.title != null) { titulo = c.title }
+            var estado = ""
+            if (c.state != null) { estado = c.state }
+            println(Lista.item(titulo, estado))
+            opcoes.add(titulo)
+        }
+        var escolha = Entrada.menu("compras", opcoes, "voltar")
+        if (escolha < 0) { return }
+        this.compra(itens.get(escolha))
+    }
+
+    void compra(Compra c) {
+        var api = MarketplaceApi(this.cliente)
+        print(Ansi.LIMPAR)
+        var texto = ""
+        if (c.title != null) { texto = c.title }
+        if (c.state != null) { texto = texto + "\n" + Tema.suave(c.state) }
+        if (c.price != null) { texto = texto + "\n" + Tema.mudo(String.valueOf(c.price) + " faíscas") }
+        println(Caixa.simples(texto))
+        var escolha = Entrada.menu("compra", listOf("ver conteúdo", "liberar", "pedir reembolso"), "voltar")
+        if (escolha == 0) {
+            var r = api.obterConteudo(c.id)
+            print(Ansi.LIMPAR)
+            if (r.ok()) {
+                println(Caixa.simples(r.corpo))
+            } else {
+                println(Tema.erro(r.mensagem()))
+            }
+            Entrada.pausar()
+        } else if (escolha == 1) {
+            this.avisar(api.liberar(c.id), "valor liberado ao vendedor")
+        } else if (escolha == 2) {
+            this.avisar(api.reembolsar(c.id), "reembolso solicitado")
+        }
+    }
+
+    void vendas() {
+        var itens = MarketplaceApi.comprasDe(MarketplaceApi(this.cliente).vendas())
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("minhas vendas"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhuma venda")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var c = itens.get(i)
+            var titulo = ""
+            if (c.title != null) { titulo = c.title }
+            var estado = ""
+            if (c.state != null) { estado = c.state }
+            if (c.price != null) {
+                if (estado.length > 0) { estado = estado + " · " }
+                estado = estado + String.valueOf(c.price) + " faíscas"
+            }
+            println(Lista.item(titulo, estado))
+        }
+        Entrada.pausar()
+    }
+
+    void anunciar() {
+        var titulo = Entrada.textoObrigatorio("título")
+        var tipo = Entrada.textoObrigatorio("tipo do item")
+        var preco = Entrada.numero("preço em faíscas", 1, 100000000)
+        var descricao = Entrada.texto("descrição (opcional)")
+        this.avisar(MarketplaceApi(this.cliente).publicar(titulo, tipo, preco, descricao),
+            "anúncio publicado")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String titulo(Anuncio a) {
+        if (a.title != null) { return a.title }
+        return a.id
+    }
+
+    String resumo(Anuncio a) {
+        var texto = ""
+        if (a.price != null) { texto = String.valueOf(a.price) + " faíscas" }
+        if (a.itemKind != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + a.itemKind
+        }
+        if (a.sellerName != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + a.sellerName
+        }
+        return texto
+    }
+}

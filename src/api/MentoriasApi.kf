@@ -76,6 +76,26 @@ class MentoriasApi {
         return this.cliente.get("/mentors/sessions/mine")
     }
 
+    static List<VagaMentor> vagasDe(Resposta r) {
+        if (!r.ok()) { return listOf<VagaMentor>() }
+        try {
+            var pagina = json.decode<PaginaVagasMentor>(r.corpo)
+            if (pagina.items == null) { return listOf<VagaMentor>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<VagaMentor>()
+        }
+    }
+
+    static List<SessaoMentoria> sessoesDe(Resposta r) {
+        if (!r.ok()) { return listOf<SessaoMentoria>() }
+        try {
+            return json.decode<List<SessaoMentoria>>(r.corpo)
+        } catch (String e) {
+            return listOf<SessaoMentoria>()
+        }
+    }
+
     static PaginaMentores pagina(Resposta r) {
         if (!r.ok()) { return PaginaMentores(listOf<Mentor>(), null) }
         try {

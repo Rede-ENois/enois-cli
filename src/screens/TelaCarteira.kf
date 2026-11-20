@@ -1,0 +1,131 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaCarteira {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var api = CarteiraApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var carteira = CarteiraApi.carteiraDe(api.saldo())
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Caixa.simples(this.cartao(carteira)))
+            var escolha = Entrada.menu("carteira",
+                listOf("extrato", "cotação", "transferir"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.extrato(api)
+            } else if (escolha == 1) {
+                this.cotacao(api)
+            } else if (escolha == 2) {
+                this.transferir(api)
+            }
+        }
+    }
+
+    void extrato(CarteiraApi api) {
+        var itens = CarteiraApi.extratoDe(api.extrato(0, 30))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("extrato"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum lançamento")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var l = itens.get(i)
+            var valor = ""
+            if (l.amount != null) { valor = String.valueOf(l.amount) }
+            var texto = ""
+            if (l.message != null) { texto = l.message }
+            if (texto.length == 0 && l.kind != null) { texto = l.kind }
+            println(Lista.item(valor, texto))
+        }
+        Entrada.pausar()
+    }
+
+    void cotacao(CarteiraApi api) {
+        var c = CarteiraApi.cotacaoDe(api.cotacao(30))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("cotação da faísca"))
+        if (c.brlCents == null) {
+            println(Caixa.simples(Lista.vazia("cotação indisponível")))
+            Entrada.pausar()
+            return
+        }
+        var texto = "1 faísca = " + this.brl(c.brlCents) + " BRL"
+        if (c.atualizadaEm != null) { texto = texto + "\n" + Tema.mudo("atualizada em " + c.atualizadaEm) }
+        println(Caixa.simples(texto))
+        if (c.historico != null && c.historico.size() > 0) {
+            println(Tema.suave("histórico"))
+            for (var i = 0; i < c.historico.size(); i = i + 1) {
+                var ponto = c.historico.get(i)
+                var quando = ""
+                if (ponto.em != null) { quando = ponto.em }
+                println(Lista.item(this.brl(ponto.brlCents), quando))
+            }
+        }
+        Entrada.pausar()
+    }
+
+    void transferir(CarteiraApi api) {
+        var usuario = Entrada.textoObrigatorio("usuário destino")
+        var valor = Entrada.numero("valor em faíscas", 1, 100000000)
+        var r = api.transferir(usuario, valor)
+        if (r.ok()) {
+            println(Tema.ok("transferência enviada"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String brl(Int? centavos) {
+        if (centavos == null) { return "—" }
+        var inteiro = centavos / 100
+        var resto = centavos % 100
+        var texto = String.valueOf(resto)
+        if (resto < 10) { texto = "0" + texto }
+        return "R$ " + String.valueOf(inteiro) + "," + texto
+    }
+
+    String cartao(Carteira c) {
+        var texto = ""
+        if (c.balance != null) {
+            texto = "saldo " + Tema.destaque(String.valueOf(c.balance)) + " faíscas"
+        } else {
+            texto = Tema.mudo("saldo indisponível")
+        }
+        if (c.cotacaoBrlCents != null) {
+            texto = texto + "\n" + Tema.suave("1 faísca = " + this.brl(c.cotacaoBrlCents))
+        }
+        if (c.chave != null) { texto = texto + "\n" + Tema.mudo("chave: " + c.chave) }
+        var sequencia = c.streak
+        if (sequencia != null) {
+            if (sequencia.currentDays != null) {
+                texto = texto + "\n" + Tema.destaque("sequência: "
+                    + String.valueOf(sequencia.currentDays) + " dias")
+            }
+            if ("" + sequencia.todayDone == "true") {
+                texto = texto + " " + Tema.ok("hoje feito")
+            }
+        }
+        return texto
+    }
+}

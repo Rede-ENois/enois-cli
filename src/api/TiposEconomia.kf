@@ -1,23 +1,40 @@
 package api
 
-record Carteira(Int? saldo, Int? escala, Int? cotacaoCentavos, String? chave,
-                List<Lancamento>? lancamentos)
+record Carteira(Int? balance, Int? escala, Int? cotacaoBrlCents, Int? cotacaoBrlMicros,
+                String? chave, List<Lancamento>? entries, Sequencia? streak)
 
-record Lancamento(Int? valor, String? tipo, String? mensagem, String? ref, String? criadoEm)
+record Lancamento(Int? amount, String? kind, String? message, String? refId, String? createdAt)
 
-record Cotacao(Int? centavos, Int? micros, Int? escala, String? atualizadaEm)
+record Extrato(List<Lancamento>? entries, Int? page, Int? size, Troolean? hasNext)
 
-record ItemLoja(String id, String? nome, String? tipo, Int? preco, Troolean? meu, String? icone)
+record Cotacao(Int? brlCents, Int? brlMicros, Int? escala, String? atualizadaEm,
+               List<PontoCotacao>? historico)
 
-record LookLoja(String id, String? nome, Int? preco, Troolean? meu)
+record PontoCotacao(Int? brlCents, Int? brlMicros, String? em)
 
-record Anuncio(String id, String? vendedor, String? titulo, String? descricao, Int? preco,
-               String? categoria, String? estado, String? criadoEm)
+record ItemLoja(String id, String? kind, String? collection, String? name, String? description,
+                Int? priceMf, String? cssRing, Int? releaseOrder, Troolean? available,
+                Troolean? purchasable, Troolean? owned, Troolean? equipped)
 
-record Compra(String id, String? anuncioId, Int? preco, String? estado, String? criadoEm)
+record LojaColecao(String id, String? name, Troolean? available, List<JanelaLoja>? windows,
+                   List<LookLoja>? looks)
 
-record Campanha(String id, String? slug, String? nome, String? descricao, Int? membros,
-                String? meuPapel, Troolean? entrou, String? estado)
+record JanelaLoja(String? start, String? end)
+
+record LookLoja(String id, String? title, List<String>? items, String? statusIcon,
+                String? statusText, Troolean? owned, Troolean? equipped)
+
+record Anuncio(String id, String? sellerName, String? sellerUsername, String? itemKind,
+               String? itemId, String? title, String? description, Int? price, String? status,
+               String? createdAt)
+
+record Compra(String id, String? listingId, String? buyerId, String? sellerId, Int? price,
+              String? state, String? createdAt, String? decidedAt, String? itemKind,
+              String? title, String? itemId)
+
+record Campanha(String id, String? slug, String? name, String? description, String? setting,
+                String? gameSystem, String? systemFamily, String? visibility, String? status,
+                Int? members, String? viewerRole, Troolean? joined, String? createdAt)
 
 record PaginaCampanhas(List<Campanha>? items, String? nextCursor)
 
