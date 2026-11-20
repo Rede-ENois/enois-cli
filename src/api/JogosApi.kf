@@ -69,51 +69,6 @@ class JogosApi {
             json.encode(mapOf("body", texto)))
     }
 
-    Resposta palavrasHoje() {
-        return this.cliente.get("/daily-games/words/today")
-    }
-
-    Resposta iniciarPalavras() {
-        return this.cliente.post("/daily-games/words/today/start", "{}")
-    }
-
-    Resposta jogarPalavras(String tentativa) {
-        return this.cliente.post("/daily-games/words/today/guess",
-            json.encode(mapOf("guess", tentativa)))
-    }
-
-    Resposta rankingPalavras() {
-        return this.cliente.get("/daily-games/words/leaderboard")
-    }
-
-    Resposta labirintoHoje(String? data) {
-        return this.cliente.get("/daily-games/maze/today" + Cliente.par("date", data))
-    }
-
-    Resposta iniciarLabirinto() {
-        return this.cliente.post("/daily-games/maze/today/start", "{}")
-    }
-
-    Resposta rankingLabirinto() {
-        return this.cliente.get("/daily-games/maze/leaderboard")
-    }
-
-    Resposta blocosHoje() {
-        return this.cliente.get("/daily-games/blocks/today")
-    }
-
-    Resposta iniciarBlocos() {
-        return this.cliente.post("/daily-games/blocks/today/start", "{}")
-    }
-
-    Resposta rankingBlocos() {
-        return this.cliente.get("/daily-games/blocks/leaderboard")
-    }
-
-    Resposta premios() {
-        return this.cliente.get("/daily-games/rewards/prizes")
-    }
-
     static PaginaJogos pagina(Resposta r) {
         if (!r.ok()) { return PaginaJogos(listOf<Jogo>(), null) }
         try {
