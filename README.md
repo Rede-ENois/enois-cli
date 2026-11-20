@@ -39,6 +39,27 @@ kof build src/main.kf --target jvm --fat --output build
 java -jar build/kof-app.jar               # distribuído
 ```
 
+## Releases
+
+Cada release publica três artefatos:
+
+| Artefato | Para quê |
+|---|---|
+| `enois-cli-<v>.jar` | rodar com `java -jar`, exige JDK 25 |
+| `enois-cli-<v>-linux-x86_64.deb` | instalar no Debian/Ubuntu, com JVM embarcado |
+| `enois-cli-<v>-linux-x86_64.tar.gz` | app autocontido, extrair e rodar `bin/enois-cli` |
+
+O `.deb` e o tarball trazem o runtime embarcado: instalar o pacote e usar
+`enois-cli` no PATH, sem Java na máquina.
+
+```bash
+bash scripts/release.sh 0.1.0            # gera os artefatos em build/release
+```
+
+Publicar é por tag: `git tag v0.1.0 && git push origin v0.1.0` dispara
+`.github/workflows/release.yml`, que checa os tipos, roda os testes, empacota e
+anexa os artefatos na release do GitHub.
+
 ## Licença
 
 GPL-3.0, como o resto da rede.
