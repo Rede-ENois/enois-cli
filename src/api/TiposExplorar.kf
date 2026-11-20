@@ -1,0 +1,65 @@
+package api
+
+record PostAnonimo(
+    String id,
+    String? conteudo,
+    String? criadoEm,
+    Int? reacoes,
+    Int? comentarios,
+    String? minhaReacao,
+    Troolean? meu
+)
+
+record PaginaAnonimos(List<PostAnonimo>? items, String? nextCursor)
+
+record Desafio(
+    String id,
+    String? titulo,
+    String? descricao,
+    String? autorNome,
+    String? criadoEm,
+    String? terminaEm,
+    String? estado,
+    Int? participacoes,
+    Troolean? meu
+)
+
+record PaginaDesafios(List<Desafio>? items, String? nextCursor)
+
+record PostBlog(String id, String? titulo, String? corpo, String? formato, String? publicadoEm)
+
+record BlogTerminal(
+    String id,
+    String? slug,
+    String? titulo,
+    String? descricao,
+    String? autorNome,
+    String? autorUsuario,
+    Int? posts,
+    Troolean? inscrito,
+    Troolean? dono,
+    List<PostBlog>? itens
+)
+
+record ResumoBlog(String id, String? slug, String? titulo, String? autorNome)
+
+record Mural(
+    String id,
+    String? titulo,
+    String? descricao,
+    String? donoNome,
+    Int? contribuicoes,
+    String? criadoEm
+)
+
+record PaginaMurais(List<Mural>? items, String? nextCursor)
+
+record PessoaRanking(String id, String? usuario, String? nome, Int? reputacao, String? ChegouEm)
+
+record Chegada(List<PessoaRanking>? items)
+
+record Sequencia(Int? diasAtuais, Int? diasRecorde, Troolean? hojeFeito, Int? descansos)
+
+record JanelaTermometro(String? rotulo, Int? valor, String? inicio, String? fim)
+
+record Aviso(String id, String? texto, String? criadoEm, String? expiraEm)
