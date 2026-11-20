@@ -1,0 +1,29 @@
+package api
+
+record Carteira(Int? saldo, Int? escala, Int? cotacaoCentavos, String? chave,
+                List<Lancamento>? lancamentos)
+
+record Lancamento(Int? valor, String? tipo, String? mensagem, String? ref, String? criadoEm)
+
+record Cotacao(Int? centavos, Int? micros, Int? escala, String? atualizadaEm)
+
+record ItemLoja(String id, String? nome, String? tipo, Int? preco, Troolean? meu, String? icone)
+
+record LookLoja(String id, String? nome, Int? preco, Troolean? meu)
+
+record Anuncio(String id, String? vendedor, String? titulo, String? descricao, Int? preco,
+               String? categoria, String? estado, String? criadoEm)
+
+record Compra(String id, String? anuncioId, Int? preco, String? estado, String? criadoEm)
+
+record Campanha(String id, String? slug, String? nome, String? descricao, Int? membros,
+                String? meuPapel, Troolean? entrou, String? estado)
+
+record PaginaCampanhas(List<Campanha>? items, String? nextCursor)
+
+record MaquinaEstado(String? gameId, Int? estado, String? resultado, String? proximaJogada,
+                     Int? tentativas, Troolean? terminou)
+
+record Ranking(String? jogo, List<Posicao>? entradas, String? minhaPuntuacao)
+
+record Posicao(String? usuario, String? nome, Int? pontos, Int? colocacao)

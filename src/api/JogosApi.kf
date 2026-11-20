@@ -1,0 +1,115 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class JogosApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? termo, String? cursor, Int limite) {
+        return this.cliente.get("/games" + Consulta.query(listOf(
+            Consulta.par("q", termo),
+            Consulta.par("cursor", cursor),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta perfilDeDev(String usuario) {
+        return this.cliente.get("/games/" + ConsultaTextos.caminho(usuario) + "/profile")
+    }
+
+    Resposta meuPerfilDev() {
+        return this.cliente.get("/games/profile/mine")
+    }
+
+    Resposta obter(String usuario, String slug) {
+        return this.cliente.get("/games/" + ConsultaTextos.caminho(usuario)
+            + "/" + ConsultaTextos.caminho(slug))
+    }
+
+    Resposta biblioteca() {
+        return this.cliente.get("/games/library")
+    }
+
+    Resposta seguir(String usuario) {
+        return this.cliente.post("/games/" + ConsultaTextos.caminho(usuario) + "/follow", "{}")
+    }
+
+    Resposta deixarDeSeguir(String usuario) {
+        return this.cliente.delete("/games/" + ConsultaTextos.caminho(usuario) + "/follow")
+    }
+
+    Resposta avaliacoes(String jogoId, Int limite) {
+        return this.cliente.get("/games/" + ConsultaTextos.caminho(jogoId)
+            + "/reviews" + Consulta.par("limit", Consulta.numero(limite)))
+    }
+
+    Resposta avaliar(String jogoId, Int nota, String texto) {
+        return this.cliente.post("/games/" + ConsultaTextos.caminho(jogoId) + "/reviews",
+            json.encode(mapOf("rating", Consulta.numero(nota), "body", texto)))
+    }
+
+    Resposta minhaAvaliacaoApagar(String jogoId) {
+        return this.cliente.delete("/games/" + ConsultaTextos.caminho(jogoId) + "/reviews/mine")
+    }
+
+    Resposta comentarios(String jogoId, Int limite) {
+        return this.cliente.get("/games/" + ConsultaTextos.caminho(jogoId)
+            + "/comments" + Consulta.par("limit", Consulta.numero(limite)))
+    }
+
+    Resposta comentar(String jogoId, String texto) {
+        return this.cliente.post("/games/" + ConsultaTextos.caminho(jogoId) + "/comments",
+            json.encode(mapOf("body", texto)))
+    }
+
+    Resposta palavrasHoje() {
+        return this.cliente.get("/daily-games/words/today")
+    }
+
+    Resposta iniciarPalavras() {
+        return this.cliente.post("/daily-games/words/today/start", "{}")
+    }
+
+    Resposta jogarPalavras(String tentativa) {
+        return this.cliente.post("/daily-games/words/today/guess",
+            json.encode(mapOf("guess", tentativa)))
+    }
+
+    Resposta rankingPalavras() {
+        return this.cliente.get("/daily-games/words/leaderboard")
+    }
+
+    Resposta labirintoHoje(String? data) {
+        return this.cliente.get("/daily-games/maze/today" + Consulta.par("date", data))
+    }
+
+    Resposta iniciarLabirinto() {
+        return this.cliente.post("/daily-games/maze/today/start", "{}")
+    }
+
+    Resposta rankingLabirinto() {
+        return this.cliente.get("/daily-games/maze/leaderboard")
+    }
+
+    Resposta blocosHoje() {
+        return this.cliente.get("/daily-games/blocks/today")
+    }
+
+    Resposta iniciarBlocos() {
+        return this.cliente.post("/daily-games/blocks/today/start", "{}")
+    }
+
+    Resposta rankingBlocos() {
+        return this.cliente.get("/daily-games/blocks/leaderboard")
+    }
+
+    Resposta premios() {
+        return this.cliente.get("/daily-games/rewards/prizes")
+    }
+}

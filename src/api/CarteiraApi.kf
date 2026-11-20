@@ -1,0 +1,32 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class CarteiraApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta saldo() {
+        return this.cliente.get("/carteira")
+    }
+
+    Resposta cotacao(Int historico) {
+        return this.cliente.get("/coin/cotacao" + Consulta.par("historico", Consulta.numero(historico)))
+    }
+
+    Resposta transferir(String usuario, Int valor) {
+        return this.cliente.post("/carteira/transferencias",
+            json.encode(mapOf("toUsername", usuario, "amount", Consulta.numero(valor))))
+    }
+
+    Resposta contestar(String refId, String motivo) {
+        return this.cliente.post("/carteira/transacoes/" + ConsultaTextos.caminho(refId)
+            + "/contestar", json.encode(mapOf("reason", motivo)))
+    }
+}

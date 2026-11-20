@@ -1,0 +1,98 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class RoleplayApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta sistemas() {
+        return this.cliente.get("/roleplay/systems")
+    }
+
+    Resposta listar(String? termo, String? cursor, Int limite) {
+        return this.cliente.get("/roleplay/campaigns" + Consulta.query(listOf(
+            Consulta.par("query", termo),
+            Consulta.par("cursor", cursor),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta minhas(Int limite) {
+        return this.cliente.get("/roleplay/campaigns/mine" + Consulta.par("limit",
+            Consulta.numero(limite)))
+    }
+
+    Resposta obter(String slugOuId) {
+        return this.cliente.get("/roleplay/campaigns/" + ConsultaTextos.caminho(slugOuId))
+    }
+
+    Resposta criar(String nome, String? descricao) {
+        return this.cliente.post("/roleplay/campaigns",
+            json.encode(mapOf("name", nome, "description", descricao)))
+    }
+
+    Resposta editar(String campanhaId, String nome, String descricao) {
+        return this.cliente.patch("/roleplay/campaigns/" + ConsultaTextos.caminho(campanhaId),
+            json.encode(mapOf("name", nome, "description", descricao)))
+    }
+
+    Resposta entrar(String campanhaId) {
+        return this.cliente.post("/roleplay/campaigns/"
+            + ConsultaTextos.caminho(campanhaId) + "/join", "{}")
+    }
+
+    Resposta convidar(String campanhaId, String usuarioId) {
+        return this.cliente.post("/roleplay/campaigns/" + ConsultaTextos.caminho(campanhaId)
+            + "/invite", json.encode(mapOf("userId", usuarioId)))
+    }
+
+    Resposta sair(String campanhaId) {
+        return this.cliente.delete("/roleplay/campaigns/"
+            + ConsultaTextos.caminho(campanhaId) + "/members/me")
+    }
+
+    Resposta membros(String campanhaId) {
+        return this.cliente.get("/roleplay/campaigns/"
+            + ConsultaTextos.caminho(campanhaId) + "/members")
+    }
+
+    Resposta pedidos(String campanhaId) {
+        return this.cliente.get("/roleplay/campaigns/"
+            + ConsultaTextos.caminho(campanhaId) + "/requests")
+    }
+
+    Resposta aprovar(String campanhaId, String pedidoId) {
+        return this.cliente.post("/roleplay/campaigns/" + ConsultaTextos.caminho(campanhaId)
+            + "/requests/" + ConsultaTextos.caminho(pedidoId) + "/approve", "{}")
+    }
+
+    Resposta recusar(String campanhaId, String pedidoId) {
+        return this.cliente.post("/roleplay/campaigns/" + ConsultaTextos.caminho(campanhaId)
+            + "/requests/" + ConsultaTextos.caminho(pedidoId) + "/reject", "{}")
+    }
+
+    Resposta arquivar(String campanhaId) {
+        return this.cliente.post("/roleplay/campaigns/"
+            + ConsultaTextos.caminho(campanhaId) + "/archive", "{}")
+    }
+
+    Resposta fichaModelo(String campanhaId) {
+        return this.cliente.get("/roleplay/campaigns/"
+            + ConsultaTextos.caminho(campanhaId) + "/sheets/template")
+    }
+
+    static PaginaCampanhas pagina(Resposta r) {
+        if (!r.ok()) { return PaginaCampanhas(listOf<Campanha>(), null) }
+        try {
+            return json.decode<PaginaCampanhas>(r.corpo)
+        } catch (String e) {
+            return PaginaCampanhas(listOf<Campanha>(), null)
+        }
+    }
+}

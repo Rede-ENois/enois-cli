@@ -1,0 +1,53 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class MarketplaceApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? categoria, Int limite) {
+        return this.cliente.get("/marketplace" + Consulta.query(listOf(
+            Consulta.par("kind", categoria),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta meus() {
+        return this.cliente.get("/marketplace/mine")
+    }
+
+    Resposta compras() {
+        return this.cliente.get("/marketplace/compras")
+    }
+
+    Resposta vendas() {
+        return this.cliente.get("/marketplace/vendas")
+    }
+
+    Resposta publicar(String titulo, String categoria, Int preco, String? descricao) {
+        return this.cliente.post("/marketplace",
+            json.encode(mapOf("title", titulo, "itemKind", categoria,
+                "price", Consulta.numero(preco), "description", descricao)))
+    }
+
+    Resposta obterConteudo(String compraId) {
+        return this.cliente.get("/marketplace/purchases/"
+            + ConsultaTextos.caminho(compraId) + "/content")
+    }
+
+    Resposta liberar(String compraId) {
+        return this.cliente.post("/marketplace/purchases/"
+            + ConsultaTextos.caminho(compraId) + "/release", "{}")
+    }
+
+    Resposta reembolsar(String compraId) {
+        return this.cliente.post("/marketplace/purchases/"
+            + ConsultaTextos.caminho(compraId) + "/refund", "{}")
+    }
+}

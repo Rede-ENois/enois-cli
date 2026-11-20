@@ -1,0 +1,52 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class LojaApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta catalogo(String? ordem) {
+        var o = "new"
+        if (ordem != null) { o = ordem }
+        return this.cliente.get("/loja" + Consulta.par("order", o))
+    }
+
+    Resposta colecoes() {
+        return this.cliente.get("/loja/colecoes")
+    }
+
+    Resposta comprar(String itemId) {
+        return this.cliente.post("/loja/" + ConsultaTextos.caminho(itemId) + "/comprar", "{}")
+    }
+
+    Resposta comprarLook(String lookId) {
+        return this.cliente.post("/loja/looks/" + ConsultaTextos.caminho(lookId) + "/comprar", "{}")
+    }
+
+    Resposta equipar(String itemId) {
+        return this.cliente.post("/loja/" + ConsultaTextos.caminho(itemId) + "/equipar", "{}")
+    }
+
+    Resposta desequipar(String itemId) {
+        return this.cliente.post("/loja/" + ConsultaTextos.caminho(itemId) + "/desequipar", "{}")
+    }
+
+    Resposta equiparLook(String lookId) {
+        return this.cliente.post("/loja/looks/" + ConsultaTextos.caminho(lookId) + "/equipar", "{}")
+    }
+
+    Resposta desequiparLook(String lookId) {
+        return this.cliente.post("/loja/looks/" + ConsultaTextos.caminho(lookId) + "/desequipar", "{}")
+    }
+
+    Resposta meuStatus(String texto, String icone) {
+        return this.cliente.put("/me/status", json.encode(mapOf("text", texto, "icon", icone)))
+    }
+}
