@@ -1,0 +1,73 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaDenuncias {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = DenunciasApi.listaDe(DenunciasApi(this.cliente).minhas())
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("denúncias"))
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("você não denunciou nada")))
+            }
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                var d = itens.get(i)
+                println(Lista.item(this.texto(d.reason), this.texto(d.status)))
+                if (d.description != null) { println("  " + Tema.suave(d.description)) }
+                println("  " + Tema.mudo(this.texto(d.targetType) + " · " + this.texto(d.createdAt)))
+            }
+            var escolha = Entrada.menu("denúncias", listOf("denunciar"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else {
+                this.denunciar()
+            }
+        }
+    }
+
+    void denunciar() {
+        var tipos = listOf("POST", "COMMENT", "USER", "MESSAGE", "CALL", "BLOG", "GAME",
+            "COMPANY", "SERVICE", "JOB", "FREELANCE")
+        var motivos = listOf("SEXUAL_CONTENT", "AI_GENERATED", "FAKE_CONTENT", "SCAM",
+            "DISCRIMINATION", "PREJUDICE", "HARASSMENT", "SPAM", "VIOLENCE", "COPYRIGHT", "OTHER")
+        var tipo = Entrada.menu("o que você denuncia", tipos, "voltar")
+        if (tipo < 0) { return }
+        var motivo = Entrada.menu("motivo", motivos, "voltar")
+        if (motivo < 0) { return }
+        var alvo = Entrada.textoObrigatorio("id do alvo")
+        var descricao = Entrada.texto("descreva o caso")
+        var r = DenunciasApi(this.cliente).denunciar(tipos.get(tipo), alvo, motivos.get(motivo),
+            descricao)
+        if (r.ok()) {
+            println(Tema.ok("denúncia registrada"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+}

@@ -1,0 +1,150 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaPenalidades {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("penalidades"))
+            var escolha = Entrada.menu("penalidades",
+                listOf("minhas penalidades", "recorrer", "recursos pendentes",
+                    "penalidades aplicadas"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.minhas()
+            } else if (escolha == 1) {
+                var mensagem = Entrada.textoObrigatorio("seu recurso")
+                this.avisar(PenalidadesApi(this.cliente).recorrer(mensagem), "recurso enviado")
+            } else if (escolha == 2) {
+                this.recursos()
+            } else {
+                this.aplicadas()
+            }
+        }
+    }
+
+    void minhas() {
+        var minhas = PenalidadesApi.minhasDe(PenalidadesApi(this.cliente).minhas())
+        var sancoes = listOf<Sancao>()
+        if (minhas.sanctions != null) { sancoes = minhas.sanctions }
+        var recursos = listOf<Recurso>()
+        if (minhas.appeals != null) { recursos = minhas.appeals }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("minhas penalidades"))
+        if (sancoes.size() == 0) { println(Lista.vazia("nenhuma penalidade na sua conta")) }
+        for (var i = 0; i < sancoes.size(); i = i + 1) {
+            println(Caixa.simples(this.cartao(sancoes.get(i))))
+        }
+        for (var i = 0; i < recursos.size(); i = i + 1) {
+            var r = recursos.get(i)
+            println(Lista.item("recurso " + this.texto(r.status), this.texto(r.createdAt)))
+        }
+        Entrada.pausar()
+    }
+
+    void recursos() {
+        var itens = PenalidadesApi.recursosDe(PenalidadesApi(this.cliente).recursos())
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("recursos pendentes"))
+        if (itens.size() == 0) {
+            println(Lista.vazia("nenhum recurso na fila"))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            opcoes.add(this.texto(itens.get(i).message))
+            println(Lista.item("recurso " + this.texto(itens.get(i).id),
+                this.texto(itens.get(i).message)))
+        }
+        var escolha = Entrada.menu("recurso", opcoes, "voltar")
+        if (escolha < 0) { return }
+        var decisao = Entrada.menu("decisão", listOf("deferir", "indeferir"), "voltar")
+        if (decisao < 0) { return }
+        var api = PenalidadesApi(this.cliente)
+        if (decisao == 0) {
+            this.avisar(api.deferirRecurso(this.texto(itens.get(escolha).id)), "recurso deferido")
+        } else {
+            this.avisar(api.indeferirRecurso(this.texto(itens.get(escolha).id)), "recurso indeferido")
+        }
+    }
+
+    void aplicadas() {
+        var itens = PenalidadesApi.aplicadasDe(PenalidadesApi(this.cliente).aplicadas("ACTIVE", 100))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("penalidades aplicadas"))
+        if (itens.size() == 0) {
+            println(Lista.vazia("nenhuma penalidade ativa"))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var s = itens.get(i)
+            opcoes.add(this.texto(s.username))
+            println(Lista.item(this.texto(s.username), this.texto(s.type) + " · "
+                + this.texto(s.reason)))
+        }
+        var escolha = Entrada.menu("penalidade", opcoes, "voltar")
+        if (escolha < 0) { return }
+        var acao = Entrada.menu("o que fazer", listOf("revogar", "trocar tipo"), "voltar")
+        if (acao < 0) { return }
+        var motivo = Entrada.textoObrigatorio("motivo")
+        var api = PenalidadesApi(this.cliente)
+        var id = this.texto(itens.get(escolha).id)
+        if (acao == 0) {
+            this.avisar(api.revogar(id, motivo), "penalidade revogada")
+        } else {
+            var tipo = Entrada.textoObrigatorio("novo tipo")
+            this.avisar(api.editar(id, tipo, motivo), "penalidade editada")
+        }
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String cartao(Sancao s) {
+        var texto = this.texto(s.type)
+        if (s.reason != null) { texto = texto + "\n" + s.reason }
+        var rodape = this.texto(s.status)
+        if (s.createdAt != null) {
+            if (rodape.length > 0) { rodape = rodape + " · " }
+            rodape = rodape + s.createdAt
+        }
+        if (s.dueAt != null) { rodape = rodape + "\nrevisão em " + s.dueAt }
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.mudo(rodape) }
+        return texto
+    }
+}

@@ -1,0 +1,80 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaSugestoes {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = SugestoesApi.listaDe(SugestoesApi(this.cliente).minhas(20))
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("sugestões"))
+            println(Tema.mudo("aprovada vira issue no repositório do destino"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(Lista.item(this.texto(itens.get(i).title), this.resumo(itens.get(i))))
+                opcoes.add(this.texto(itens.get(i).title))
+            }
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma sugestão enviada")))
+            }
+            opcoes.add("enviar sugestão")
+            var escolha = Entrada.menu("sugestões", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == opcoes.size() - 1) {
+                this.enviar()
+            }
+        }
+    }
+
+    void enviar() {
+        var alvo = Entrada.menu("destino", listOf("backend", "frontend", "design system"), "voltar")
+        if (alvo < 0) { return }
+        var destinos = listOf("BACKEND", "FRONTEND", "DESIGN_SYSTEM")
+        var titulo = Entrada.textoObrigatorio("título")
+        var corpo = Entrada.textoObrigatorio("o que você sugere")
+        var r = SugestoesApi(this.cliente).enviar(destinos.get(alvo), titulo, corpo)
+        if (r.ok()) {
+            println(Tema.ok("sugestão enviada para a fila"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String resumo(Sugestao s) {
+        var texto = this.texto(s.status)
+        if (s.target != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + s.target
+        }
+        if (s.githubIssueUrl != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + s.githubIssueUrl
+        }
+        return texto
+    }
+}

@@ -1,0 +1,76 @@
+package api
+
+import tipos.*
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class SegurancaApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta estado() {
+        return this.cliente.get("/auth/2fa/status")
+    }
+
+    Resposta reenviarVerificacao(String email) {
+        return this.cliente.post("/auth/email/resend", json.encode(mapOf("email", email)))
+    }
+
+    Resposta iniciarTotp(String senha) {
+        return this.cliente.post("/auth/2fa/totp/setup", json.encode(mapOf("password", senha)))
+    }
+
+    Resposta ativarTotp(String codigo, String senha) {
+        return this.cliente.post("/auth/2fa/totp/enable",
+            json.encode(mapOf("code", codigo, "password", senha)))
+    }
+
+    Resposta desativarTotp(String senha) {
+        return this.cliente.post("/auth/2fa/totp/disable", json.encode(mapOf("password", senha)))
+    }
+
+    Resposta pedirCodigoEmail() {
+        return this.cliente.post("/auth/2fa/email/request", "{}")
+    }
+
+    Resposta confirmarCodigoEmail(String codigo) {
+        return this.cliente.post("/auth/2fa/email/confirm", json.encode(mapOf("code", codigo)))
+    }
+
+    Resposta desativarCodigoEmail(String senha) {
+        return this.cliente.post("/auth/2fa/email/disable", json.encode(mapOf("password", senha)))
+    }
+
+    static EstadoDoisFatores estadoDe(Resposta r) {
+        var vazio = EstadoDoisFatores(null, null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<EstadoDoisFatores>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static ConfiguracaoTotp? configuracaoDe(Resposta r) {
+        if (!r.ok()) { return null }
+        try {
+            return json.decode<ConfiguracaoTotp>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+
+    static AtivacaoDoisFatores? ativacaoDe(Resposta r) {
+        if (!r.ok()) { return null }
+        try {
+            return json.decode<AtivacaoDoisFatores>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+}

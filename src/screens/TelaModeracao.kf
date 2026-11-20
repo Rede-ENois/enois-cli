@@ -5,6 +5,7 @@ import api.*
 import core.Ansi
 import core.Cliente
 import core.Entrada
+import core.Resposta
 import core.Tema
 import ui.Caixa
 import ui.Lista
@@ -29,14 +30,21 @@ class TelaModeracao {
             if (estado.ok()) {
                 println(Caixa.simples(estado.corpo))
             }
-            var opcoes = listOf("painel de votação", "minhas denúncias")
+            var opcoes = listOf("painel de votação", "minhas denúncias", "denunciar alvo")
             var escolha = Entrada.menu("moderação", opcoes, "voltar")
             if (escolha < 0) {
                 rodando = false
             } else if (escolha == 0) {
                 this.painel()
-            } else {
+            } else if (escolha == 1) {
                 this.minhas()
+            } else {
+                var tipo = Entrada.textoObrigatorio("tipo do alvo (POST, COMMENT, USER...)")
+                var alvo = Entrada.textoObrigatorio("id do alvo")
+                var motivo = Entrada.textoObrigatorio("motivo (SPAM, HARASSMENT...)")
+                var descricao = Entrada.texto("descrição")
+                this.avisar(DenunciasApi(this.cliente).denunciar(tipo, alvo, motivo, descricao),
+                    "denúncia registrada")
             }
         }
     }
@@ -116,5 +124,14 @@ class TelaModeracao {
     String texto(String? valor) {
         if (valor != null) { return valor }
         return ""
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
     }
 }

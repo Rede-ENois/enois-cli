@@ -31,8 +31,8 @@ class TelaConta {
             if (this.sessao.usuario != null) {
                 println(Tema.mudo("@" + this.sessao.usuario.usuario))
             }
-            var opcoes = listOf("preferências", "avisos e notificações", "moderação",
-                "trocar senha", "excluir conta")
+            var opcoes = listOf("preferências", "avisos e notificações", "segurança", "carteira",
+                "moderação", "penalidades", "sugestões", "trocar senha", "excluir conta")
             var escolha = Entrada.menu("ajustes", opcoes, "voltar")
             if (escolha < 0) {
                 rodando = false
@@ -41,8 +41,16 @@ class TelaConta {
             } else if (escolha == 1) {
                 this.avisos()
             } else if (escolha == 2) {
-                TelaModeracao(this.cliente).executar()
+                TelaSeguranca(this.cliente).executar()
             } else if (escolha == 3) {
+                TelaCarteira(this.cliente).executar()
+            } else if (escolha == 4) {
+                TelaModeracao(this.cliente).executar()
+            } else if (escolha == 5) {
+                TelaPenalidades(this.cliente).executar()
+            } else if (escolha == 6) {
+                TelaSugestoes(this.cliente).executar()
+            } else if (escolha == 7) {
                 this.trocarSenha()
             } else {
                 this.excluir()

@@ -1,0 +1,4 @@
+package tipos
+
+record OrigemDesenvolvedor(String id, String? origin, String? createdAt, Troolean? blocked,
+                          String? blockedReason, String? blockedUntil)

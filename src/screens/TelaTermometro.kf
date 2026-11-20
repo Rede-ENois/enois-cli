@@ -1,0 +1,67 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaTermometro {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var janelas = TermometroApi.janelasDe(TermometroApi(this.cliente).painel())
+        print(Ansi.LIMPAR)
+        println(Menu.topo("énois", ""))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Tema.destaque("termômetro"))
+        println(Tema.mudo("o humor da rede por janela"))
+        if (janelas.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem amostra suficiente agora")))
+        }
+        for (var i = 0; i < janelas.size(); i = i + 1) {
+            println(Caixa.simples(this.janela(janelas.get(i))))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String janela(JanelaTermometro j) {
+        var texto = this.texto(j.periodo)
+        if (j.dominante != null) { texto = texto + " · dominante: " + j.dominante }
+        if (j.manifestacoes != null) { texto = texto + "\n" + j.manifestacoes + " manifestações" }
+        if (j.participantes != null) { texto = texto + " · " + j.participantes + " pessoas" }
+        var emocoes = listOf<EmocaoTermometro>()
+        if (j.emocoes != null) { emocoes = j.emocoes }
+        for (var i = 0; i < emocoes.size(); i = i + 1) {
+            var e = emocoes.get(i)
+            var linha = this.texto(e.emocao)
+            if (e.porcentagem != null) { linha = linha + " " + e.porcentagem + "%" }
+            texto = texto + "\n" + Lista.item(linha, this.barra(e.porcentagem))
+        }
+        return texto
+    }
+
+    String barra(Int? porcentagem) {
+        var quota = 0
+        if (porcentagem != null) { quota = porcentagem / 5 }
+        var texto = ""
+        for (var i = 0; i < quota; i = i + 1) {
+            texto = texto + "█"
+        }
+        return texto
+    }
+}

@@ -1,0 +1,36 @@
+package api
+
+import tipos.*
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class DevelopersApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta origens() {
+        return this.cliente.get("/developers/origins")
+    }
+
+    Resposta adicionar(String origem) {
+        return this.cliente.post("/developers/origins", json.encode(mapOf("origin", origem)))
+    }
+
+    Resposta remover(String origemId) {
+        return this.cliente.delete("/developers/origins/" + Cliente.caminho(origemId))
+    }
+
+    static List<OrigemDesenvolvedor> origensDe(Resposta r) {
+        if (!r.ok()) { return listOf<OrigemDesenvolvedor>() }
+        try {
+            return json.decode<List<OrigemDesenvolvedor>>(r.corpo)
+        } catch (String e) {
+            return listOf<OrigemDesenvolvedor>()
+        }
+    }
+}

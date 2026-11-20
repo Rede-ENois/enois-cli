@@ -1,0 +1,10 @@
+package tipos
+
+record EstadoDoisFatores(Troolean? emailVerified, Troolean? totpEnabled,
+                         Troolean? emailOtpEnabled, Troolean? providerSecondFactor,
+                         Troolean? twoFactorEnabled, Troolean? identityVerified,
+                         Int? backupCodesLeft, Troolean? totpAvailable)
+
+record ConfiguracaoTotp(String? secret, String? otpauthUri)
+
+record AtivacaoDoisFatores(String? status, List<String>? backupCodes)

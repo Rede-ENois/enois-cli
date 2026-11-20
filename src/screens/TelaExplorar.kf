@@ -45,23 +45,32 @@ class TelaExplorar {
 
     void comunidade() {
         var escolha = Entrada.menu("comunidade",
-            listOf("murais", "coleções", "colagem", "desabafos", "selos", "éroleplay", "agenda",
-                "moderação"), "voltar")
+            listOf("colagem", "desabafos", "confessionário", "murais", "coleções", "selos",
+                "éroleplay", "agenda", "termômetro", "papo reto", "sugestões", "moderador"),
+            "voltar")
         if (escolha == 0) {
-            TelaMurais(this.cliente).executar()
-        } else if (escolha == 1) {
-            TelaColecoes(this.cliente).executar()
-        } else if (escolha == 2) {
             TelaColagem(this.cliente).executar()
-        } else if (escolha == 3) {
+        } else if (escolha == 1) {
             TelaDesabafos(this.cliente).executar()
+        } else if (escolha == 2) {
+            TelaConfessionario(this.cliente).executar()
+        } else if (escolha == 3) {
+            TelaMurais(this.cliente).executar()
         } else if (escolha == 4) {
-            TelaSelos(this.cliente, this.sessao).executar()
+            TelaColecoes(this.cliente).executar()
         } else if (escolha == 5) {
-            TelaRoleplay(this.cliente).executar()
+            TelaSelos(this.cliente, this.sessao).executar()
         } else if (escolha == 6) {
-            TelaAgenda(this.cliente).executar()
+            TelaRoleplay(this.cliente).executar()
         } else if (escolha == 7) {
+            TelaAgenda(this.cliente).executar()
+        } else if (escolha == 8) {
+            TelaTermometro(this.cliente).executar()
+        } else if (escolha == 9) {
+            TelaPapoReto(this.cliente).executar()
+        } else if (escolha == 10) {
+            TelaSugestoes(this.cliente).executar()
+        } else if (escolha == 11) {
             TelaModeracao(this.cliente).executar()
         }
     }
@@ -77,13 +86,13 @@ class TelaExplorar {
 
     void construir() {
         var escolha = Entrada.menu("construir",
-            listOf("projetos", "loja", "marketplace"), "voltar")
+            listOf("projetos", "marketplace", "desenvolvedores"), "voltar")
         if (escolha == 0) {
             TelaProjetos(this.cliente, this.sessao).executar()
         } else if (escolha == 1) {
-            TelaLoja(this.cliente).executar()
-        } else if (escolha == 2) {
             TelaMarketplace(this.cliente).executar()
+        } else if (escolha == 2) {
+            TelaDevelopers(this.cliente).executar()
         }
     }
 

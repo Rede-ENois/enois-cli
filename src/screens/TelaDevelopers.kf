@@ -1,0 +1,81 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaDevelopers {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var origens = DevelopersApi.origensDe(DevelopersApi(this.cliente).origens())
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("desenvolvedores"))
+            println(Tema.mudo("origens autorizadas a chamar a api pública"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < origens.size(); i = i + 1) {
+                println(Lista.item(this.texto(origens.get(i).origin), this.situacao(origens.get(i))))
+                opcoes.add(this.texto(origens.get(i).origin))
+            }
+            if (origens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma origem cadastrada")))
+            }
+            opcoes.add("adicionar origem")
+            var escolha = Entrada.menu("origens", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == opcoes.size() - 1) {
+                var origem = Entrada.textoObrigatorio("origem (https://...)")
+                this.avisar(DevelopersApi(this.cliente).adicionar(origem), "origem adicionada")
+            } else {
+                if (Entrada.confirmar("remover esta origem?")) {
+                    this.avisar(DevelopersApi(this.cliente).remover(origens.get(escolha).id),
+                        "origem removida")
+                }
+            }
+        }
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String situacao(OrigemDesenvolvedor o) {
+        var texto = ""
+        if (o.blocked != null) {
+            if (PreferenciasApi.booleanos(o.blocked) == "true") {
+                texto = "bloqueada"
+            } else {
+                texto = "liberada"
+            }
+        }
+        if (o.blockedReason != null) { texto = texto + " · " + o.blockedReason }
+        return texto
+    }
+}
