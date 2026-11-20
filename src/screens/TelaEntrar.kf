@@ -49,16 +49,6 @@ class TelaEntrar {
     }
 
     void provarFeed() {
-        var feed = FeedApi(this.cliente)
-        var r = feed.listar(null, 10)
-        if (!r.ok()) {
-            println(Tema.erro("feed: " + r.mensagem()))
-            Entrada.pausar()
-            return
-        }
-        var pagina = FeedApi.paginaFeed(r)
-        var tela = TelaFeed(this.cliente)
-        tela.pagina(pagina)
-        Entrada.pausar()
+        TelaFeed(this.cliente).executar()
     }
 }

@@ -17,25 +17,55 @@ class TelaFeed {
         this.cliente = cliente
     }
 
-    Bool pagina(PaginaFeed pagina) {
-        print(Ansi.LIMPAR)
-        println(Menu.topo("énois", ""))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
-        var itens = pagina.items
-        if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("feed vazio — siga alguém pelo Explorar")))
-            return false
+    void executar() {
+        var r = FeedApi(this.cliente).listar(null, 10)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            if (!r.ok()) {
+                println(Tema.erro(r.mensagem()))
+                Entrada.pausar()
+                return
+            }
+            var pagina = FeedApi.paginaFeed(r)
+            var itens = pagina.items
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            if (itens == null || itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("feed vazio — siga alguém pelo Explorar")))
+                Entrada.pausar()
+                return
+            }
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(this.card(itens.get(i)))
+            }
+            var proximo = ""
+            if (pagina.nextCursor != null) { proximo = pagina.nextCursor }
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                opcoes.add(this.resumo(itens.get(i)))
+            }
+            if (proximo.length > 0) { opcoes.add("carregar mais") }
+            var escolha = Entrada.menu("feed", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == itens.size()) {
+                r = FeedApi(this.cliente).listar(proximo, 10)
+            } else {
+                TelaPost(this.cliente).executar(itens.get(escolha))
+                r = FeedApi(this.cliente).listar(null, 10)
+            }
         }
-        var cursorProximo = ""
-        if (pagina.nextCursor != null) { cursorProximo = pagina.nextCursor }
-        for (var i = 0; i < itens.size(); i = i + 1) {
-            println(this.card(itens.get(i)))
-        }
-        if (cursorProximo.length == 0) {
-            println(Tema.mudo("~ fim do feed"))
-            return false
-        }
-        return Entrada.confirmar("carregar mais")
+    }
+
+    String resumo(PostResumo p) {
+        var quem = ""
+        if (p.autor != null && p.autor.nome != null) { quem = p.autor.nome + ": " }
+        var trecho = ""
+        if (p.conteudo != null) { trecho = p.conteudo }
+        if (trecho.length > 48) { trecho = trecho.substring(0, 48) + "…" }
+        if (trecho.length == 0) { trecho = "(mídia)" }
+        return quem + trecho
     }
 
     String card(PostResumo p) {

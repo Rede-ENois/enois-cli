@@ -43,23 +43,7 @@ main() {
             cliente.sair()
             println(Tema.mudo("sessão encerrada"))
         } else if (opcoes.get(escolha) == "feed") {
-            var r = FeedApi(cliente).listar(null, 10)
-            if (!r.ok()) {
-                println(Tema.erro(r.mensagem()))
-                Entrada.pausar()
-            } else {
-                var rodando = true
-                while (rodando) {
-                    rodando = feed.pagina(FeedApi.paginaFeed(r))
-                    if (rodando) {
-                        var cursor = ""
-                        var p = FeedApi.paginaFeed(r)
-                        if (p.nextCursor != null) { cursor = p.nextCursor }
-                        r = FeedApi(cliente).listar(cursor, 10)
-                        if (!r.ok()) { println(Tema.erro(r.mensagem())); rodando = false }
-                    }
-                }
-            }
+            feed.executar()
         } else if (opcoes.get(escolha) == "trocar alvo") {
             if (cfg.alvo == "qa") {
                 cfg.usaAlvo("producao")
