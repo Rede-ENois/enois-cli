@@ -46,16 +46,28 @@ class PerfilApi {
 
     static Perfil perfil(Resposta r) {
         if (!r.ok()) { return Perfil("", null, null, null, null, null, null, null, null, null, null) }
-        return json.decode<Perfil>(r.corpo)
+        try {
+            return json.decode<Perfil>(r.corpo)
+        } catch (String e) {
+            return Perfil("", null, null, null, null, null, null, null, null, null, null)
+        }
     }
 
     static List<PessoaRede> redeDe(Resposta r) {
         if (!r.ok()) { return listOf() }
-        return json.decode<List<PessoaRede>>(r.corpo)
+        try {
+            return json.decode<List<PessoaRede>>(r.corpo)
+        } catch (String e) {
+            return listOf()
+        }
     }
 
     static List<UsuarioBusca> buscaDe(Resposta r) {
         if (!r.ok()) { return listOf() }
-        return json.decode<List<UsuarioBusca>>(r.corpo)
+        try {
+            return json.decode<List<UsuarioBusca>>(r.corpo)
+        } catch (String e) {
+            return listOf()
+        }
     }
 }

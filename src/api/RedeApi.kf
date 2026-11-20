@@ -33,6 +33,11 @@ class RedeApi {
             + ConsultaTextos.caminho(usuarioId), "{}")
     }
 
+    Resposta desconectar(String usuarioId) {
+        return this.cliente.delete("/network/connections/"
+            + ConsultaTextos.caminho(usuarioId))
+    }
+
     Resposta aceitar(String usuarioId) {
         return this.cliente.post("/network/connections/"
             + ConsultaTextos.caminho(usuarioId) + "/accept", "{}")

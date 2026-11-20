@@ -11,6 +11,7 @@ main() {
     var feed = TelaFeed(cliente)
     var notificacoes = TelaNotificacoes(cliente)
     var mensagens = TelaMensagens(cliente, s)
+    var perfil = TelaPerfil(cliente, s)
     var executando = true
     while (executando && Entrada.ativa) {
         print(Ansi.LIMPAR)
@@ -36,6 +37,8 @@ main() {
             notificacoes.executar()
         } else if (opcoes.get(escolha) == "mensagens") {
             mensagens.executar()
+        } else if (opcoes.get(escolha) == "perfil") {
+            perfil.executar()
         } else if (opcoes.get(escolha) == "sair") {
             cliente.sair()
             println(Tema.mudo("sessão encerrada"))

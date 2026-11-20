@@ -1,0 +1,182 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Sessao
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaPerfil {
+
+    Cliente cliente
+    Sessao sessao
+
+    public constructor(Cliente cliente, Sessao sessao) {
+        this.cliente = cliente
+        this.sessao = sessao
+    }
+
+    void executar() {
+        print(Ansi.LIMPAR)
+        println(Menu.topo("énois", ""))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        var r = PerfilApi(this.cliente).eu()
+        if (!r.ok()) {
+            println(Caixa.simples(Lista.vazia("sem perfil — entre na sua conta")))
+            Entrada.pausar()
+            return
+        }
+        println(Caixa.simples(this.cartao(PerfilApi.perfil(r))))
+        var rede = RedeApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var escolha = Entrada.menu("rede", listOf("sugestões", "seguidores", "seguindo", "pedidos"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.sugestoes(rede)
+            } else if (escolha == 1) {
+                this.seguidores(rede)
+            } else if (escolha == 2) {
+                this.seguindo(rede)
+            } else if (escolha == 3) {
+                this.pedidos(rede)
+            }
+        }
+    }
+
+    String cartao(Perfil p) {
+        var texto = ""
+        if (p.nome != null) { texto = p.nome }
+        if (p.usuario != null) { texto = texto + " · @" + p.usuario }
+        if (p.bio != null) { texto = texto + "\n" + p.bio }
+        if (p.titulo != null) { texto = texto + "\n" + Tema.suave(p.titulo) }
+        if (p.local != null) { texto = texto + "\n" + Tema.suave(p.local) }
+        if (p.site != null) { texto = texto + "\n" + p.site }
+        if (p.faisca != null) { texto = texto + "\n" + Tema.destaque("✦ " + p.faisca) }
+        if (p.selos != null && p.selos.size() > 0) {
+            var selos = ""
+            for (var i = 0; i < p.selos.size(); i = i + 1) {
+                if (i > 0) { selos = selos + " · " }
+                selos = selos + p.selos.get(i)
+            }
+            texto = texto + "\n" + selos
+        }
+        return texto
+    }
+
+    String rotulo(PessoaRede p) {
+        var nome = p.id
+        if (p.nome != null) { nome = p.nome }
+        if (p.usuario != null) { return nome + " @" + p.usuario }
+        return nome
+    }
+
+    List<String> rotulos(List<PessoaRede> pessoas) {
+        var opcoes = listOf<String>()
+        for (var i = 0; i < pessoas.size(); i = i + 1) {
+            opcoes.add(this.rotulo(pessoas.get(i)))
+        }
+        return opcoes
+    }
+
+    void sugestoes(RedeApi rede) {
+        var r = rede.sugestoes(20)
+        if (!r.ok()) {
+            println(Tema.erro(r.mensagem()))
+            Entrada.pausar()
+            return
+        }
+        var pessoas = PerfilApi.redeDe(r)
+        if (pessoas.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem sugestões agora")))
+            Entrada.pausar()
+            return
+        }
+        var escolha = Entrada.menu("sugestões", this.rotulos(pessoas), "voltar")
+        if (escolha < 0) { return }
+        var pessoa = pessoas.get(escolha)
+        var f = rede.conectar(pessoa.id)
+        if (f.ok()) {
+            println(Tema.ok("pedido enviado para " + this.rotulo(pessoa)))
+        } else {
+            println(Tema.erro(f.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void seguidores(RedeApi rede) {
+        this.lista(rede, "followers", "seguidores")
+    }
+
+    void seguindo(RedeApi rede) {
+        this.lista(rede, "following", "seguindo")
+    }
+
+    void lista(RedeApi rede, String tipo, String titulo) {
+        if (this.sessao.usuario == null) { return }
+        var r = PerfilApi(this.cliente).rede(this.sessao.usuario.usuario, tipo)
+        if (!r.ok()) {
+            println(Tema.erro(r.mensagem()))
+            Entrada.pausar()
+            return
+        }
+        var pessoas = PerfilApi.redeDe(r)
+        if (pessoas.size() == 0) {
+            println(Caixa.simples(Lista.vazia("ninguém aqui")))
+            Entrada.pausar()
+            return
+        }
+        var escolha = Entrada.menu(titulo, this.rotulos(pessoas), "voltar")
+        if (escolha < 0) { return }
+        this.pessoa(rede, pessoas.get(escolha))
+    }
+
+    void pedidos(RedeApi rede) {
+        var r = rede.pedidosPendentes(null, 20)
+        if (!r.ok()) {
+            println(Tema.erro(r.mensagem()))
+            Entrada.pausar()
+            return
+        }
+        var pessoas = PerfilApi.redeDe(r)
+        if (pessoas.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
+            Entrada.pausar()
+            return
+        }
+        var escolha = Entrada.menu("pedidos", this.rotulos(pessoas), "voltar")
+        if (escolha < 0) { return }
+        var pessoa = pessoas.get(escolha)
+        var f = rede.aceitar(pessoa.id)
+        if (f.ok()) {
+            println(Tema.ok("conexão aceita com " + this.rotulo(pessoa)))
+        } else {
+            println(Tema.erro(f.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void pessoa(RedeApi rede, PessoaRede p) {
+        var opcoes = listOf("conectar", "deixar de seguir", "silenciar", "dessilenciar", "bloquear", "desbloquear")
+        var escolha = Entrada.menu(this.rotulo(p), opcoes, "voltar")
+        if (escolha < 0) { return }
+        var acao = opcoes.get(escolha)
+        var f = rede.silenciar(p.id)
+        if (acao == "conectar") { f = rede.conectar(p.id) }
+        if (acao == "deixar de seguir") { f = rede.desconectar(p.id) }
+        if (acao == "dessilenciar") { f = rede.dessilenciar(p.id) }
+        if (acao == "bloquear") { f = rede.bloquear(p.id) }
+        if (acao == "desbloquear") { f = rede.desbloquear(p.id) }
+        if (f.ok()) {
+            println(Tema.ok(acao + ": " + this.rotulo(p)))
+        } else {
+            println(Tema.erro(f.mensagem()))
+        }
+        Entrada.pausar()
+    }
+}
