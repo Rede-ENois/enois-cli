@@ -1,0 +1,65 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Badge
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaNotificacoes {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var cursor = ""
+        var temMais = true
+        while (temMais) {
+            var r = NotificacoesApi(this.cliente).listar(cursor, 20, "SOCIAL")
+            if (!r.ok()) {
+                println(Tema.erro(r.mensagem()))
+                Entrada.pausar()
+                return
+            }
+            var pagina = NotificacoesApi.pagina(r)
+            var itens = pagina.items
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("notificações"))
+            if (itens == null || itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma notificação")))
+                Entrada.pausar()
+                return
+            }
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(this.linha(itens.get(i)))
+            }
+            if (Entrada.ativa) { Entrada.pausar() }
+            var proximo = ""
+            if (pagina.nextCursor != null) { proximo = pagina.nextCursor }
+            if (proximo.length == 0) {
+                temMais = false
+            } else {
+                temMais = Entrada.confirmar("carregar mais")
+                if (temMais) { cursor = proximo }
+            }
+        }
+    }
+
+    String linha(Notificacao n) {
+        var texto = ""
+        if (n.texto != null) { texto = n.texto }
+        if ("" + n.lida == "true") {
+            return Tema.mudo("· " + texto)
+        }
+        return "● " + Tema.texto(texto)
+    }
+}

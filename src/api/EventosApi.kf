@@ -12,14 +12,12 @@ class EventosApi {
         this.cliente = cliente
     }
 
-    Resposta listar(String? formato, String? cursor, Int limite, Troolean? recorrente) {
-        var soSeries = ""
-        if (recorrente != null && recorrente == true) { soSeries = "true" }
+    Resposta listar(String? formato, String? cursor, Int limite, String? recorrente) {
         return this.cliente.get("/events" + Consulta.query(listOf(
             Consulta.par("format", formato),
             Consulta.par("cursor", cursor),
             Consulta.par("limit", Consulta.numero(limite)),
-            Consulta.par("recurring", soSeries))))
+            Consulta.par("recurring", recorrente))))
     }
 
     Resposta obter(String eventoId) {

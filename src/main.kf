@@ -9,6 +9,8 @@ main() {
     var cliente = Cliente(cfg, s)
     var entrar = TelaEntrar(cliente, cfg, s)
     var feed = TelaFeed(cliente)
+    var notificacoes = TelaNotificacoes(cliente)
+    var mensagens = TelaMensagens(cliente, s)
     var executando = true
     while (executando && Entrada.ativa) {
         print(Ansi.LIMPAR)
@@ -30,6 +32,10 @@ main() {
             executando = false
         } else if (opcoes.get(escolha) == "entrar") {
             if (entrar.executar()) { entrar.provarFeed() }
+        } else if (opcoes.get(escolha) == "notificações") {
+            notificacoes.executar()
+        } else if (opcoes.get(escolha) == "mensagens") {
+            mensagens.executar()
         } else if (opcoes.get(escolha) == "sair") {
             cliente.sair()
             println(Tema.mudo("sessão encerrada"))
