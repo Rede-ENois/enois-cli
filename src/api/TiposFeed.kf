@@ -1,24 +1,13 @@
 package api
 
-/**
- * Tipos de leitura do feed — o espelho terminal do PostView do frontend.
- *
- * Só os campos que a TUI renderiza; o resto do payload é ignorado no decode
- * (o json.decode tolera campos sobrando). Campos que podem faltar na resposta
- * são anuláveis; o uso estreita com `if` antes de ler.
- */
 record Autor(String id, String nome, String usuario, String? selo)
 
-/** Contadores do post — reações, comentários, salvamentos, compartilhamentos e reposts. */
 record Contadores(Int reacoes, Int comentarios, Int salvos, Int compartilhados, Int reposts)
 
-/** Uma opção de enquete com o total de votos dela. */
 record OpcaoEnquete(String texto, Int votos)
 
-/** Enquete anexa ao post (só em posts do tipo POLL). */
 record Enquete(List<OpcaoEnquete>? opcoes, Int? totalVotos, Int? minhaOpcao, String? fechaEm)
 
-/** Post do feed na visão de quem lê. */
 record PostResumo(
     String id,
     String? tipo,
@@ -32,8 +21,6 @@ record PostResumo(
     Troolean? resolvida
 )
 
-/** Página do feed e das demais listagens de posts ({items, nextCursor}). */
 record PaginaPost(List<PostResumo>? items, String? nextCursor)
 
-/** Página do GET /feed: acrescenta o marcador "você está em dia". */
 record PaginaFeed(List<PostResumo>? items, String? nextCursor, String? ultimoVistoEm)

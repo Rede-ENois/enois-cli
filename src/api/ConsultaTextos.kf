@@ -2,12 +2,6 @@ package api
 
 import java.net.URLEncoder
 
-/**
- * Textos que a API recebe dentro do caminho da URL: usuário, id, termo de busca.
- *
- * Sempre encodados — o Kof não tem interpolação de URL e um `@` ou espaço cru
- * no caminho muda a rota no servidor.
- */
 class ConsultaTextos {
 
     static String caminho(String bruto) {

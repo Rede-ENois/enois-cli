@@ -1,0 +1,64 @@
+package api
+
+record ResultadoBusca(
+    String id,
+    String? tipo,
+    String? titulo,
+    String? subtitulo,
+    String? imagem,
+    String? href
+)
+
+record PaginaBusca(List<ResultadoBusca>? items, String? nextCursor)
+
+record Comunidade(
+    String id,
+    String? nome,
+    String? descricao,
+    String? assunto,
+    Int? membros,
+    Troolean? entrou,
+    String? avatar,
+    String? cidade,
+    String? estado
+)
+
+record PaginaComunidades(List<Comunidade>? items, String? nextCursor)
+
+record Grupo(
+    String id,
+    String? slug,
+    String? nome,
+    String? descricao,
+    String? assunto,
+    String? modoEntrada,
+    String? status,
+    Int? membros,
+    String? meuPapel,
+    Troolean? entrou,
+    String? criadoEm
+)
+
+record PaginaGrupos(List<Grupo>? items, String? nextCursor)
+
+record Evento(
+    String id,
+    String? titulo,
+    String? data,
+    String? hora,
+    String? formato,
+    String? anfitriao,
+    Int? participantes,
+    String? local,
+    String? linkTransmissao,
+    Troolean? expirado,
+    Troolean? confirmado,
+    String? recorrencia,
+    Troolean? tamoJunto
+)
+
+record PaginaEventos(List<Evento>? items, String? nextCursor)
+
+record Colecao(String id, String? nome, String? descricao, Int? posts)
+
+record PaginaColecoes(List<Colecao>? items, String? nextCursor)

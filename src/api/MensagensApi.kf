@@ -4,12 +4,6 @@ import core.Cliente
 import core.Resposta
 import kof.json
 
-/**
- * Mensagens (caixa de entrada e conversas) — o espelho terminal do messagesApi do frontend.
- *
- * Toda escrita pede confirmação na tela antes de chamar (a tela decide);
- * aqui ficam os verbos crus.
- */
 class MensagensApi {
 
     Cliente cliente
@@ -18,44 +12,37 @@ class MensagensApi {
         this.cliente = cliente
     }
 
-    /** Caixa de entrada (contexto: vazio = todas, "SOCIAL" ou "CORPORATE"). */
     Resposta listar(String? cursor, Int limite, String contexto) {
         return this.cliente.get("/conversations" + Consulta.query(listOf(
             Consulta.pagina(cursor, limite),
             Consulta.par("context", contexto))))
     }
 
-    /** Abre (ou reaproveita) a conversa direta com um usuário. */
     Resposta abrirDireta(String idUsuario) {
         var corpo = json.encode(mapOf("userId", idUsuario))
         return this.cliente.post("/conversations/direct", corpo)
     }
 
-    /** Abre (ou reaproveita) a DM corporativa. */
     Resposta abrirCorporativa(String idUsuario) {
         var corpo = json.encode(mapOf("userId", idUsuario))
         return this.cliente.post("/conversations/business-direct", corpo)
     }
 
-    /** Uma conversa pelo id. */
     Resposta obter(String idConversa) {
         return this.cliente.get("/conversations/" + ConsultaTextos.caminho(idConversa))
     }
 
-    /** Histórico de mensagens da conversa (paginação de 50, como o frontend). */
     Resposta listarMensagens(String idConversa, String? cursor, Int limite) {
         var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa) + "/messages"
         return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
     }
 
-    /** Envia uma mensagem de texto. */
     Resposta enviar(String idConversa, String texto) {
         var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa) + "/messages"
         var corpo = json.encode(mapOf("text", texto))
         return this.cliente.post(caminho, corpo)
     }
 
-    /** Reage a uma mensagem (o backend alterna: mesmo emoji remove). */
     Resposta reagir(String idConversa, String idMensagem, String tipo) {
         var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa)
             + "/messages/" + ConsultaTextos.caminho(idMensagem) + "/reactions"
@@ -63,50 +50,42 @@ class MensagensApi {
         return this.cliente.post(caminho, corpo)
     }
 
-    /** Marca a conversa como lida. */
     Resposta marcarLida(String idConversa) {
         return this.cliente.post("/conversations/" + ConsultaTextos.caminho(idConversa) + "/read", "")
     }
 
-    /** Busca de conversas por termo. */
     Resposta buscar(String termo, Int limite) {
         return this.cliente.get("/conversations/search" + Consulta.query(listOf(
             Consulta.par("q", termo),
             Consulta.par("limit", Consulta.numero(limite)))))
     }
 
-    /** Não lidas de uma interface (vazio = todas). */
     Resposta naoLidas(String contexto) {
         return this.cliente.get("/conversations/unread-count" + Consulta.query(listOf(
             Consulta.par("context", contexto))))
     }
 
-    /** Esconde conversas "apagar para mim" em massa. */
     Resposta esconder(List<String> ids) {
         var corpo = json.encode(mapOf("ids", ids))
         return this.cliente.post("/conversations/hide", corpo)
     }
 
-    /** Restaura conversas escondidas. */
     Resposta restaurar(List<String> ids) {
         var corpo = json.encode(mapOf("ids", ids))
         return this.cliente.post("/conversations/unhide", corpo)
     }
 
-    /** Arquivadas (apagadas só para quem chama). */
     Resposta arquivadas(String? cursor, Int limite, String contexto) {
         return this.cliente.get("/conversations/archived" + Consulta.query(listOf(
             Consulta.pagina(cursor, limite),
             Consulta.par("context", contexto))))
     }
 
-    /** Decodifica uma página de conversas. */
     static PaginaConversa paginaConversas(Resposta r) {
         if (!r.ok()) { return PaginaConversa(listOf(), null) }
         return json.decode<PaginaConversa>(r.corpo)
     }
 
-    /** Decodifica uma página de mensagens. */
     static PaginaMensagens paginaMensagens(Resposta r) {
         if (!r.ok()) { return PaginaMensagens(listOf(), null) }
         return json.decode<PaginaMensagens>(r.corpo)

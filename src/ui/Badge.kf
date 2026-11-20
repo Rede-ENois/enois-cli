@@ -3,34 +3,24 @@ package ui
 import core.Ansi
 import core.Tema
 
-/**
- * Badge do DS: pílula pequena com fundo colorido e texto de alto contraste.
- * No DS cada variante tem cor semântica fixa (destructive, growth,
- * opportunity…); aqui mapeadas para os estilos do Tema.
- */
 class Badge {
 
-    /** Pílula com fundo primário e texte escuro (badge "ativa" do DS). */
     static String primaria(String texto) {
         return Tema.comFundo(Tema.FUNDO_PRIMARIO, Tema.TEXTO_SO_PRIMARIO, " " + texto + " ")
     }
 
-    /** Badge de sucesso (growth: verde do DS). */
     static String sucesso(String texto) {
         return Tema.comFundo(Tema.FUNDO_SUCESSO, Tema.TEXTO, " " + texto + " ")
     }
 
-    /** Badge de alerta (opportunity: âmbar do DS). */
     static String alerta(String texto) {
         return Tema.comFundo(Tema.FUNDO_AVISO, Tema.TEXTO, " " + texto + " ")
     }
 
-    /** Badge de erro/destrutivo. */
     static String erro(String texto) {
         return Tema.comFundo(Tema.FUNDO_DESTRUTIVO, Tema.TEXTO, " " + texto + " ")
     }
 
-    /** Badge cinza neutra (muted do DS). */
     static String neutra(String texto) {
         return Tema.comFundo(Tema.FUNDO_MUDO, Tema.TEXTO_SUAVE, " " + texto + " ")
     }

@@ -3,12 +3,6 @@ import api.*
 import ui.*
 import screens.*
 
-/**
- * énois terminal: o app em modo texto.
- *
- * Menu raiz: entrar/sair, feed e o resto chega conforme os módulos de tela
- * sobem (mesma cobertura das interfaces do frontend).
- */
 main() {
     var cfg = Config.carregar()
     var s = Sessao.carregar()
@@ -16,7 +10,7 @@ main() {
     var entrar = TelaEntrar(cliente, cfg, s)
     var feed = TelaFeed(cliente)
     var executando = true
-    while (executando && Entrada.viva()) {
+    while (executando && Entrada.ativa) {
         print(Ansi.LIMPAR)
         var usuario = ""
         if (s.logado() && s.usuario != null) { usuario = s.usuario.usuario }

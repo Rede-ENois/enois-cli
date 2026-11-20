@@ -1,8 +1,5 @@
 package api
 
-/**
- * Tipos de leitura das notificações — o espelho terminal do Notification do frontend.
- */
 record Notificacao(
     String id,
     String? tipo,
@@ -13,8 +10,6 @@ record Notificacao(
     String? idPost
 )
 
-/** Página de notificações. */
 record PaginaNotificacao(List<Notificacao>? items, String? nextCursor)
 
-/** Resumo de não lidas por área (o sinal do menu). */
 record ResumoNaoLidas(Int? mensagens, Int? notificacoes, Int? total)

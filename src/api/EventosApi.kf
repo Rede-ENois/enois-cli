@@ -1,0 +1,64 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class EventosApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? formato, String? cursor, Int limite, Troolean? recorrente) {
+        var soSeries = ""
+        if (recorrente != null && recorrente == true) { soSeries = "true" }
+        return this.cliente.get("/events" + Consulta.query(listOf(
+            Consulta.par("format", formato),
+            Consulta.par("cursor", cursor),
+            Consulta.par("limit", Consulta.numero(limite)),
+            Consulta.par("recurring", soSeries))))
+    }
+
+    Resposta obter(String eventoId) {
+        return this.cliente.get("/events/" + ConsultaTextos.caminho(eventoId))
+    }
+
+    Resposta criar(String titulo, String data, String hora, String formato) {
+        return this.cliente.post("/events",
+            json.encode(mapOf("title", titulo, "date", data, "time", hora, "format", formato)))
+    }
+
+    Resposta editar(String eventoId, String titulo, String data, String hora) {
+        return this.cliente.patch("/events/" + ConsultaTextos.caminho(eventoId),
+            json.encode(mapOf("title", titulo, "date", data, "time", hora)))
+    }
+
+    Resposta apagar(String eventoId) {
+        return this.cliente.delete("/events/" + ConsultaTextos.caminho(eventoId))
+    }
+
+    Resposta participar(String eventoId) {
+        return this.cliente.post("/events/" + ConsultaTextos.caminho(eventoId) + "/attendees", "{}")
+    }
+
+    Resposta cancelarPresenca(String eventoId) {
+        return this.cliente.delete("/events/" + ConsultaTextos.caminho(eventoId) + "/attendees")
+    }
+
+    Resposta recorrencia(String eventoId, String recorrencia) {
+        return this.cliente.patch("/events/" + ConsultaTextos.caminho(eventoId) + "/recurrence",
+            json.encode(mapOf("recurrence", recorrencia)))
+    }
+
+    static PaginaEventos pagina(Resposta r) {
+        if (!r.ok()) { return PaginaEventos(listOf<Evento>(), null) }
+        try {
+            return json.decode<PaginaEventos>(r.corpo)
+        } catch (String e) {
+            return PaginaEventos(listOf<Evento>(), null)
+        }
+    }
+}

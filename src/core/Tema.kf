@@ -1,98 +1,72 @@
 package core
 
-/**
- * Tema visual do enois-cli.
- *
- * Os valores vêm do design system da rede (@rede-enois/design-system, tema escuro
- * "boteco": berinjela quente #15111c, violeta #a78bfa, superfícies #1f1929).
- * Aqui eles viram letras de escape ANSI 24-bit para o terminal.
- *
- * Regra do DS que aqui virou lei: texto sobre fundo primário é escuro; texto
- * suave/mudo nunca carrega a informação sozinho; sem cores piscantes.
- */
 class Tema {
 
     static String RESET = "\u001b[0m"
     static String NEGRITO = "\u001b[1m"
     static String APAgada = "\u001b[2m"
 
-    // fundo da aplicação e das superfícies (cartão) — berinjela quente
     static String FUNDO = "\u001b[48;2;21;17;28m"
     static String CARTAO = "\u001b[48;2;31;25;41m"
     static String CARTAO_ALTO = "\u001b[48;2;42;34;53m"
 
-    // texto — foreground do DS
     static String TEXTO = "\u001b[38;2;243;238;247m"
     static String TEXTO_SUAVE = "\u001b[38;2;185;174;198m"
     static String TEXTO_MUDO = "\u001b[38;2;114;105;124m"
 
-    // primário — violeta A78BFA (escuro) usado em links, foco, ações
     static String PRIMARIO = "\u001b[38;2;167;139;250m"
     static String FUNDO_PRIMARIO = "\u001b[48;2;103;70;245m"
     static String TEXTO_SO_PRIMARIO = "\u001b[38;2;21;17;28m"
 
-    // bordas — border-soft / border-strong do DS
     static String BORDA_SUAVE = "\u001b[38;2;52;41;63m"
     static String BORDA_FORTE = "\u001b[38;2;143;127;161m"
 
-    // semânticas do DS: destructive, growth (sucesso), opportunity (aviso)
     static String DESTRUTIVO = "\u001b[38;2;249;128;128m"
     static String SUCESSO = "\u001b[38;2;110;231;183m"
     static String AVISO = "\u001b[38;2;251;191;36m"
     static String INFO = "\u001b[38;2;147;197;253m"
 
-    // fundos das badges semânticas (versões escuras das semânticas, contraste 4.5:1)
     static String FUNDO_SUCESSO = "\u001b[48;2;6;78;59m"
     static String FUNDO_AVISO = "\u001b[48;2;69;26;3m"
     static String FUNDO_DESTRUTIVO = "\u001b[48;2;127;29;29m"
     static String FUNDO_MUDO = "\u001b[48;2;55;52;60m"
 
-    /** Pinta um texto com um estilo de frente e reseta. */
     static String pinta(String estilo, String texto) {
         return estilo + texto + RESET
     }
 
-    /** Cor de fundo aplicada a um trecho. */
     static String comFundo(String fundo, String estiloTexto, String texto) {
         return fundo + estiloTexto + texto + RESET
     }
 
-    /** Negrito + cor primária: títulos e destaques. */
     static String destaque(String texto) {
         return NEGRITO + PRIMARIO + texto + RESET
     }
 
-    /** Texto padrão da interface (o foreground do DS, já resetado). */
     static String texto(String conteudo) {
         return TEXTO + conteudo + RESET
     }
 
-    /** Texto secundário da interface (timestamps, contadores). */
     static String suave(String texto) {
         return TEXTO_SUAVE + texto + RESET
     }
 
-    /** Texto discreto (rodapé, dicas). */
     static String mudo(String texto) {
         return TEXTO_MUDO + texto + RESET
     }
 
-    /** Indicador de erro/sanção. */
     static String erro(String texto) {
         return NEGRITO + DESTRUTIVO + texto + RESET
     }
 
-    /** Indicador de sucesso/conclusão. */
     static String ok(String texto) {
         return NEGRITO + SUCESSO + texto + RESET
     }
 
-    /** Indicador de aviso/oportunidade. */
     static String alerta(String texto) {
         return NEGRITO + AVISO + texto + RESET
     }
 
-    /** Cor pela recompensa/crescimento (faísca, streak). */
     static String progresso(String texto) {
         return NEGRITO + SUCESSO + texto + RESET
     }

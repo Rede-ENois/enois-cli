@@ -3,21 +3,12 @@ package ui
 import core.Ansi
 import core.Tema
 
-/**
- * Card do DS: fundo `card`, canto arredondado simulado por bordas finas na
- * cor `border-soft`, título em `primary` e conteúdo com quebra de linha.
- *
- * O DS usa radius 1rem e sombra suave; no terminal, o card é uma caixa de
- * "╭╮╰╯│─" com o fundo colorido — superfície sem borda dura.
- */
 class Caixa {
 
-    /** Largura padrão dos cards: a coluna de conteúdo do DS (100 colunas). */
     static Int larguraPadrao() {
         return Ansi.LARGURA_CONTEUDO
     }
 
-    /** Card com título e um bloco de texto livre; multi-linha quebra por \n. */
     static List<String> card(String titulo, String corpo) {
         var largura = Caixa.larguraPadrao()
         var interna = largura - 4
@@ -33,7 +24,6 @@ class Caixa {
         return linhas
     }
 
-    /** Card com corpo multi-linha (post): quebra cada linha por `\n` e desenha. */
     static List<String> cartao(String corpo) {
         var largura = Caixa.larguraPadrao()
         var interna = largura - 4
@@ -48,7 +38,6 @@ class Caixa {
         return linhas
     }
 
-    /** Divide o corpo em linhas mantendo as vazias (o `split` do Kof pula vazias). */
     static List<String> partes(String corpo) {
         var saida = listOf<String>()
         var atual = ""
@@ -65,7 +54,6 @@ class Caixa {
         return saida
     }
 
-    /** Card simples, sem título: só o corpo dentro da borda. */
     static List<String> simples(String corpo) {
         var largura = Caixa.larguraPadrao()
         var interna = largura - 4
@@ -78,7 +66,6 @@ class Caixa {
         return linhas
     }
 
-    /** Desenha a lista de linhas na saída padrão. */
     static void desenhar(List<String> linhas) {
         for (var l in linhas) {
             println(l)
@@ -109,7 +96,6 @@ class Caixa {
         return Tema.pinta(Tema.BORDA_SUAVE, "╰" + meio + "╯")
     }
 
-    /** Uma linha de conteúdo: texto à esquerda, padding colorido, borda. */
     static String conteudo(String texto, Int interna) {
         var restante = interna - Ansi.largura(texto)
         var espacos = ""

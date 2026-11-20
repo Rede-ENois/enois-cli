@@ -10,12 +10,6 @@ import core.Tema
 import ui.Caixa
 import ui.Menu
 
-/**
- * Tela de entrar: e-mail + senha (+ segundo fator quando a conta pede).
- *
- * Depois de logar já tenta puxar a primeira página do feed — se a rede falhar
- * a sessão continua válida, é só o feed que vem vazio com a mensagem do erro.
- */
 class TelaEntrar {
 
     Cliente cliente
@@ -28,7 +22,6 @@ class TelaEntrar {
         this.sessao = sessao
     }
 
-    /** Fluxo completo; devolve verdadeiro quando a sessão ficou ativa. */
     Bool executar() {
         print(Ansi.LIMPAR)
         println(Menu.topo("énois", ""))
@@ -55,7 +48,6 @@ class TelaEntrar {
         return true
     }
 
-    /** Puxa e desenha a primeira página do feed (prova de que a sessão serve). */
     void provarFeed() {
         var feed = FeedApi(this.cliente)
         var r = feed.listar(null, 10)

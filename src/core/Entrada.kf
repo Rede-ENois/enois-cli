@@ -1,22 +1,9 @@
 package core
 
-/**
- * Leitura de entrada do usuário no padrão linha-a-linha (o Kof 0.8.0 não tem
- * raw mode nem pacote de TUI): `readLine()` devolve `String?` e null significa
- * fim de entrada.
- *
- * O fim de entrada (EOF, Ctrl+D, tubo fechado) desliga a bandeira `ativa`:
- * os laços de leitura checam essa bandeira antes de repetir, para nunca
- * girar eternamente quando a entrada acaba (tubo, script, terminal fechado).
- *
- * Toda leitura passa por aqui — as telas nunca chamam readLine() direto.
- */
 class Entrada {
 
-    /** Falso quando a entrada acabou (EOF) — telas devem se encerrar. */
     static Bool ativa = true
 
-    /** Lê uma linha; devolve "" no EOF (e desliga a bandeira). */
     static String linha() {
         var bruto = readLine()
         if (bruto == null) {
@@ -26,48 +13,32 @@ class Entrada {
         return bruto
     }
 
-    /** Bandeira da entrada: só a tela raiz deve consultá-la para encerrar. */
-    static Bool viva() {
-        return Entrada.ativa
-    }
-
-    /**
-     * Menu numerado: mostra `titulo`, lista as opções (1..n) e a saída (0),
-     * e devolve o ÍNDICE da opção escolhida (0-based). Digitar 0 (saída) ou
-     * a entrada acabar devolve -1 — a tela raiz encerra.
-     */
     static Int menu(String titulo, List<String> opcoes, String rotuloSaida) {
         var n = opcoes.size()
         println(Tema.destaque(titulo))
         for (var i = 0; i < n; i = i + 1) {
-            var numero = Ansi.padEsquerda(String.valueOf(i + 1), 2)
-            println("  " + numero + ". " + opcoes.get(i))
+            println("  " + Ansi.padEsquerda(String.valueOf(i + 1), 2) + ". " + opcoes.get(i))
         }
-        var saida = Ansi.padEsquerda("0", 2)
-        println("  " + saida + ". " + Tema.suave(rotuloSaida))
+        println("  " + Ansi.padEsquerda("0", 2) + ". " + Tema.suave(rotuloSaida))
         var digitado = Entrada.numero("Sua escolha", 0, n)
         if (digitado <= 0) { return -1 }
         return digitado - 1
     }
 
-    /** Pede um número entre `minimo` e `maximo`; repete até ser válido. */
     static Int numero(String pergunta, Int minimo, Int maximo) {
         while (Entrada.ativa) {
+            println(Tema.suave(pergunta + " [" + String.valueOf(minimo) + "-" + String.valueOf(maximo) + "]:"))
             var texto = Entrada.linha().trim()
             if (texto.length == 0) { continue }
-            var n = 0
+            var n = -1
             var valido = true
             try {
                 n = Integer.parseInt(texto)
             } catch (String e) {
                 valido = false
             }
-            if (!valido) {
-                println(Tema.erro("  Digite um número entre " + String.valueOf(minimo) + " e " + String.valueOf(maximo) + "."))
-                continue
-            }
-            if (n < minimo || n > maximo) {
-                println(Tema.erro("  Fora da faixa: escolha entre " + String.valueOf(minimo) + " e " + String.valueOf(maximo) + "."))
+            if (!valido || n < minimo || n > maximo) {
+                println(Tema.erro("  Escolha um número entre " + String.valueOf(minimo) + " e " + String.valueOf(maximo) + "."))
                 continue
             }
             return n
@@ -75,13 +46,11 @@ class Entrada {
         return -1
     }
 
-    /** Pede um texto livre com rótulo; devolve o que foi digitado (pode ser ""). */
     static String texto(String rotulo) {
         println(Tema.suave(rotulo + ":"))
         return Entrada.linha().trim()
     }
 
-    /** Pede um texto obrigatório: repete até não ser vazio (ou a entrada acabar). */
     static String textoObrigatorio(String rotulo) {
         while (Entrada.ativa) {
             var t = Entrada.texto(rotulo)
@@ -91,7 +60,6 @@ class Entrada {
         return ""
     }
 
-    /** Pede um texto com eco oculto substituído por "•" (senha, código 2FA). */
     static String secreta(String rotulo) {
         println(Tema.suave(rotulo + ":"))
         var bruto = Entrada.linha()
@@ -103,11 +71,10 @@ class Entrada {
         return bruto.trim()
     }
 
-    /** Pergunta sim/não; aceita "s", "sim", "y", "yes", "n", "nao", "não". */
     static Bool confirmar(String pergunta) {
         while (Entrada.ativa) {
-            var bruto = Entrada.linha()
-            var t = bruto.trim().toLowerCase()
+            println(Tema.suave(pergunta + " [s/n]:"))
+            var t = Entrada.linha().trim().toLowerCase()
             if (t.length == 0) { return false }
             if (t == "s" || t == "sim" || t == "y" || t == "yes") { return true }
             if (t == "n" || t == "nao" || t == "não" || t == "no") { return false }
@@ -116,7 +83,6 @@ class Entrada {
         return false
     }
 
-    /** Pausa: "pressione ENTER para continuar" (encerra quando a entrada acabou). */
     static void pausar() {
         println(Tema.mudo("  pressione ENTER para continuar…"))
         Entrada.linha()

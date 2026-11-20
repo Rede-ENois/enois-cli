@@ -1,12 +1,5 @@
 package core
 
-/**
- * Utilidades de renderização ANSI: limpar tela, mover cursor, desenhar caixas
- * e alinhar texto com largura segura.
- *
- * O terminal não é um navegador: aqui cada linha é desenhada de cima para baixo
- * com caracteres de meia largura (UTF-8) e no máximo a largura do terminal.
- */
 class Ansi {
 
     static String ESC = "\u001b"
@@ -14,11 +7,9 @@ class Ansi {
     static String OCULTAR_CURSOR = ESC + "[?25l"
     static String MOSTRAR_CURSOR = ESC + "[?25h"
 
-    /** Largura padrão do conteúdo: o DS usa 640px máx. — no terminal, 100 colunas. */
     static Int LARGURA_CONTEUDO = 100
     static Int LARGURA_MINIMA = 40
 
-    /** Largura visual de uma string: códigos ANSI não contam, só caracteres visíveis. */
     static String SEM_COR = "\u001b\\[[0-9;]*m"
 
     static Int largura(String s) {
@@ -27,7 +18,6 @@ class Ansi {
         var total = 0
         for (var i = 0; i < limpo.length; i = i + 1) {
             var c = limpo.charAt(i)
-            // blocos de emoji e caracteres de largura total ocupam 2 colunas
             if (c >= 0x1F300 && c <= 0x1FAFF) {
                 total = total + 2
             } else if (c >= 0x2600 && c <= 0x27BF) {
@@ -39,7 +29,6 @@ class Ansi {
         return total
     }
 
-    /** Coloca espaços à direita até a largura pedida. */
     static String padDireita(String s, Int maximo) {
         var faltam = maximo - largura(s)
         if (faltam <= 0) { return s }
@@ -50,7 +39,6 @@ class Ansi {
         return s + espacos
     }
 
-    /** Coloca espaços à esquerda até a largura pedida. */
     static String padEsquerda(String s, Int maximo) {
         var faltam = maximo - largura(s)
         if (faltam <= 0) { return s }
@@ -61,7 +49,6 @@ class Ansi {
         return espacos + s
     }
 
-    /** Centraliza na largura pedida. */
     static String centrar(String s, Int maximo) {
         var faltam = maximo - largura(s)
         if (faltam <= 0) { return s }
@@ -74,7 +61,6 @@ class Ansi {
         return e + s + d
     }
 
-    /** Corta o texto no limite visual, com reticências quando corta. */
     static String cortar(String s, Int maximo) {
         if (maximo <= 0) { return "" }
         if (largura(s) <= maximo) { return s }
@@ -93,7 +79,6 @@ class Ansi {
         return saida + "…"
     }
 
-    /** Quebra um texto em linhas que não passem da largura, respeitando palavras. */
     static List<String> quebrar(String texto, Int larguraMaxima) {
         var linhas = listOf<String>()
         if (texto == null || texto.length == 0) {
@@ -115,7 +100,6 @@ class Ansi {
         return linhas
     }
 
-    /** Linha horizontal de separação (divisor do DS). */
     static String divisor(Int largura, String cor) {
         var linha = ""
         for (var i = 0; i < largura; i = i + 1) {
@@ -124,7 +108,6 @@ class Ansi {
         return cor + linha + Tema.RESET
     }
 
-    /** Título com divisor embaixo, estilo do cabeçalho de tela do DS. */
     static String cabecalho(String titulo, Int largura) {
         return Tema.destaque(titulo) + "\n" + divisor(largura, Tema.BORDA_SUAVE)
     }

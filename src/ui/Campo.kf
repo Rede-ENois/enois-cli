@@ -3,18 +3,12 @@ package ui
 import core.Ansi
 import core.Tema
 
-/**
- * Campo de formulário do DS: rótulo em suave, valor em texto, ajuda/dica em
- * mudo e erro em destructive — as quatro camadas de um input.
- */
 class Campo {
 
-    /** Rótulo acima do valor. */
     static String rotulo(String texto) {
         return Tema.suave(texto + ":")
     }
 
-    /** Valor digitado (oculto em "•" quando segredo). */
     static String valor(String texto, Bool segredo) {
         if (!segredo) { return Tema.texto(texto) }
         var visivel = ""
@@ -24,17 +18,14 @@ class Campo {
         return Tema.texto(visivel)
     }
 
-    /** Ajuda/dica abaixo do campo. */
     static String dica(String texto) {
         return Tema.mudo("  " + texto)
     }
 
-    /** Mensagem de erro de validação do campo. */
     static String erro(String texto) {
         return Tema.erro("  ⚠ " + texto)
     }
 
-    /** Campo desabilitado: mudo (o DS não usa opacity — usa cor apagada). */
     static String desabilitado(String texto) {
         return Tema.mudo(texto)
     }

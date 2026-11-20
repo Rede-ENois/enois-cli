@@ -1,8 +1,5 @@
 package api
 
-/**
- * Tipos de leitura de perfil e usuários — o espelho terminal do Profile do frontend.
- */
 record Perfil(
     String id,
     String? nome,
@@ -17,8 +14,6 @@ record Perfil(
     String? criadoEm
 )
 
-/** Entrada da rede (conexões/seguidores) de um perfil. */
 record PessoaRede(String id, String? nome, String? usuario, String? avatar)
 
-/** Resultado de busca de usuário. */
 record UsuarioBusca(String id, String? nome, String? usuario, String? avatar)

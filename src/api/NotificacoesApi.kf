@@ -4,9 +4,6 @@ import core.Cliente
 import core.Resposta
 import kof.json
 
-/**
- * Notificações — o espelho terminal do notificationsApi do frontend.
- */
 class NotificacoesApi {
 
     Cliente cliente
@@ -15,35 +12,29 @@ class NotificacoesApi {
         this.cliente = cliente
     }
 
-    /** Lista paginada (contexto: vazio = todas, "SOCIAL" ou "CORPORATE"). */
     Resposta listar(String? cursor, Int limite, String contexto) {
         return this.cliente.get("/notifications" + Consulta.query(listOf(
             Consulta.pagina(cursor, limite),
             Consulta.par("context", contexto))))
     }
 
-    /** Resumo de não lidas por área (o sinal do menu). */
     Resposta resumo(String contexto) {
         return this.cliente.get("/notifications/unread-summary" + Consulta.query(listOf(
             Consulta.par("context", contexto))))
     }
 
-    /** Marca uma notificação como lida. */
     Resposta marcarLida(String id) {
         return this.cliente.post("/notifications/" + ConsultaTextos.caminho(id) + "/read", "")
     }
 
-    /** Marca todas como lidas. */
     Resposta marcarTodasLidas() {
         return this.cliente.post("/notifications/read-all", "")
     }
 
-    /** Preferências de notificação do usuário logado. */
     Resposta preferencias() {
         return this.cliente.get("/me/notification-preferences")
     }
 
-    /** Decodifica uma página de notificações. */
     static PaginaNotificacao pagina(Resposta r) {
         if (!r.ok()) { return PaginaNotificacao(listOf(), null) }
         return json.decode<PaginaNotificacao>(r.corpo)

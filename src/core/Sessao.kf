@@ -2,14 +2,6 @@ package core
 
 import kof.json
 
-/**
- * Sessão autenticada do terminal.
- *
- * O backend entrega os tokens em cookies HttpOnly e aceita o header
- * `X-Session-Token` para clientes que não são navegador — é esse o caminho do
- * CLI: guarda o valor do `enois_session` e o manda em cada chamada, junto do
- * `enois_refresh` para renovar a sessão em `/auth/refresh`.
- */
 record Usuario(
     String id,
     String nome,
@@ -19,7 +11,6 @@ record Usuario(
     Int faisca
 )
 
-/** Estado da sessão tal como gravado em ~/.config/enois-cli/sessao.json. */
 record EstadoSessao(
     String token,
     String renova,
@@ -33,11 +24,8 @@ record EstadoSessao(
 
 class Sessao {
 
-    /** Token de sessão ativo (valor do cookie enois_session). */
     String token
-    /** Token de renovação (valor do cookie enois_refresh). */
     String renova
-    /** Usuário logado; vazio quando deslogado. */
     Usuario? usuario
 
     public constructor() {
@@ -62,12 +50,10 @@ class Sessao {
         return "@" + this.usuario.usuario
     }
 
-    /** Nenhum usuário: única forma de obter um `Usuario?` vazio (SEM048). */
     static Usuario? nenhum() {
         return null
     }
 
-    /** Extrai o valor de um cookie de um header Set-Cookie (ou bloco de headers). */
     static String cookieDe(String bruto, String nome) {
         if (bruto == null || bruto.length == 0) { return "" }
         for (var linha in bruto.split("\n")) {
@@ -76,7 +62,6 @@ class Sessao {
             if (minusculo.startsWith(nome.toLowerCase() + "=")) {
                 return valorDoCookie(l)
             }
-            // linha completa de Set-Cookie: "set-cookie: enois_session=abc; Path=/; ..."
             var prefixo = "set-cookie: " + nome.toLowerCase() + "="
             if (minusculo.startsWith(prefixo)) {
                 return valorDoCookie(l.substring(prefixo.length))
@@ -85,7 +70,6 @@ class Sessao {
         return ""
     }
 
-    /** Valor até o primeiro atributo do cookie (`;`). */
     static String valorDoCookie(String parte) {
         var valor = parte
         var p = valor.indexOf(";")
@@ -93,7 +77,6 @@ class Sessao {
         return valor.trim()
     }
 
-    /** Monta o registro da sessão a partir dos Set-Cookie do login/refresh. */
     static Sessao deResposta(String brutoCookies) {
         var s = Sessao()
         var t = cookieDe(brutoCookies, "enois_session")
@@ -122,13 +105,11 @@ class Sessao {
         return json.encode(estado)
     }
 
-    /** Nulo vira texto vazio: o resto do código só lida com String cheia. */
     static String texto(String? bruto) {
         if (bruto == null) { return "" }
         return bruto
     }
 
-    /** Nulo vira zero (faisca ausente no arquivo). */
     static Int numero(Int? bruto) {
         if (bruto == null) { return 0 }
         return bruto

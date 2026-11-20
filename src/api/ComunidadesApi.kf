@@ -1,0 +1,118 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ComunidadesApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? assunto, String? termo, String? cidade, String? estado,
+                    String? cursor, Int limite) {
+        return this.cliente.get("/communities" + Consulta.query(listOf(
+            Consulta.par("topic", assunto),
+            Consulta.par("q", termo),
+            Consulta.par("city", cidade),
+            Consulta.par("state", estado),
+            Consulta.par("cursor", cursor),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta locais(Int limite) {
+        return this.cliente.get("/communities/local" + Consulta.query(listOf(
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta obter(String comunidadeId) {
+        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId))
+    }
+
+    Resposta criar(String nome, String? descricao) {
+        return this.cliente.post("/communities",
+            json.encode(mapOf("name", nome, "description", descricao)))
+    }
+
+    Resposta editar(String comunidadeId, String descricao) {
+        return this.cliente.patch("/communities/" + ConsultaTextos.caminho(comunidadeId),
+            json.encode(mapOf("description", descricao)))
+    }
+
+    Resposta entrar(String comunidadeId) {
+        return this.cliente.post("/communities/" + ConsultaTextos.caminho(comunidadeId)
+            + "/members", "{}")
+    }
+
+    Resposta sair(String comunidadeId) {
+        return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId)
+            + "/members")
+    }
+
+    Resposta mural(String comunidadeId, String? cursor, Int limite) {
+        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId)
+            + "/feed" + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta fixado(String comunidadeId) {
+        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/pin")
+    }
+
+    Resposta fixar(String comunidadeId, String postId) {
+        return this.cliente.post("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/pin",
+            json.encode(mapOf("postId", postId)))
+    }
+
+    Resposta desafixar(String comunidadeId) {
+        return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/pin")
+    }
+
+    Resposta canais(String comunidadeId) {
+        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/channels")
+    }
+
+    Resposta favoritar(String comunidadeId) {
+        return this.cliente.post("/communities/" + ConsultaTextos.caminho(comunidadeId)
+            + "/favorite", "{}")
+    }
+
+    Resposta desfavoritar(String comunidadeId) {
+        return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId)
+            + "/favorite")
+    }
+
+    Resposta favoritas(Int limite) {
+        return this.cliente.get("/communities/favorites" + Consulta.query(listOf(
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta minhas(Int limite) {
+        return this.cliente.get("/communities/mine" + Consulta.query(listOf(
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta membros(String comunidadeId) {
+        return this.cliente.get("/communities/" + ConsultaTextos.caminho(comunidadeId) + "/members")
+    }
+
+    Resposta transferir(String comunidadeId, String novoDonoId) {
+        return this.cliente.post("/communities/" + ConsultaTextos.caminho(comunidadeId)
+            + "/transfer", json.encode(mapOf("newOwnerId", novoDonoId)))
+    }
+
+    Resposta apagar(String comunidadeId) {
+        return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId))
+    }
+
+    static PaginaComunidades pagina(Resposta r) {
+        if (!r.ok()) { return PaginaComunidades(listOf<Comunidade>(), null) }
+        try {
+            return json.decode<PaginaComunidades>(r.corpo)
+        } catch (String e) {
+            return PaginaComunidades(listOf<Comunidade>(), null)
+        }
+    }
+}

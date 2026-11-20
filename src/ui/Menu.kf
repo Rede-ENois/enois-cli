@@ -4,13 +4,8 @@ import core.Ansi
 import core.Entrada
 import core.Tema
 
-/**
- * Barra de navegação do app ("home · explorar · mensagens · notificações ·
- * perfil"), transposta para menu numerado de linha inteira.
- */
 class Menu {
 
-    /** Cabeçalho do app: nome, "faisca" do usuário e divisor. */
     static String topo(String nomeApp, String usuario) {
         var largura = Ansi.LARGURA_CONTEUDO
         var linha = ""
@@ -21,12 +16,10 @@ class Menu {
         return Ansi.padDireita(linha, largura)
     }
 
-    /** Menu principal numerado, com opções do app. */
     static Int principal(List<String> opcoes, String rotuloSaida) {
         return Entrada.menu("menu", opcoes, rotuloSaida)
     }
 
-    /** Exibe e lê um submenu com título próprio. */
     static Int submenu(String titulo, List<String> opcoes, String rotuloSaida) {
         println("")
         return Entrada.menu(titulo, opcoes, rotuloSaida)

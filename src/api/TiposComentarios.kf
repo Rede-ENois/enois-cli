@@ -1,0 +1,23 @@
+package api
+
+record Comentario(
+    String id,
+    String? postId,
+    String? autorNome,
+    String? autorUsuario,
+    String? conteudo,
+    String? criadoEm,
+    String? status,
+    Troolean? fixado,
+    Troolean? aceita,
+    String? minhaReacao,
+    Int? contagemReacoes,
+    String? editadoEm,
+    String? comentarioPai
+)
+
+record PaginaComentarios(List<Comentario>? items, String? nextCursor)
+
+record Reagente(String? usuarioId, String? tipo, String? criadoEm)
+
+record ListaReacoes(List<Reagente>? reactions)

@@ -4,13 +4,6 @@ import core.Cliente
 import core.Resposta
 import kof.json
 
-/**
- * Feed (a linha do tempo do Explorar) — o espelho terminal do feedApi do frontend.
- *
- * Os métodos devolvem `Resposta` crua; as funções `pagina*` decodificam o corpo
- * no record tipado. Assim a tela decide: erro aparece como mensagem do `Resposta`,
- * sucesso vira página com cursor para "carregar mais".
- */
 class FeedApi {
 
     Cliente cliente
@@ -19,45 +12,37 @@ class FeedApi {
         this.cliente = cliente
     }
 
-    /** Linha do tempo principal (tab "para você"). */
     Resposta listar(String? cursor, Int limite) {
         return this.cliente.get("/feed" + Consulta.pagina(cursor, limite))
     }
 
-    /** Feed corporativo: só o que as identidades profissionais assinam. */
     Resposta corporativo(String? cursor, Int limite) {
         return this.cliente.get("/feed/corporate" + Consulta.pagina(cursor, limite))
     }
 
-    /** Posts públicos de um perfil social (página de usuário). */
     Resposta porUsuario(String usuario, String? cursor, Int limite) {
         var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/posts"
         return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
     }
 
-    /** Posts da identidade profissional daquele @. */
     Resposta corporativoPorUsuario(String usuario, String? cursor, Int limite) {
         var caminho = "/corporate/" + ConsultaTextos.caminho(usuario) + "/posts"
         return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
     }
 
-    /** Respostas de um perfil (aba respostas). */
     Resposta respostas(String usuario, String? cursor, Int limite) {
         var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/replies"
         return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
     }
 
-    /** Posts salvos de quem está logado. */
     Resposta salvos(String? cursor, Int limite) {
         return this.cliente.get("/feed/saved" + Consulta.pagina(cursor, limite))
     }
 
-    /** Um post específico (leitura de artigo, página, enquete completa). */
     Resposta obter(String id) {
         return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(id))
     }
 
-    /** Publica um post simples de texto (type INSIGHT no frontend). */
     Resposta publicar(String conteudo) {
         var corpo = json.encode(mapOf(
             "type", "INSIGHT",
@@ -65,52 +50,43 @@ class FeedApi {
         return this.cliente.post("/feed/posts", corpo)
     }
 
-    /** Voto em enquete aberta: registra ou troca a seleção (índice da opção). */
     Resposta votarEnquete(String id, Int opcao) {
         var corpo = json.encode(mapOf("option", opcao))
         return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/poll/vote", corpo)
     }
 
-    /** Avança o marcador "você está em dia" (só anda para frente). */
     Resposta marcarVisto(String vistoAte) {
         var corpo = json.encode(mapOf("seenUntil", vistoAte))
         return this.cliente.post("/feed/seen", corpo)
     }
 
-    /** Soft delete do próprio post (reversível por restaurar). */
     Resposta apagar(String id) {
         return this.cliente.delete("/feed/posts/" + ConsultaTextos.caminho(id))
     }
 
-    /** Desfaz a exclusão do próprio post. */
     Resposta restaurar(String id) {
         return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/restore", "")
     }
 
-    /** Edita conteúdo e tags de um post próprio. */
     Resposta editar(String id, String conteudo) {
         var corpo = json.encode(mapOf("content", conteudo))
         return this.cliente.patch("/feed/posts/" + ConsultaTextos.caminho(id), corpo)
     }
 
-    /** Salva (guarda) um post na lista de salvos. */
     Resposta salvar(String id) {
         return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/save", "")
     }
 
-    /** Decodifica uma página comum de posts ({items, nextCursor}). */
     static PaginaPost paginaPost(Resposta r) {
         if (!r.ok()) { return PaginaPost(listOf(), null) }
         return json.decode<PaginaPost>(r.corpo)
     }
 
-    /** Decodifica a página do feed principal (com o marcador de visto). */
     static PaginaFeed paginaFeed(Resposta r) {
         if (!r.ok()) { return PaginaFeed(listOf(), null, null) }
         return json.decode<PaginaFeed>(r.corpo)
     }
 
-    /** Verdadeiro quando a resposta trouxe página vazia ou erro (a tela mostra vazio). */
     static Bool paginaVazia(PaginaPost p) {
         if (p.items == null) { return true }
         return p.items.size() == 0

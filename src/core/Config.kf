@@ -2,29 +2,18 @@ package core
 
 import kof.json
 
-/**
- * Configuração persistida do cliente: qual backend usar e a origem declarada.
- *
- * A API do Énóis recusa requisições sem `X-Client-Origin` com uma origem
- * cadastrada (o navegador manda `Origin`; chamadas de servidor e o terminal
- * mandam esse header). O CLI usa a origem oficial do app por padrão e permite
- * trocar o alvo entre produção e QA pela linha de comando.
- */
 class Config {
 
     static String URL_PRODUCAO = "https://api.enois.ia.br/api"
     static String URL_QA = "https://enois-api-qa.b7cloud.tech/api"
 
-    /** Origem que a API espera ver no X-Client-Origin (uma por alvo — o CORS é por ambiente). */
     static String ORIGEM_PRODUCAO = "https://enois.ia.br"
     static String ORIGEM_QA = "https://enois-qa.b7cloud.tech"
 
-    /** Diretório de estado do CLI (mesmo padrão do `~/.config`). */
     static String dirEstado() {
         return "/home/mel/.config/enois-cli"
     }
 
-    /** Alvo ativo: "producao" (padrão) ou "qa". */
     String alvo
     String urlApi
     String origem
@@ -35,7 +24,6 @@ class Config {
         this.origem = ORIGEM_PRODUCAO
     }
 
-    /** Troca de alvo e rederiva a URL da API e a origem (cada ambiente tem a sua). */
     void usaAlvo(String novo) {
         this.alvo = novo
         if (novo == "qa") {
@@ -47,7 +35,6 @@ class Config {
         }
     }
 
-    /** Representação serializável (JSON) do estado. */
     String comoJson() {
         return json.encode(mapOf(
             "alvo", this.alvo,
@@ -55,7 +42,6 @@ class Config {
             "origem", this.origem))
     }
 
-    /** Restaura de um mapa decodificado; campos ausentes ficam com o padrão. */
     static Config deMapa(Map<String, String> m) {
         var c = Config()
         var alvo = m.get("alvo")
@@ -67,7 +53,6 @@ class Config {
         return c
     }
 
-    /** Carrega o arquivo de configuração, se existir. */
     static Config carregar() {
         var c = Config()
         var caminho = dirEstado() + "/config.json"
@@ -77,7 +62,6 @@ class Config {
         return deMapa(m)
     }
 
-    /** Salva o arquivo de configuração (cria o diretório quando falta). */
     Bool salvar() {
         File(dirEstado()).mkdirs()
         return File(dirEstado() + "/config.json").writeText(this.comoJson())

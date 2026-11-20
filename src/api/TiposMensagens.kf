@@ -1,11 +1,7 @@
 package api
 
-/**
- * Tipos de leitura das mensagens — o espelho terminal do Conversation/Message do frontend.
- */
 record UltimaMensagem(String? texto, String? autor, String? criadoEm)
 
-/** Conversa da caixa de entrada: participantes, título e a última mensagem. */
 record Conversa(
     String id,
     String? titulo,
@@ -16,7 +12,6 @@ record Conversa(
     Troolean? naoLida
 )
 
-/** Mensagem dentro de uma conversa. */
 record Mensagem(
     String id,
     String? texto,
@@ -26,6 +21,5 @@ record Mensagem(
     String? respondendoA
 )
 
-/** Página da caixa de entrada e das mensagens de uma conversa. */
 record PaginaConversa(List<Conversa>? items, String? nextCursor)
 record PaginaMensagens(List<Mensagem>? items, String? nextCursor)

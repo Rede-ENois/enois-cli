@@ -9,12 +9,6 @@ import ui.Caixa
 import ui.Lista
 import ui.Menu
 
-/**
- * Tela do feed: a linha do tempo do Explorar em lista de cards.
- *
- * Cada post é um cartão do DS no terminal (Caixa.card): autor em destaque,
- * conteúdo quebrado na largura do conteúdo e contadores em texto suave.
- */
 class TelaFeed {
 
     Cliente cliente
@@ -23,7 +17,6 @@ class TelaFeed {
         this.cliente = cliente
     }
 
-    /** Desenha uma página inteira e pergunta se quer a próxima. */
     Bool pagina(PaginaFeed pagina) {
         print(Ansi.LIMPAR)
         println(Menu.topo("énois", ""))
@@ -45,7 +38,6 @@ class TelaFeed {
         return Entrada.confirmar("carregar mais")
     }
 
-    /** Card de um post; campos ausentes da API saem do card. */
     String card(PostResumo p) {
         var topo = this.linhaAutor(p)
         var corpo = ""
@@ -65,7 +57,6 @@ class TelaFeed {
         return saida
     }
 
-    /** "Nome @usuario · tipo · quando" + crédito de repost quando é republicado. */
     String linhaAutor(PostResumo p) {
         var nome = ""
         if (p.autor != null) {
@@ -84,7 +75,6 @@ class TelaFeed {
         return linha
     }
 
-    /** Contadores + enquete quando o post tem uma. */
     String linhaRodape(PostResumo p) {
         var reacoes = 0
         var comentarios = 0
@@ -100,7 +90,6 @@ class TelaFeed {
         return rodape
     }
 
-    /** Alternativas da enquete com a fatia de votos de cada uma. */
     String linhaEnquete(Enquete e) {
         var opcoes = e.opcoes
         if (opcoes == null || opcoes.size() == 0) { return "" }
@@ -130,7 +119,6 @@ class TelaFeed {
         return resumo
     }
 
-    /** Tipo do post em texto curto e humano. */
     static String tipoEmTexto(String tipo) {
         if (tipo == "INSIGHT") { return "insight" }
         if (tipo == "ARTICLE") { return "artigo" }

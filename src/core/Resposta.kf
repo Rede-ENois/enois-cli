@@ -2,12 +2,6 @@ package core
 
 import kof.json
 
-/**
- * Resposta da API decodificada: código HTTP, corpo cru e o bloco de headers.
- *
- * O CLI não lança exceção em erro de API — o chamador decide o que fazer com
- * `ok()` e `mensagem()`, como o frontend faz com o ApiError dele.
- */
 class Resposta {
 
     Int codigo
@@ -24,18 +18,15 @@ class Resposta {
         return this.codigo >= 200 && this.codigo < 300
     }
 
-    /** Corpo interpretado como mapa (para erros e payloads simples). */
     Map<String, String> comoMapa() {
         if (this.corpo.length == 0) { return mapOf() }
         return json.decode<Map>(this.corpo)
     }
 
-    /** Bloco de headers como texto (para o Sessao.deResposta). */
     String headersComoTexto() {
         return this.headers
     }
 
-    /** Valor de um header pelo nome (ignora caixa). */
     String header(String nome) {
         var alvo = nome.toLowerCase()
         for (var linha in this.headers.split("\n")) {
@@ -50,7 +41,6 @@ class Resposta {
         return ""
     }
 
-    /** Campo `code` do envelope de erro da API. */
     String codigoDeErro() {
         if (this.ok()) { return "" }
         var m = this.comoMapa()
@@ -59,7 +49,6 @@ class Resposta {
         return c
     }
 
-    /** Mensagem apresentável ao usuário (API manda `message`). */
     String mensagem() {
         var m = this.comoMapa()
         var msg = m.get("message")

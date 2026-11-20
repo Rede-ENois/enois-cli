@@ -2,19 +2,6 @@ package core
 
 import kof.json
 
-/**
- * Cliente HTTP da API do Énóis.
- *
- * Monta toda requisição com os headers que o backend exige:
- * - `X-Client-Origin`: origem cadastrada (sem ela a API responde ORIGIN_REQUIRED);
- * - `X-Session-Token`: sessão do usuário (o SessionCookieFilter aceita o header
- *   explícito de clientes não-browser);
- * - `X-CSRF-Protection: 1` em toda escrita autenticada;
- * - `Accept: application/json` e `Content-Type: application/json` nos verbos com corpo.
- *
- * Não há cookie jar: o CLI guarda os valores do `enois_session`/`enois_refresh`
- * e os manda no header, que é o caminho oficial para clientes fora do navegador.
- */
 class Cliente {
 
     Config config
@@ -25,13 +12,11 @@ class Cliente {
         this.sessao = sessao
     }
 
-    /** Headers base de toda requisição. */
     String cabecalhosBase() {
         return "Accept: application/json\n"
             + "X-Client-Origin: " + this.config.origem
     }
 
-    /** Headers completos: base + sessão + CSRF quando é escrita. */
     String cabecalhos(Bool escrita) {
         var h = this.cabecalhosBase()
         if (this.sessao.logado()) {
@@ -43,39 +28,32 @@ class Cliente {
         return h
     }
 
-    /** URL completa a partir de um caminho relativo à base da API. */
     String url(String caminho) {
         var c = caminho
         if (c.startsWith("/")) { c = c.substring(1) }
         return this.config.urlApi + "/" + c
     }
 
-    /** GET sem corpo. */
     Resposta get(String caminho) {
         return this.enviar("GET", caminho, "", false)
     }
 
-    /** POST com corpo JSON. */
     Resposta post(String caminho, String corpoJson) {
         return this.enviar("POST", caminho, corpoJson, true)
     }
 
-    /** PUT com corpo JSON. */
     Resposta put(String caminho, String corpoJson) {
         return this.enviar("PUT", caminho, corpoJson, true)
     }
 
-    /** PATCH com corpo JSON. */
     Resposta patch(String caminho, String corpoJson) {
         return this.enviar("PATCH", caminho, corpoJson, true)
     }
 
-    /** DELETE sem corpo. */
     Resposta delete(String caminho) {
         return this.enviar("DELETE", caminho, "", true)
     }
 
-    /** Envio com uma tentativa de renovação de sessão ao receber 401. */
     Resposta enviar(String metodo, String caminho, String corpo, Bool escrita) {
         var r = this.disparar(metodo, caminho, corpo, escrita)
         if (r.codigo == 401 && this.sessao.renova.length > 0) {
@@ -87,7 +65,6 @@ class Cliente {
         return r
     }
 
-    /** Chamada crua ao http.send, com tratamento de falha de rede. */
     Resposta disparar(String metodo, String caminho, String corpo, Bool escrita) {
         http.timeout(15)
         http.retry(1)
@@ -99,7 +76,6 @@ class Cliente {
         }
     }
 
-    /** Renova a sessão com o token de refresh; verdadeiro quando conseguiu. */
     Bool renovar() {
         if (this.sessao.renova.length == 0) { return false }
         var corpo = json.encode(mapOf("refreshToken", this.sessao.renova))
@@ -119,12 +95,6 @@ class Cliente {
         }
     }
 
-    /**
-     * Login com e-mail e senha. Devolve:
-     * - "ok" quando a sessão entrou (tokens guardados);
-     * - "2fa:challengeId" quando pede segundo fator;
-     * - "erro:<mensagem>" quando recusou.
-     */
     String entrar(String email, String senha) {
         var corpo = json.encode(mapOf("email", email, "password", senha))
         var r = this.disparar("POST", "/auth/login", corpo, true)
@@ -144,7 +114,6 @@ class Cliente {
         return "ok"
     }
 
-    /** Segundo fator (TOTP/código por e-mail). */
     String verificar2fa(String challengeId, String codigo) {
         var corpo = json.encode(mapOf("challengeId", challengeId, "code", codigo))
         var r = this.disparar("POST", "/auth/2fa/verify", corpo, true)
@@ -158,7 +127,6 @@ class Cliente {
         return "ok"
     }
 
-    /** Carrega /auth/me para preencher o usuário da sessão. */
     void carregarEu() {
         var r = this.get("/auth/me")
         if (!r.ok()) { return }
@@ -174,14 +142,12 @@ class Cliente {
         this.sessao.usuario = Usuario(id, nome, login, email, avatar, faisca)
     }
 
-    /** Campo textual de um mapa com tolerância a nulos. */
     static String valor(Map<String, String> m, String chave) {
         var v = m.get(chave)
         if (v == null) { return "" }
         return v
     }
 
-    /** Fecha a sessão no servidor e localmente. */
     void sair() {
         this.post("/auth/logout", "{}")
         this.sessao.limpar()
