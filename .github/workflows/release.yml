@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão a publicar (ex.: 0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Jar + app nativo Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar Kof
+        run: |
+          curl -fsSL -o kof.tar.gz \
+            https://github.com/KofLang/Kof4j/releases/download/kof-0.8.0-linux-x86_64/kof-0.8.0-linux-x86_64.tar.gz
+          tar -xzf kof.tar.gz
+          echo "$PWD/kof-0.8.0-linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - name: Instalar JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Instalar fakeroot
+        run: sudo apt-get update && sudo apt-get install -y fakeroot
+
+      - name: Definir versão
+        id: versao
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            versao="${{ inputs.version }}"
+          else
+            versao="${GITHUB_REF_NAME#v}"
+          fi
+          echo "versao=$versao" >> "$GITHUB_OUTPUT"
+
+      - name: Checar tipos
+        run: kof check src/main.kf
+
+      - name: Testes
+        run: kof test src/tests/unitarios.kf --module-root src --target jvm
+
+      - name: Empacotar
+        run: bash scripts/release.sh "${{ steps.versao.outputs.versao }}"
+
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: "v${{ steps.versao.outputs.versao }}"
+        run: |
+          gh release create "$TAG" \
+            --title "enois-cli ${{ steps.versao.outputs.versao }}" \
+            --generate-notes \
+            build/release/enois-cli-${{ steps.versao.outputs.versao }}.jar \
+            build/release/enois-cli-${{ steps.versao.outputs.versao }}-linux-x86_64.deb \
+            build/release/enois-cli-${{ steps.versao.outputs.versao }}-linux-x86_64.tar.gz \
+            build/release/SHA256SUMS.txt

@@ -11,7 +11,19 @@ class Config {
     static String ORIGEM_QA = "https://enois-qa.b7cloud.tech"
 
     static String dirEstado() {
-        return "/home/mel/.config/enois-cli"
+        return Config.baseDeConfiguracao() + "/enois-cli"
+    }
+
+    static String baseDeConfiguracao() {
+        var xdg = config.env("XDG_CONFIG_HOME")
+        var xdgTexto = ""
+        if (xdg != null) { xdgTexto = xdg }
+        if (xdgTexto.length > 0) { return xdgTexto }
+        var home = config.env("HOME")
+        var homeTexto = ""
+        if (home != null) { homeTexto = home }
+        if (homeTexto.length > 0) { return homeTexto + "/.config" }
+        return "/tmp"
     }
 
     String alvo
