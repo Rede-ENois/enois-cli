@@ -50,7 +50,7 @@ class TelaMensagens {
                     rodando = false
                 } else {
                     var conversa = itens.get(escolha)
-                    if (conversa.id != null) { this.conversa(conversa.id) }
+                    this.conversa(conversa.id)
                 }
             }
         }
@@ -58,21 +58,20 @@ class TelaMensagens {
 
     String titulo(Conversa c) {
         var t = ""
-        if (c.titulo != null && c.titulo.length > 0) {
-            t = c.titulo
+        if (c.title != null && c.title.length > 0) {
+            t = c.title
         } else {
-            var participantes = c.participantes
+            var participantes = c.participantIds
             if (participantes != null && participantes.size() > 0) {
                 t = participantes.get(0)
             }
         }
         var ultima = ""
-        if (c.ultimaMensagem != null) {
-            var u = c.ultimaMensagem
-            if (u.texto != null) { ultima = " — " + u.texto }
+        if (c.lastMessage != null && c.lastMessage.length > 0) {
+            ultima = " — " + c.lastMessage
         }
         var naoLida = false
-        if ("" + c.naoLida == "true") { naoLida = true }
+        if (c.unread != null && c.unread > 0) { naoLida = true }
         var marca = ""
         if (naoLida) { marca = Badge.primaria("nova") + " " }
         return marca + t + Tema.suave(ultima)
@@ -114,8 +113,12 @@ class TelaMensagens {
 
     String bolha(Mensagem m, String meuId) {
         var texto = ""
-        if (m.texto != null) { texto = m.texto }
-        var ehMinha = m.autorId != null && m.autorId == meuId && meuId.length > 0
+        if ("" + m.e2e == "true") {
+            texto = "🔒 mensagem criptografada"
+        } else if (m.text != null) {
+            texto = m.text
+        }
+        var ehMinha = m.from != null && m.from == meuId && meuId.length > 0
         if (ehMinha) {
             return Tema.suave("      " + texto)
         }

@@ -45,11 +45,11 @@ class PerfilApi {
     }
 
     static Perfil perfil(Resposta r) {
-        if (!r.ok()) { return Perfil("", null, null, null, null, null, null, null, null, null, null) }
+        if (!r.ok()) { return Perfil("", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null) }
         try {
             return json.decode<Perfil>(r.corpo)
         } catch (String e) {
-            return Perfil("", null, null, null, null, null, null, null, null, null, null)
+            return Perfil("", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
         }
     }
 

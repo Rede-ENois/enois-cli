@@ -2,12 +2,21 @@ package api
 
 record Notificacao(
     String id,
-    String? tipo,
-    String? texto,
-    String? criadoEm,
-    Troolean? lida,
-    String? urlPost,
-    String? idPost
+    String? kind,
+    String? context,
+    String? module,
+    String? actorId,
+    String? actorName,
+    String? actorUsername,
+    String? actorAvatar,
+    String? title,
+    String? body,
+    String? preview,
+    String? createdAt,
+    Troolean? read,
+    String? href,
+    String? ctaLabel,
+    Int? actorCount
 )
 
 record PaginaNotificacao(List<Notificacao>? items, String? nextCursor)

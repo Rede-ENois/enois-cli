@@ -60,24 +60,19 @@ class TelaFeed {
 
     String resumo(PostResumo p) {
         var quem = ""
-        if (p.autor != null && p.autor.nome != null) { quem = p.autor.nome + ": " }
+        if (p.authorName != null) { quem = p.authorName + ": " }
         var trecho = ""
-        if (p.conteudo != null) { trecho = p.conteudo }
+        if (p.content != null) { trecho = p.content }
         if (trecho.length > 48) { trecho = trecho.substring(0, 48) + "…" }
         if (trecho.length == 0) { trecho = "(mídia)" }
         return quem + trecho
     }
 
     String card(PostResumo p) {
-        var topo = this.linhaAutor(p)
-        var corpo = ""
-        if (p.conteudo != null && p.conteudo.length > 0) {
-            corpo = p.conteudo
-        }
-        var rodape = this.linhaRodape(p)
-        var conteudo = topo
+        var conteudo = this.linhaAutor(p)
+        var corpo = this.corpo(p)
         if (corpo.length > 0) { conteudo = conteudo + "\n" + corpo }
-        conteudo = conteudo + "\n" + rodape
+        conteudo = conteudo + "\n" + this.linhaRodape(p)
         var linhas = Caixa.cartao(conteudo)
         var saida = ""
         for (var i = 0; i < linhas.size(); i = i + 1) {
@@ -87,20 +82,29 @@ class TelaFeed {
         return saida
     }
 
+    String corpo(PostResumo p) {
+        var corpo = ""
+        if (p.content != null) { corpo = p.content }
+        if ("" + p.repostWithOpinion == "true" && p.repostOfContent != null) {
+            corpo = corpo + "\n" + Tema.mudo("↳ " + p.repostOfContent)
+        }
+        return corpo
+    }
+
     String linhaAutor(PostResumo p) {
         var nome = ""
-        if (p.autor != null) {
-            var a = p.autor
-            if (a.nome != null) { nome = a.nome }
-            var usuario = ""
-            if (a.usuario != null) { usuario = " @" + a.usuario }
-            nome = nome + usuario
+        if (p.authorName != null) { nome = p.authorName }
+        if (p.authorUsername != null) { nome = nome + " @" + p.authorUsername }
+        var extras = ""
+        if (p.authorBadge != null && p.authorBadge.length > 0) {
+            extras = extras + " · " + p.authorBadge
         }
-        var tipo = ""
-        if (p.tipo != null && p.tipo.length > 0) { tipo = " · " + Tema.suave(tipoEmTexto(p.tipo)) }
-        var linha = Tema.destaque(nome + tipo)
-        if (p.autorRepostado != null && p.autorRepostado.length > 0) {
-            linha = Tema.mudo("↻ @" + p.autorRepostado) + "\n" + linha
+        if (p.type != null && p.type.length > 0) {
+            extras = extras + " · " + Tema.suave(tipoEmTexto(p.type))
+        }
+        var linha = Tema.destaque(nome + extras)
+        if (p.repostOfAuthor != null && p.repostOfAuthor.length > 0) {
+            linha = Tema.mudo("↻ @" + p.repostOfAuthor) + "\n" + linha
         }
         return linha
     }
@@ -108,30 +112,27 @@ class TelaFeed {
     String linhaRodape(PostResumo p) {
         var reacoes = 0
         var comentarios = 0
-        if (p.contadores != null) {
-            var c = p.contadores
-            if (c.reacoes != null) { reacoes = c.reacoes }
-            if (c.comentarios != null) { comentarios = c.comentarios }
+        if (p.counters != null) {
+            var c = p.counters
+            if (c.reactions != null) { reacoes = c.reactions }
+            if (c.comments != null) { comentarios = c.comments }
         }
         var rodape = Tema.suave("♥ " + String.valueOf(reacoes) + "   💬 " + String.valueOf(comentarios))
-        if (p.enquete != null) {
-            rodape = rodape + "\n" + this.linhaEnquete(p.enquete)
+        if (p.poll != null) {
+            rodape = rodape + "\n" + this.linhaEnquete(p.poll)
         }
         return rodape
     }
 
     String linhaEnquete(Enquete e) {
-        var opcoes = e.opcoes
+        var opcoes = e.options
         if (opcoes == null || opcoes.size() == 0) { return "" }
         var total = 0
-        if (e.totalVotos != null) { total = e.totalVotos }
+        if (e.totalVotes != null) { total = e.totalVotes }
         var linhas = ""
         for (var i = 0; i < opcoes.size(); i = i + 1) {
-            var o = opcoes.get(i)
-            var texto = ""
-            if (o.texto != null) { texto = o.texto }
             var votos = 0
-            if (o.votos != null) { votos = o.votos }
+            if (e.counts != null && i < e.counts.size()) { votos = e.counts.get(i) }
             var fatia = 0
             if (total > 0) { fatia = (votos * 20) / total }
             var barra = ""
@@ -142,7 +143,7 @@ class TelaFeed {
                     barra = barra + "░"
                 }
             }
-            linhas = linhas + Tema.suave(barra + " " + String.valueOf(votos)) + " " + texto + "\n"
+            linhas = linhas + Tema.suave(barra + " " + String.valueOf(votos)) + " " + opcoes.get(i) + "\n"
         }
         var resumo = Tema.mudo(String.valueOf(total) + " votos")
         if (linhas.length > 0) { resumo = linhas + resumo }

@@ -51,28 +51,40 @@ class TelaPerfil {
 
     String cartao(Perfil p) {
         var texto = ""
-        if (p.nome != null) { texto = p.nome }
-        if (p.usuario != null) { texto = texto + " · @" + p.usuario }
+        if (p.name != null) { texto = p.name }
+        if (p.username != null) { texto = texto + " · @" + p.username }
+        if (p.headline != null) { texto = texto + "\n" + p.headline }
         if (p.bio != null) { texto = texto + "\n" + p.bio }
-        if (p.titulo != null) { texto = texto + "\n" + Tema.suave(p.titulo) }
-        if (p.local != null) { texto = texto + "\n" + Tema.suave(p.local) }
-        if (p.site != null) { texto = texto + "\n" + p.site }
-        if (p.faisca != null) { texto = texto + "\n" + Tema.destaque("✦ " + p.faisca) }
-        if (p.selos != null && p.selos.size() > 0) {
+        if (p.company != null) { texto = texto + "\n" + Tema.suave(p.company) }
+        if (p.location != null) { texto = texto + "\n" + Tema.suave(p.location) }
+        if (p.reputation != null) {
+            texto = texto + "\n" + Tema.destaque("✦ " + String.valueOf(p.reputation) + " faísca")
+        }
+        if (p.followersCount != null) {
+            texto = texto + "\n" + Tema.mudo(String.valueOf(p.followersCount) + " seguidores"
+                + this.conectados(p))
+        }
+        if (p.badges != null && p.badges.size() > 0) {
             var selos = ""
-            for (var i = 0; i < p.selos.size(); i = i + 1) {
+            for (var i = 0; i < p.badges.size(); i = i + 1) {
                 if (i > 0) { selos = selos + " · " }
-                selos = selos + p.selos.get(i)
+                selos = selos + p.badges.get(i)
             }
             texto = texto + "\n" + selos
         }
+        if (p.statusText != null) { texto = texto + "\n" + Tema.suave(p.statusText) }
         return texto
+    }
+
+    String conectados(Perfil p) {
+        if (p.connectionsCount == null) { return "" }
+        return " · " + String.valueOf(p.connectionsCount) + " conexões"
     }
 
     String rotulo(PessoaRede p) {
         var nome = p.id
-        if (p.nome != null) { nome = p.nome }
-        if (p.usuario != null) { return nome + " @" + p.usuario }
+        if (p.name != null) { nome = p.name }
+        if (p.username != null) { return nome + " @" + p.username }
         return nome
     }
 
@@ -91,7 +103,7 @@ class TelaPerfil {
             Entrada.pausar()
             return
         }
-        var pessoas = PerfilApi.redeDe(r)
+        var pessoas = RedeApi.listaDe(r)
         if (pessoas.size() == 0) {
             println(Caixa.simples(Lista.vazia("sem sugestões agora")))
             Entrada.pausar()
@@ -143,13 +155,22 @@ class TelaPerfil {
             Entrada.pausar()
             return
         }
-        var pessoas = PerfilApi.redeDe(r)
+        var pedidos = RedeApi.pedidosDe(r)
+        var pessoas = listOf<PessoaRede>()
+        var opcoes = listOf<String>()
+        for (var i = 0; i < pedidos.size(); i = i + 1) {
+            var peer = pedidos.get(i).peer
+            if (peer != null) {
+                pessoas.add(peer)
+                opcoes.add(this.rotulo(peer))
+            }
+        }
         if (pessoas.size() == 0) {
             println(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
             Entrada.pausar()
             return
         }
-        var escolha = Entrada.menu("pedidos", this.rotulos(pessoas), "voltar")
+        var escolha = Entrada.menu("pedidos", opcoes, "voltar")
         if (escolha < 0) { return }
         var pessoa = pessoas.get(escolha)
         var f = rede.aceitar(pessoa.id)

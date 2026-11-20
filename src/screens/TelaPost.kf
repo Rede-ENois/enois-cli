@@ -69,14 +69,15 @@ class TelaPost {
 
     String comentario(Comentario c) {
         var quem = "alguém"
-        if (c.autorUsuario != null) { quem = "@" + c.autorUsuario }
-        if (c.autorNome != null) { quem = c.autorNome + " " + quem }
-        if ("" + c.fixado == "true") { quem = "📌 " + quem }
+        if (c.authorUsername != null) { quem = "@" + c.authorUsername }
+        if (c.authorName != null) { quem = c.authorName + " " + quem }
+        if ("" + c.pinned == "true") { quem = "📌 " + quem }
+        if ("" + c.accepted == "true") { quem = "✔ " + quem }
         var texto = ""
-        if (c.conteudo != null) { texto = c.conteudo }
+        if (c.content != null) { texto = c.content }
         var marca = ""
-        if (c.contagemReacoes != null && c.contagemReacoes > 0) {
-            marca = Tema.suave(" ♥ " + c.contagemReacoes)
+        if (c.reactionCount != null && c.reactionCount > 0) {
+            marca = Tema.suave(" ♥ " + c.reactionCount)
         }
         return "  " + Tema.destaque(quem) + " " + texto + marca
     }
@@ -131,9 +132,9 @@ class TelaPost {
         for (var i = 0; i < itens.size(); i = i + 1) {
             var reagente = itens.get(i)
             var quem = "alguém"
-            if (reagente.usuarioId != null) { quem = reagente.usuarioId }
+            if (reagente.userId != null) { quem = reagente.userId }
             var tipo = ""
-            if (reagente.tipo != null) { tipo = " · " + reagente.tipo }
+            if (reagente.type != null) { tipo = " · " + reagente.type }
             linhas.add("  " + Tema.destaque(quem) + Tema.suave(tipo))
         }
         for (var i = 0; i < linhas.size(); i = i + 1) {

@@ -1,24 +1,28 @@
 package api
 
-record UltimaMensagem(String? texto, String? autor, String? criadoEm)
-
 record Conversa(
     String id,
-    String? titulo,
-    String? tipo,
-    String? criadoEm,
-    UltimaMensagem? ultimaMensagem,
-    List<String>? participantes,
-    Troolean? naoLida
+    String? userId,
+    String? kind,
+    String? context,
+    String? title,
+    List<String>? participantIds,
+    String? lastMessage,
+    String? time,
+    Int? unread,
+    String? lastMessageFrom
 )
 
 record Mensagem(
     String id,
-    String? texto,
-    String? autorId,
-    String? criadoEm,
-    List<String>? reacoes,
-    String? respondendoA
+    String? conversationId,
+    String? from,
+    String? text,
+    List<String>? mediaIds,
+    String? time,
+    String? myReaction,
+    Troolean? e2e,
+    String? replyToId
 )
 
 record PaginaConversa(List<Conversa>? items, String? nextCursor)

@@ -3,21 +3,23 @@ package api
 record Comentario(
     String id,
     String? postId,
-    String? autorNome,
-    String? autorUsuario,
-    String? conteudo,
-    String? criadoEm,
-    String? status,
-    Troolean? fixado,
-    Troolean? aceita,
-    String? minhaReacao,
-    Int? contagemReacoes,
-    String? editadoEm,
-    String? comentarioPai
+    String? authorId,
+    String? authorName,
+    String? authorUsername,
+    String? authorAvatar,
+    String? authorBadge,
+    String? parentCommentId,
+    String? content,
+    String? createdAt,
+    String? editedAt,
+    String? currentUserReaction,
+    Int? reactionCount,
+    Troolean? pinned,
+    Troolean? accepted
 )
 
 record PaginaComentarios(List<Comentario>? items, String? nextCursor)
 
-record Reagente(String? usuarioId, String? tipo, String? criadoEm)
+record Reagente(String? userId, String? type, String? createdAt)
 
 record ListaReacoes(List<Reagente>? reactions)

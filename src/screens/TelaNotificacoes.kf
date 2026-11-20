@@ -5,7 +5,6 @@ import core.Ansi
 import core.Cliente
 import core.Entrada
 import core.Tema
-import ui.Badge
 import ui.Caixa
 import ui.Lista
 import ui.Menu
@@ -55,9 +54,16 @@ class TelaNotificacoes {
     }
 
     String linha(Notificacao n) {
-        var texto = ""
-        if (n.texto != null) { texto = n.texto }
-        if ("" + n.lida == "true") {
+        var titulo = "notificação"
+        if (n.title != null) { titulo = n.title }
+        var detalhe = ""
+        if (n.preview != null) {
+            detalhe = " — " + n.preview
+        } else if (n.body != null) {
+            detalhe = " — " + n.body
+        }
+        var texto = titulo + detalhe
+        if ("" + n.read == "true") {
             return Tema.mudo("· " + texto)
         }
         return "● " + Tema.texto(texto)

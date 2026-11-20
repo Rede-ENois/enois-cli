@@ -1,26 +1,44 @@
 package api
 
-record Autor(String id, String nome, String usuario, String? selo)
+record Contadores(Int? reactions, Int? comments, Int? saves, Int? shares, Int? reposts)
 
-record Contadores(Int reacoes, Int comentarios, Int salvos, Int compartilhados, Int reposts)
+record Enquete(
+    List<String>? options,
+    List<Int>? counts,
+    List<Int>? myVotes,
+    Int? totalVotes,
+    Troolean? multipleChoice,
+    String? endsAt
+)
 
-record OpcaoEnquete(String texto, Int votos)
-
-record Enquete(List<OpcaoEnquete>? opcoes, Int? totalVotos, Int? minhaOpcao, String? fechaEm)
+record ComunidadeRef(String id, String? name, Troolean? joined)
 
 record PostResumo(
     String id,
-    String? tipo,
-    String? conteudo,
-    String? criadoEm,
-    Autor? autor,
-    Contadores? contadores,
+    String? type,
+    String? content,
+    String? createdAt,
+    String? authorId,
+    String? authorName,
+    String? authorUsername,
+    String? authorAvatar,
+    String? authorBadge,
+    String? authorHeadline,
     List<String>? tags,
-    Enquete? enquete,
-    String? autorRepostado,
-    Troolean? resolvida
+    Contadores? counters,
+    String? currentUserReaction,
+    String? communityId,
+    String? repostOf,
+    String? repostOfAuthor,
+    String? repostOfContent,
+    Troolean? repostWithOpinion,
+    Enquete? poll,
+    Troolean? currentUserReposted,
+    String? acceptedCommentId,
+    String? topic,
+    String? editedAt
 )
 
 record PaginaPost(List<PostResumo>? items, String? nextCursor)
 
-record PaginaFeed(List<PostResumo>? items, String? nextCursor, String? ultimoVistoEm)
+record PaginaFeed(List<PostResumo>? items, String? nextCursor, String? lastSeenAt)
