@@ -1,0 +1,31 @@
+package tipos
+
+record TentativaPalavra(String? word, List<String>? marks)
+
+record EstadoPalavra(String? date, String? status, List<TentativaPalavra>? guesses, Long? streak)
+
+record PosicaoPalavra(String? username, String? name, Long? attempts, String? completedAt)
+
+record RankingPalavras(List<PosicaoPalavra>? items)
+
+record EstadoLabirinto(String? date, String? status, List<Long>? passages, Long? position,
+                      Long? moves, String? startedAt, String? completedAt)
+
+record PosicaoLabirinto(String? username, String? name, Long? elapsedMillis, Long? moves)
+
+record RankingLabirinto(List<PosicaoLabirinto>? items)
+
+record CelulaBlocos(Long? x, Long? y)
+
+record EstadoBlocos(String? date, String? status, Long? score, Long? lines, Long? actions,
+                    List<String>? board, List<CelulaBlocos>? activeCells,
+                    List<CelulaBlocos>? nextCells, List<Long>? pieces, Long? rulesVersion)
+
+record PosicaoBlocos(String? username, String? name, Long? score, Long? lines,
+                     Long? elapsedMillis)
+
+record RankingBlocos(List<PosicaoBlocos>? items)
+
+record PremioJogo(String? label, Long? amount)
+
+record PremiosJogos(List<PremioJogo>? tiers)

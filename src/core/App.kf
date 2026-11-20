@@ -58,8 +58,10 @@ class App {
     }
 
     List<String> opcoes(String contexto) {
-        var opcoes = listOf("feed", "mensagens", "rede", "salvos")
+        var opcoes = listOf("feed", "mensagens")
         if (contexto == "social") {
+            opcoes.add("rede")
+            opcoes.add("salvos")
             opcoes.add("comunidades")
             opcoes.add("grupos")
             opcoes.add("eventos")
@@ -71,6 +73,7 @@ class App {
             opcoes.add("serviços")
             opcoes.add("empresas")
             opcoes.add("mentoria")
+            opcoes.add("perfil profissional")
         }
         opcoes.add("explorar")
         opcoes.add("perfil")
@@ -114,6 +117,8 @@ class App {
             TelaEmpresas(this.cliente).executar()
         } else if (escolha == "mentoria") {
             TelaMentoria(this.cliente).executar()
+        } else if (escolha == "perfil profissional") {
+            TelaProfissional(this.cliente).executar()
         } else if (escolha == "explorar") {
             TelaExplorar(this.cliente, this.sessao).executar()
         } else if (escolha == "perfil") {

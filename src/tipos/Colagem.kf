@@ -1,0 +1,17 @@
+package tipos
+
+record AutorColagem(String? id, String? name, String? username, String? avatar,
+                    String? avatarFrame, String? style)
+
+record PostColagem(String id, AutorColagem? author, String? mediaId, String? mediaUrl,
+                   String? mimeType, Long? width, Long? height, String? description,
+                   Troolean? mediaSpoiler, String? createdAt, Long? reactions,
+                   String? myReaction, Long? comments)
+
+record ComentarioColagem(String id, AutorColagem? author, String? content, String? mediaId,
+                         String? mediaUrl, Troolean? mediaSpoiler, String? parentCommentId,
+                         String? createdAt)
+
+record PaginaColagem(List<PostColagem>? items, String? nextCursor)
+
+record PaginaComentariosColagem(List<ComentarioColagem>? items, String? nextCursor)

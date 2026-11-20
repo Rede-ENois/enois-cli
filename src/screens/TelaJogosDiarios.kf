@@ -1,0 +1,261 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaJogosDiarios {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("jogos diários"))
+            println(Tema.mudo("um desafio por dia, igual pra todo mundo"))
+            var escolha = Entrada.menu("jogos",
+                listOf("palavra", "labirinto", "blocos", "prêmios"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.palavra()
+            } else if (escolha == 1) {
+                this.labirinto()
+            } else if (escolha == 2) {
+                this.blocos()
+            } else {
+                this.premios()
+            }
+        }
+    }
+
+    void palavra() {
+        var api = JogosDiariosApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var estado = JogosDiariosApi.palavraDe(api.palavraHoje(null))
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartaoPalavra(estado)))
+            var tentativas = estado.guesses
+            if (tentativas != null) {
+                for (var i = 0; i < tentativas.size(); i = i + 1) {
+                    println(Lista.item(this.marcas(tentativas.get(i).marks),
+                        this.texto(tentativas.get(i).word)))
+                }
+            }
+            var escolha = Entrada.menu("palavra", listOf("tentar", "ranking"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                var palpite = Entrada.textoObrigatorio("palpite")
+                var estadoNovo = api.adivinhar(palpite, uuid.v4(), null)
+                this.avisar(estadoNovo, "palpite enviado")
+            } else {
+                this.rankingPalavras()
+            }
+        }
+    }
+
+    void labirinto() {
+        var api = JogosDiariosApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var estado = JogosDiariosApi.labirintoDe(api.labirintoHoje(null))
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartaoLabirinto(estado)))
+            var escolha = Entrada.menu("labirinto",
+                listOf("cima", "direita", "baixo", "esquerda", "ranking"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < 4) {
+                var direcoes = listOf("UP", "RIGHT", "DOWN", "LEFT")
+                this.avisar(api.mover(direcoes.get(escolha), uuid.v4(), null), "movimento feito")
+            } else {
+                this.rankingLabirinto()
+            }
+        }
+    }
+
+    void blocos() {
+        var api = JogosDiariosApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var estado = JogosDiariosApi.blocosDe(api.blocosHoje(null))
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartaoBlocos(estado)))
+            println(this.tabuleiro(estado))
+            var acoes = listOf("LEFT", "RIGHT", "ROTATE", "SOFT_DROP", "HARD_DROP", "WAIT")
+            var opcoes = listOf("esquerda", "direita", "rotacionar", "descer",
+                "derrubar", "esperar", "ranking")
+            var escolha = Entrada.menu("blocos", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < 6) {
+                this.avisar(api.agir(acoes.get(escolha), uuid.v4(), null), "jogada feita")
+            } else {
+                this.rankingBlocos()
+            }
+        }
+    }
+
+    void rankingPalavras() {
+        var ranking = JogosDiariosApi.rankingPalavrasDe(JogosDiariosApi(this.cliente)
+            .rankingPalavras())
+        var itens = listOf<PosicaoPalavra>()
+        if (ranking.items != null) { itens = ranking.items }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("ranking da palavra"))
+        if (itens.size() == 0) { println(Lista.vazia("ninguém no ranking hoje")) }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var posicao = itens.get(i)
+            var nome = this.texto(posicao.name)
+            if (nome.length == 0) { nome = this.texto(posicao.username) }
+            var detalhe = ""
+            if (posicao.attempts != null) {
+                detalhe = String.valueOf(posicao.attempts) + " tentativas"
+            }
+            println(Lista.item(nome, detalhe))
+        }
+        Entrada.pausar()
+    }
+
+    void rankingLabirinto() {
+        var ranking = JogosDiariosApi.rankingLabirintoDe(JogosDiariosApi(this.cliente)
+            .rankingLabirinto())
+        var itens = listOf<PosicaoLabirinto>()
+        if (ranking.items != null) { itens = ranking.items }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("ranking do labirinto"))
+        if (itens.size() == 0) { println(Lista.vazia("ninguém no ranking hoje")) }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var posicao = itens.get(i)
+            var nome = this.texto(posicao.name)
+            if (nome.length == 0) { nome = this.texto(posicao.username) }
+            var detalhe = ""
+            if (posicao.elapsedMillis != null) {
+                detalhe = String.valueOf(posicao.elapsedMillis) + " ms"
+            }
+            println(Lista.item(nome, detalhe))
+        }
+        Entrada.pausar()
+    }
+
+    void rankingBlocos() {
+        var ranking = JogosDiariosApi.rankingBlocosDe(JogosDiariosApi(this.cliente)
+            .rankingBlocos())
+        var itens = listOf<PosicaoBlocos>()
+        if (ranking.items != null) { itens = ranking.items }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("ranking dos blocos"))
+        if (itens.size() == 0) { println(Lista.vazia("ninguém no ranking hoje")) }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var posicao = itens.get(i)
+            var nome = this.texto(posicao.name)
+            if (nome.length == 0) { nome = this.texto(posicao.username) }
+            var detalhe = ""
+            if (posicao.score != null) { detalhe = String.valueOf(posicao.score) + " pontos" }
+            println(Lista.item(nome, detalhe))
+        }
+        Entrada.pausar()
+    }
+
+    void premios() {
+        var premios = JogosDiariosApi.premiosDe(JogosDiariosApi(this.cliente).premios())
+        var itens = listOf<PremioJogo>()
+        if (premios.tiers != null) { itens = premios.tiers }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("prêmios dos jogos diários"))
+        if (itens.size() == 0) { println(Lista.vazia("sem tabela de prêmios")) }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var detalhe = ""
+            if (itens.get(i).amount != null) {
+                detalhe = String.valueOf(itens.get(i).amount) + " faíscas"
+            }
+            println(Lista.item(this.texto(itens.get(i).label), detalhe))
+        }
+        Entrada.pausar()
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String marcas(List<String>? marcas) {
+        var texto = ""
+        if (marcas != null) {
+            for (var i = 0; i < marcas.size(); i = i + 1) {
+                var marca = marcas.get(i)
+                if (marca == "CORRECT") { texto = texto + "█" } else if (marca == "PRESENT") {
+                    texto = texto + "▒"
+                } else {
+                    texto = texto + "░"
+                }
+            }
+        }
+        return texto
+    }
+
+    String cartaoPalavra(EstadoPalavra e) {
+        var texto = "palavra do dia"
+        if (e.status != null) { texto = texto + "\n" + e.status }
+        if (e.date != null) { texto = texto + "\n" + Tema.mudo(e.date) }
+        if (e.streak != null) { texto = texto + "\n" + e.streak + " dias de sequência" }
+        return texto
+    }
+
+    String cartaoLabirinto(EstadoLabirinto e) {
+        var texto = "labirinto do dia"
+        if (e.status != null) { texto = texto + "\n" + e.status }
+        var posicao = ""
+        if (e.position != null) { posicao = "posição " + e.position }
+        var movimentos = ""
+        if (e.moves != null) { movimentos = e.moves + " movimentos" }
+        if (posicao.length > 0) { texto = texto + "\n" + posicao + " · " + movimentos }
+        return texto
+    }
+
+    String cartaoBlocos(EstadoBlocos e) {
+        var texto = "blocos do dia"
+        if (e.status != null) { texto = texto + "\n" + e.status }
+        var pontos = ""
+        if (e.score != null) { pontos = e.score + " pontos" }
+        var linhas = ""
+        if (e.lines != null) { linhas = e.lines + " linhas" }
+        if (pontos.length > 0) { texto = texto + "\n" + pontos + " · " + linhas }
+        return texto
+    }
+
+    String tabuleiro(EstadoBlocos e) {
+        var linhas = listOf<String>()
+        if (e.board != null) { linhas = e.board }
+        var texto = ""
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            texto = texto + linhas.get(i) + "\n"
+        }
+        return texto
+    }
+}

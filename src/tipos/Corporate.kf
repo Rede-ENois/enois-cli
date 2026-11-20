@@ -1,0 +1,10 @@
+package tipos
+
+record PerfilCorporate(Troolean? exists, String? userId, String? username, String? name,
+                      String? headline, String? bio, String? avatar, String? banner,
+                      String? bannerHtml, String? location, String? industry,
+                      String? externalLinks, String? status, Troolean? identityVerified,
+                      Int? reputation, String? memberSince, List<String>? skills)
+
+record PreviaImportacaoCorporate(String? name, String? headline, String? bio, String? avatar,
+                                 String? banner, String? bannerHtml, String? location)

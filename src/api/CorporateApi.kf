@@ -1,0 +1,86 @@
+package api
+
+import tipos.*
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class CorporateApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta meu() {
+        return this.cliente.get("/me/business-profile")
+    }
+
+    Resposta criar(String usuario, String nome) {
+        return this.cliente.post("/me/business-profile",
+            json.encode(mapOf("username", usuario, "name", nome)))
+    }
+
+    Resposta atualizar(String headline, String bio, String local, String setor, String links) {
+        return this.cliente.patch("/me/business-profile", this.corpoDetalhes(headline, bio, local,
+            setor, links))
+    }
+
+    Resposta renomear(String nome) {
+        return this.cliente.post("/me/business-profile/name", json.encode(mapOf("name", nome)))
+    }
+
+    Resposta trocarUsuario(String usuario) {
+        return this.cliente.post("/me/business-profile/username",
+            json.encode(mapOf("username", usuario)))
+    }
+
+    Resposta ativar() {
+        return this.cliente.post("/me/business-profile/activate", "{}")
+    }
+
+    Resposta desativar() {
+        return this.cliente.post("/me/business-profile/deactivate", "{}")
+    }
+
+    Resposta previaImportacao() {
+        return this.cliente.get("/me/business-profile/import-preview")
+    }
+
+    Resposta importar(List<String> campos) {
+        return this.cliente.post("/me/business-profile/import",
+            json.encode(mapOf("fields", campos)))
+    }
+
+    Resposta deUsuario(String usuario) {
+        return this.cliente.get("/corporate/" + Cliente.caminho(usuario))
+    }
+
+    static String corpoDetalhes(String headline, String bio, String local, String setor,
+        String links) {
+        return "{\"headline\":" + json.encode(headline)
+            + ",\"bio\":" + json.encode(bio)
+            + ",\"location\":" + json.encode(local)
+            + ",\"industry\":" + json.encode(setor)
+            + ",\"externalLinks\":" + json.encode(links) + "}"
+    }
+
+    static PerfilCorporate? unico(Resposta r) {
+        if (!r.ok()) { return null }
+        try {
+            return json.decode<PerfilCorporate>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+
+    static PreviaImportacaoCorporate? previa(Resposta r) {
+        if (!r.ok()) { return null }
+        try {
+            return json.decode<PreviaImportacaoCorporate>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+}
