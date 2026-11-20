@@ -1,0 +1,258 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaServicos {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var vitrine = ServicosApi.vitrineDe(ServicosApi(this.cliente).listar(null, 20))
+            var ofertas = listOf<OfertaServico>()
+            if (vitrine.ofertas != null) { ofertas = vitrine.ofertas }
+            var pedidos = listOf<PedidoServico>()
+            if (vitrine.pedidos != null) { pedidos = vitrine.pedidos }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("serviços"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < ofertas.size(); i = i + 1) {
+                var o = ofertas.get(i)
+                println(Lista.item(this.tituloOferta(o), this.resumoOferta(o)))
+                opcoes.add(this.tituloOferta(o))
+            }
+            for (var i = 0; i < pedidos.size(); i = i + 1) {
+                var p = pedidos.get(i)
+                println(Lista.item(this.tituloPedido(p), this.resumoPedido(p)))
+                opcoes.add(this.tituloPedido(p))
+            }
+            if (opcoes.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhum serviço na vitrine")))
+            }
+            opcoes.add("meus serviços")
+            opcoes.add("criar oferta")
+            opcoes.add("criar pedido")
+            var escolha = Entrada.menu("vitrine", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < ofertas.size()) {
+                this.oferta(ofertas.get(escolha))
+            } else if (escolha < ofertas.size() + pedidos.size()) {
+                this.pedido(pedidos.get(escolha - ofertas.size()))
+            } else if (escolha == ofertas.size() + pedidos.size()) {
+                this.meus()
+            } else if (escolha == ofertas.size() + pedidos.size() + 1) {
+                this.criarOferta()
+            } else {
+                this.criarPedido()
+            }
+        }
+    }
+
+    void oferta(OfertaServico o) {
+        var api = ServicosApi(this.cliente)
+        print(Ansi.LIMPAR)
+        var texto = this.tituloOferta(o)
+        if (o.sellerName != null) { texto = texto + "\n" + Tema.suave(o.sellerName) }
+        if (o.description != null) { texto = texto + "\n" + o.description }
+        if (o.deliverables != null) { texto = texto + "\n" + o.deliverables }
+        texto = texto + "\n" + this.resumoOferta(o)
+        println(Caixa.simples(texto))
+        var escolha = Entrada.menu(this.tituloOferta(o),
+            listOf("contratar", "abrir chat"), "voltar")
+        if (escolha == 0) {
+            this.avisar(api.contratoDaOferta(o.id), "contratação iniciada")
+        } else if (escolha == 1) {
+            this.avisar(api.chatDaOferta(o.id), "chat aberto")
+        }
+    }
+
+    void pedido(PedidoServico p) {
+        var api = ServicosApi(this.cliente)
+        print(Ansi.LIMPAR)
+        var texto = this.tituloPedido(p)
+        if (p.description != null) { texto = texto + "\n" + p.description }
+        texto = texto + "\n" + this.resumoPedido(p)
+        println(Caixa.simples(texto))
+        var escolha = Entrada.menu(this.tituloPedido(p),
+            listOf("ver propostas", "enviar proposta"), "voltar")
+        if (escolha == 0) {
+            this.propostas(p)
+        } else if (escolha == 1) {
+            var mensagem = Entrada.textoObrigatorio("sua proposta")
+            this.avisar(api.proporNoPedido(p.id, mensagem), "proposta enviada")
+        }
+    }
+
+    void propostas(PedidoServico p) {
+        var itens = ServicosApi.propostasDe(ServicosApi(this.cliente).propostasDoPedido(p.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("propostas · " + this.tituloPedido(p)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhuma proposta ainda")))
+            Entrada.pausar()
+            return
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var proposta = itens.get(i)
+            var texto = ""
+            if (proposta.message != null) { texto = proposta.message }
+            var valor = ""
+            if (proposta.price != null) { valor = String.valueOf(proposta.price) }
+            println(Lista.item(texto, valor))
+        }
+        Entrada.pausar()
+    }
+
+    void meus() {
+        var meus = ServicosApi.meusDe(ServicosApi(this.cliente).minhasServicos())
+        var ofertas = listOf<OfertaServico>()
+        if (meus.ofertas != null) { ofertas = meus.ofertas }
+        var comprados = listOf<ContratoServico>()
+        if (meus.contratosComoComprador != null) { comprados = meus.contratosComoComprador }
+        var vendidos = listOf<ContratoServico>()
+        if (meus.contratosComoVendedor != null) { vendidos = meus.contratosComoVendedor }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("meus serviços"))
+        var opcoes = listOf<String>()
+        for (var i = 0; i < ofertas.size(); i = i + 1) {
+            println(Lista.item(this.tituloOferta(ofertas.get(i)), this.resumoOferta(ofertas.get(i))))
+            opcoes.add("oferta: " + this.tituloOferta(ofertas.get(i)))
+        }
+        for (var i = 0; i < comprados.size(); i = i + 1) {
+            println(Lista.item("compra · " + this.estadoContrato(comprados.get(i)),
+                this.resumoContrato(comprados.get(i))))
+            opcoes.add("compra " + String.valueOf(i + 1))
+        }
+        for (var i = 0; i < vendidos.size(); i = i + 1) {
+            println(Lista.item("venda · " + this.estadoContrato(vendidos.get(i)),
+                this.resumoContrato(vendidos.get(i))))
+            opcoes.add("venda " + String.valueOf(i + 1))
+        }
+        if (opcoes.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nada por aqui ainda")))
+            Entrada.pausar()
+            return
+        }
+        var escolha = Entrada.menu("meus serviços", opcoes, "voltar")
+        if (escolha < 0) { return }
+        if (escolha < ofertas.size()) {
+            this.oferta(ofertas.get(escolha))
+            return
+        }
+        var indiceCompra = escolha - ofertas.size()
+        if (indiceCompra < comprados.size()) {
+            this.contrato(comprados.get(indiceCompra), true)
+        } else {
+            this.contrato(vendidos.get(indiceCompra - comprados.size()), false)
+        }
+    }
+
+    void contrato(ContratoServico c, Bool comprador) {
+        var api = ServicosApi(this.cliente)
+        print(Ansi.LIMPAR)
+        var texto = "contrato " + this.estadoContrato(c)
+        texto = texto + "\n" + this.resumoContrato(c)
+        if (c.deliverableNote != null) { texto = texto + "\n" + c.deliverableNote }
+        println(Caixa.simples(texto))
+        var opcoes = listOf<String>()
+        if (comprador) { opcoes.add("aceitar entrega") }
+        if (!comprador) { opcoes.add("entregar") }
+        opcoes.add("pedir reembolso")
+        var escolha = Entrada.menu("contrato", opcoes, "voltar")
+        if (escolha < 0) { return }
+        var acao = opcoes.get(escolha)
+        if (acao == "aceitar entrega") { this.avisar(api.aceitarContrato(c.id), "entrega aceita") }
+        if (acao == "entregar") { this.avisar(api.entregarContrato(c.id), "entrega registrada") }
+        if (acao == "pedir reembolso") { this.avisar(api.reembolsoContrato(c.id), "reembolso solicitado") }
+    }
+
+    void criarOferta() {
+        var titulo = Entrada.textoObrigatorio("título da oferta")
+        var preco = Entrada.numero("preço em faíscas", 1, 100000000)
+        this.avisar(ServicosApi(this.cliente).criarOferta(titulo, preco), "oferta publicada")
+    }
+
+    void criarPedido() {
+        var titulo = Entrada.textoObrigatorio("título do pedido")
+        var descricao = Entrada.textoObrigatorio("descrição")
+        this.avisar(ServicosApi(this.cliente).criarPedido(titulo, descricao), "pedido publicado")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String tituloOferta(OfertaServico o) {
+        if (o.title != null) { return o.title }
+        return o.id
+    }
+
+    String tituloPedido(PedidoServico p) {
+        if (p.title != null) { return p.title }
+        return p.id
+    }
+
+    String resumoOferta(OfertaServico o) {
+        var texto = ""
+        if (o.price != null) { texto = String.valueOf(o.price) + " faíscas" }
+        if (o.deliveryDays != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(o.deliveryDays) + " dias"
+        }
+        if (o.category != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + o.category
+        }
+        return texto
+    }
+
+    String resumoPedido(PedidoServico p) {
+        var texto = ""
+        if (p.budgetMin != null) {
+            texto = String.valueOf(p.budgetMin)
+            if (p.budgetMax != null) { texto = texto + "–" + String.valueOf(p.budgetMax) }
+            texto = texto + " faíscas"
+        }
+        if (p.deadline != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "até " + p.deadline
+        }
+        return texto
+    }
+
+    String estadoContrato(ContratoServico c) {
+        if (c.escrowState != null) { return c.escrowState }
+        return "aberto"
+    }
+
+    String resumoContrato(ContratoServico c) {
+        var texto = ""
+        if (c.price != null) { texto = String.valueOf(c.price) + " faíscas" }
+        if (c.createdAt != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + c.createdAt
+        }
+        return texto
+    }
+}

@@ -1,0 +1,11 @@
+package api
+
+import java.net.URLEncoder
+
+class ConsultaTextos {
+
+    static String caminho(String bruto) {
+        if (bruto == null) { return "" }
+        return URLEncoder.encode(bruto, "UTF-8")
+    }
+}

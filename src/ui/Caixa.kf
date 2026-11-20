@@ -1,0 +1,107 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+class Caixa {
+
+    static Int larguraPadrao() {
+        return Ansi.LARGURA_CONTEUDO
+    }
+
+    static List<String> card(String titulo, String corpo) {
+        var largura = Caixa.larguraPadrao()
+        var interna = largura - 4
+        var linhas = listOf<String>()
+        linhas.add(Caixa.linhaSuperior(largura))
+        var rotulo = " " + titulo + " "
+        linhas.add(Caixa.conteudo(Tema.destaque(rotulo), interna))
+        linhas.add(Caixa.linhaMeio(largura))
+        for (var parte in Ansi.quebrar(corpo, interna)) {
+            linhas.add(Caixa.conteudo(parte, interna))
+        }
+        linhas.add(Caixa.linhaInferior(largura))
+        return linhas
+    }
+
+    static List<String> cartao(String corpo) {
+        var largura = Caixa.larguraPadrao()
+        var interna = largura - 4
+        var linhas = listOf<String>()
+        linhas.add(Caixa.linhaSuperior(largura))
+        for (var linha in Caixa.partes(corpo)) {
+            for (var parte in Ansi.quebrar(linha, interna)) {
+                linhas.add(Caixa.conteudo(parte, interna))
+            }
+        }
+        linhas.add(Caixa.linhaInferior(largura))
+        return linhas
+    }
+
+    static List<String> partes(String corpo) {
+        var saida = listOf<String>()
+        var atual = ""
+        for (var i = 0; i < corpo.length; i = i + 1) {
+            var c = corpo.substring(i, i + 1)
+            if (c == "\n") {
+                saida.add(atual)
+                atual = ""
+            } else {
+                atual = atual + c
+            }
+        }
+        saida.add(atual)
+        return saida
+    }
+
+    static List<String> simples(String corpo) {
+        var largura = Caixa.larguraPadrao()
+        var interna = largura - 4
+        var linhas = listOf<String>()
+        linhas.add(Caixa.linhaSuperior(largura))
+        for (var parte in Ansi.quebrar(corpo, interna)) {
+            linhas.add(Caixa.conteudo(parte, interna))
+        }
+        linhas.add(Caixa.linhaInferior(largura))
+        return linhas
+    }
+
+    static void desenhar(List<String> linhas) {
+        for (var l in linhas) {
+            println(l)
+        }
+    }
+
+    static String linhaSuperior(Int largura) {
+        var meio = ""
+        for (var i = 0; i < largura - 2; i = i + 1) {
+            meio = meio + "─"
+        }
+        return Tema.pinta(Tema.BORDA_SUAVE, "╭" + meio + "╮")
+    }
+
+    static String linhaMeio(Int largura) {
+        var meio = ""
+        for (var i = 0; i < largura - 2; i = i + 1) {
+            meio = meio + "─"
+        }
+        return Tema.pinta(Tema.BORDA_SUAVE, "├" + meio + "┤")
+    }
+
+    static String linhaInferior(Int largura) {
+        var meio = ""
+        for (var i = 0; i < largura - 2; i = i + 1) {
+            meio = meio + "─"
+        }
+        return Tema.pinta(Tema.BORDA_SUAVE, "╰" + meio + "╯")
+    }
+
+    static String conteudo(String texto, Int interna) {
+        var restante = interna - Ansi.largura(texto)
+        var espacos = ""
+        for (var i = 0; i < restante; i = i + 1) {
+            espacos = espacos + " "
+        }
+        return Tema.pinta(Tema.BORDA_SUAVE, "│ ") + texto + espacos + Tema.pinta(Tema.BORDA_SUAVE, " │")
+    }
+}

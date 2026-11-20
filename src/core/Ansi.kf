@@ -1,0 +1,114 @@
+package core
+
+class Ansi {
+
+    static String ESC = "\u001b"
+    static String LIMPAR = ESC + "[2J" + ESC + "[H"
+    static String OCULTAR_CURSOR = ESC + "[?25l"
+    static String MOSTRAR_CURSOR = ESC + "[?25h"
+
+    static Int LARGURA_CONTEUDO = 100
+    static Int LARGURA_MINIMA = 40
+
+    static String SEM_COR = "\u001b\\[[0-9;]*m"
+
+    static Int largura(String s) {
+        if (s == null) { return 0 }
+        var limpo = s.replaceAll(SEM_COR, "")
+        var total = 0
+        for (var i = 0; i < limpo.length; i = i + 1) {
+            var c = limpo.charAt(i)
+            if (c >= 0x1F300 && c <= 0x1FAFF) {
+                total = total + 2
+            } else if (c >= 0x2600 && c <= 0x27BF) {
+                total = total + 2
+            } else {
+                total = total + 1
+            }
+        }
+        return total
+    }
+
+    static String padDireita(String s, Int maximo) {
+        var faltam = maximo - largura(s)
+        if (faltam <= 0) { return s }
+        var espacos = ""
+        for (var i = 0; i < faltam; i = i + 1) {
+            espacos = espacos + " "
+        }
+        return s + espacos
+    }
+
+    static String padEsquerda(String s, Int maximo) {
+        var faltam = maximo - largura(s)
+        if (faltam <= 0) { return s }
+        var espacos = ""
+        for (var i = 0; i < faltam; i = i + 1) {
+            espacos = espacos + " "
+        }
+        return espacos + s
+    }
+
+    static String centrar(String s, Int maximo) {
+        var faltam = maximo - largura(s)
+        if (faltam <= 0) { return s }
+        var esquerda = faltam / 2
+        var direita = faltam - esquerda
+        var e = ""
+        var d = ""
+        for (var i = 0; i < esquerda; i = i + 1) { e = e + " " }
+        for (var i = 0; i < direita; i = i + 1) { d = d + " " }
+        return e + s + d
+    }
+
+    static String cortar(String s, Int maximo) {
+        if (maximo <= 0) { return "" }
+        if (largura(s) <= maximo) { return s }
+        var saida = ""
+        var total = 0
+        for (var i = 0; i < s.length; i = i + 1) {
+            var c = s.charAt(i)
+            var peso = 1
+            if ((c >= 0x1F300 && c <= 0x1FAFF) || (c >= 0x2600 && c <= 0x27BF)) {
+                peso = 2
+            }
+            if (total + peso > maximo - 1) { break }
+            saida = saida + c
+            total = total + peso
+        }
+        return saida + "…"
+    }
+
+    static List<String> quebrar(String texto, Int larguraMaxima) {
+        var linhas = listOf<String>()
+        if (texto == null || texto.length == 0) {
+            linhas.add("")
+            return linhas
+        }
+        var atual = ""
+        for (var palavra in texto.split(" ")) {
+            var candidata = atual + " " + palavra
+            if (atual.length == 0) { candidata = palavra }
+            if (largura(candidata) > larguraMaxima && atual.length > 0) {
+                linhas.add(atual)
+                atual = palavra
+            } else {
+                atual = candidata
+            }
+        }
+        if (atual.length > 0) { linhas.add(atual) }
+        return linhas
+    }
+
+    static String divisor(Int largura, String cor) {
+        var linha = ""
+        for (var i = 0; i < largura; i = i + 1) {
+            linha = linha + "─"
+        }
+        return cor + linha + Tema.RESET
+    }
+
+    static String cabecalho(String titulo, Int largura) {
+        return Tema.destaque(titulo) + "\n" + divisor(largura, Tema.BORDA_SUAVE)
+    }
+}

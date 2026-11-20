@@ -1,0 +1,144 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaDesafios {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = DesafiosApi.pagina(DesafiosApi(this.cliente).listar(null, 20)).items
+            var desafios = listOf<Desafio>()
+            if (itens != null) { desafios = itens }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("desafios"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < desafios.size(); i = i + 1) {
+                println(Lista.item(this.titulo(desafios.get(i)), this.resumo(desafios.get(i))))
+                opcoes.add(this.titulo(desafios.get(i)))
+            }
+            if (desafios.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhum desafio rolando")))
+            }
+            opcoes.add("criar desafio")
+            var escolha = Entrada.menu("desafios", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < desafios.size()) {
+                this.abrir(desafios.get(escolha))
+            } else {
+                this.criar()
+            }
+        }
+    }
+
+    void abrir(Desafio d) {
+        var api = DesafiosApi(this.cliente)
+        var atual = DesafiosApi.unico(api.obter(d.id))
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartao(atual)))
+            var itens = DesafiosApi.participacoesDe(api.participacoes(atual.id, null, 20))
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("ninguém participou ainda")))
+            }
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                var p = itens.get(i)
+                var autor = ""
+                if (p.author != null && p.author.name != null) { autor = p.author.name }
+                var aplausos = ""
+                if (p.cheers != null) { aplausos = String.valueOf(p.cheers) + " aplausos" }
+                println(Lista.item(autor, aplausos))
+            }
+            var escolha = Entrada.menu(this.titulo(atual),
+                listOf("participar", "aplaudir participação"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                var conteudo = Entrada.textoObrigatorio("sua participação")
+                this.avisar(api.participar(atual.id, conteudo), "participação enviada")
+            } else {
+                if (itens.size() == 0) {
+                    println(Tema.mudo("sem participações para aplaudir"))
+                    Entrada.pausar()
+                } else {
+                    var opcoes = listOf<String>()
+                    for (var i = 0; i < itens.size(); i = i + 1) {
+                        var autor = ""
+                        var autorDoItem = itens.get(i).author
+                        if (autorDoItem != null && autorDoItem.name != null) {
+                            autor = autorDoItem.name
+                        }
+                        opcoes.add(autor)
+                    }
+                    var alvo = Entrada.menu("aplaudir", opcoes, "voltar")
+                    if (alvo >= 0) {
+                        this.avisar(api.aplaudir(itens.get(alvo).id), "aplauso enviado")
+                    }
+                }
+            }
+        }
+    }
+
+    void criar() {
+        var titulo = Entrada.textoObrigatorio("título do desafio")
+        var descricao = Entrada.textoObrigatorio("descrição")
+        this.avisar(DesafiosApi(this.cliente).publicar(titulo, descricao), "desafio criado")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String titulo(Desafio d) {
+        if (d.title != null) { return d.title }
+        return d.id
+    }
+
+    String resumo(Desafio d) {
+        var texto = ""
+        if (d.participacoes != null) { texto = String.valueOf(d.participacoes) + " participações" }
+        if (d.status != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + d.status
+        }
+        if (d.endsAt != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "até " + d.endsAt
+        }
+        return texto
+    }
+
+    String cartao(Desafio d) {
+        var texto = this.titulo(d)
+        if (d.description != null) { texto = texto + "\n" + d.description }
+        var autor = ""
+        if (d.author != null && d.author.name != null) { autor = "por " + d.author.name }
+        if (autor.length > 0) { texto = texto + "\n" + Tema.suave(autor) }
+        var rodape = this.resumo(d)
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.mudo(rodape) }
+        return texto
+    }
+}

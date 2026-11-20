@@ -1,0 +1,90 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class AgendaApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta agenda(String de, String ate) {
+        return this.cliente.get("/calendar/entries" + Consulta.query(listOf(
+            Consulta.par("from", de),
+            Consulta.par("to", ate))))
+    }
+
+    Resposta obter(String entradaId) {
+        return this.cliente.get("/calendar/entries/" + ConsultaTextos.caminho(entradaId))
+    }
+
+    Resposta criar(String titulo, String comecaEm, String terminaEm) {
+        return this.cliente.post("/calendar/entries",
+            json.encode(mapOf("title", titulo, "startsAt", comecaEm, "endsAt", terminaEm)))
+    }
+
+    Resposta editar(String entradaId, String titulo, String comecaEm, String terminaEm) {
+        return this.cliente.patch("/calendar/entries/" + ConsultaTextos.caminho(entradaId),
+            json.encode(mapOf("title", titulo, "startsAt", comecaEm, "endsAt", terminaEm)))
+    }
+
+    Resposta cancelar(String entradaId) {
+        return this.cliente.delete("/calendar/entries/" + ConsultaTextos.caminho(entradaId))
+    }
+
+    Resposta recorrencia(String entradaId, String cadencia) {
+        return this.cliente.post("/calendar/entries/" + ConsultaTextos.caminho(entradaId)
+            + "/series", json.encode(mapOf("recurrence", cadencia)))
+    }
+
+    Resposta convidar(String entradaId, String usuario) {
+        return this.cliente.post("/calendar/entries/" + ConsultaTextos.caminho(entradaId)
+            + "/participants", json.encode(mapOf("username", usuario)))
+    }
+
+    Resposta participantes(String entradaId) {
+        return this.cliente.get("/calendar/entries/" + ConsultaTextos.caminho(entradaId)
+            + "/participants")
+    }
+
+    Resposta responder(String entradaId, String estado) {
+        return this.cliente.patch("/calendar/entries/" + ConsultaTextos.caminho(entradaId)
+            + "/participants/me", json.encode(mapOf("state", estado)))
+    }
+
+    Resposta pendentes() {
+        return this.cliente.get("/calendar/invitations")
+    }
+
+    static List<ItemAgenda> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<ItemAgenda>() }
+        try {
+            return json.decode<List<ItemAgenda>>(r.corpo)
+        } catch (String e) {
+            return listOf<ItemAgenda>()
+        }
+    }
+
+    static DetalheAgenda detalheDe(Resposta r) {
+        var vazio = DetalheAgenda(null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<DetalheAgenda>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<ParticipanteAgenda> participantesDe(Resposta r) {
+        if (!r.ok()) { return listOf<ParticipanteAgenda>() }
+        try {
+            return json.decode<List<ParticipanteAgenda>>(r.corpo)
+        } catch (String e) {
+            return listOf<ParticipanteAgenda>()
+        }
+    }
+}

@@ -1,0 +1,64 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class CarteiraApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta saldo() {
+        return this.cliente.get("/carteira")
+    }
+
+    Resposta extrato(Int pagina, Int tamanho) {
+        return this.cliente.get("/carteira/extrato" + Consulta.query(listOf(
+            Consulta.par("page", Consulta.numero(pagina)),
+            Consulta.par("size", Consulta.numero(tamanho)))))
+    }
+
+    Resposta cotacao(Int historico) {
+        return this.cliente.get("/coin/cotacao" + Consulta.par("historico", Consulta.numero(historico)))
+    }
+
+    Resposta transferir(String usuario, Int valor) {
+        return this.cliente.post("/carteira/transferencias",
+            json.encode(mapOf("toUsername", usuario, "amount", Consulta.numero(valor))))
+    }
+
+    static Carteira carteiraDe(Resposta r) {
+        var vazia = Carteira(null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazia }
+        try {
+            return json.decode<Carteira>(r.corpo)
+        } catch (String e) {
+            return vazia
+        }
+    }
+
+    static List<Lancamento> extratoDe(Resposta r) {
+        if (!r.ok()) { return listOf<Lancamento>() }
+        try {
+            var pagina = json.decode<Extrato>(r.corpo)
+            if (pagina.entries == null) { return listOf<Lancamento>() }
+            return pagina.entries
+        } catch (String e) {
+            return listOf<Lancamento>()
+        }
+    }
+
+    static Cotacao cotacaoDe(Resposta r) {
+        var vazia = Cotacao(null, null, null, null, null)
+        if (!r.ok()) { return vazia }
+        try {
+            return json.decode<Cotacao>(r.corpo)
+        } catch (String e) {
+            return vazia
+        }
+    }
+}

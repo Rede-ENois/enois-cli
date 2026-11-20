@@ -1,0 +1,140 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaAgenda {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = AgendaApi.listaDe(AgendaApi(this.cliente).agenda("", ""))
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("agenda"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                var item = itens.get(i)
+                println(Lista.item(this.titulo(item), this.resumo(item)))
+                opcoes.add(this.titulo(item))
+            }
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nada na sua agenda")))
+            }
+            opcoes.add("novo compromisso")
+            var escolha = Entrada.menu("agenda", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < itens.size()) {
+                this.abrir(itens.get(escolha))
+            } else {
+                this.criar()
+            }
+        }
+    }
+
+    void abrir(ItemAgenda item) {
+        var entrada = item.entry
+        if (entrada == null) { return }
+        var api = AgendaApi(this.cliente)
+        print(Ansi.LIMPAR)
+        println(Caixa.simples(this.cartao(entrada)))
+        var detalhe = AgendaApi.detalheDe(api.obter(entrada.id))
+        var participantes = listOf<ParticipanteAgenda>()
+        if (detalhe.participants != null) { participantes = detalhe.participants }
+        if (participantes.size() > 0) {
+            println(Tema.suave("participantes"))
+            for (var i = 0; i < participantes.size(); i = i + 1) {
+                var p = participantes.get(i)
+                var nome = ""
+                if (p.username != null) { nome = "@" + p.username }
+                var estado = ""
+                if (p.state != null) { estado = p.state }
+                println(Lista.item(nome, estado))
+            }
+        }
+        var opcoes = listOf("confirmar presença", "recusar", "convidar")
+        if ("" + item.owner == "true") { opcoes.add("cancelar compromisso") }
+        var escolha = Entrada.menu(this.titulo(item), opcoes, "voltar")
+        if (escolha < 0) { return }
+        var acao = opcoes.get(escolha)
+        if (acao == "confirmar presença") {
+            this.avisar(api.responder(entrada.id, "ACCEPTED"), "presença confirmada")
+        } else if (acao == "recusar") {
+            this.avisar(api.responder(entrada.id, "DECLINED"), "convite recusado")
+        } else if (acao == "convidar") {
+            var usuario = Entrada.textoObrigatorio("usuário")
+            this.avisar(api.convidar(entrada.id, usuario), "convite enviado")
+        } else if (acao == "cancelar compromisso") {
+            if (Entrada.confirmar("cancelar " + this.titulo(item) + "?")) {
+                this.avisar(api.cancelar(entrada.id), "compromisso cancelado")
+            }
+        }
+    }
+
+    void criar() {
+        var titulo = Entrada.textoObrigatorio("título")
+        var comeca = Entrada.textoObrigatorio("início (AAAA-MM-DDTHH:MM)")
+        var termina = Entrada.textoObrigatorio("fim (AAAA-MM-DDTHH:MM)")
+        this.avisar(AgendaApi(this.cliente).criar(titulo, comeca, termina), "compromisso criado")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String titulo(ItemAgenda item) {
+        var entrada = item.entry
+        if (entrada != null && entrada.title != null) { return entrada.title }
+        return "compromisso"
+    }
+
+    String resumo(ItemAgenda item) {
+        var entrada = item.entry
+        if (entrada == null) { return "" }
+        var texto = ""
+        if (entrada.startsAt != null) { texto = entrada.startsAt }
+        if (entrada.kind != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + entrada.kind
+        }
+        if (item.participation != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + item.participation
+        }
+        return texto
+    }
+
+    String cartao(Compromisso c) {
+        var texto = ""
+        if (c.title != null) { texto = c.title }
+        if (c.description != null) { texto = texto + "\n" + c.description }
+        if (c.startsAt != null) { texto = texto + "\n" + Tema.suave("de " + c.startsAt) }
+        if (c.endsAt != null) { texto = texto + "\n" + Tema.suave("até " + c.endsAt) }
+        if ("" + c.allDay == "true") { texto = texto + "\n" + Tema.mudo("dia inteiro") }
+        if (c.state != null) { texto = texto + "\n" + Tema.mudo("estado: " + c.state) }
+        if (c.recurrence != null) {
+            texto = texto + "\n" + Tema.mudo("repete: " + c.recurrence)
+        }
+        return texto
+    }
+}

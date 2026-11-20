@@ -1,0 +1,191 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaLoja {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = LojaApi.itensDe(LojaApi(this.cliente).catalogo("new"))
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("loja"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(Lista.item(this.nome(itens.get(i)), this.resumo(itens.get(i))))
+                opcoes.add(this.nome(itens.get(i)))
+            }
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nada à venda agora")))
+            }
+            opcoes.add("coleções")
+            opcoes.add("meu status")
+            var escolha = Entrada.menu("vitrine", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < itens.size()) {
+                this.item(itens.get(escolha))
+            } else if (escolha == itens.size()) {
+                this.colecoes()
+            } else {
+                this.status()
+            }
+        }
+    }
+
+    void item(ItemLoja item) {
+        var api = LojaApi(this.cliente)
+        print(Ansi.LIMPAR)
+        var texto = this.nome(item)
+        if (item.description != null) { texto = texto + "\n" + item.description }
+        texto = texto + "\n" + this.resumo(item)
+        println(Caixa.simples(texto))
+        var opcoes = listOf<String>()
+        if ("" + item.owned == "true") {
+            if ("" + item.equipped == "true") {
+                opcoes.add("desequipar")
+            } else {
+                opcoes.add("equipar")
+            }
+        } else if ("" + item.purchasable == "true") {
+            opcoes.add("comprar")
+        }
+        if (opcoes.size() == 0) {
+            println(Tema.mudo("indisponível"))
+            Entrada.pausar()
+            return
+        }
+        var escolha = Entrada.menu(this.nome(item), opcoes, "voltar")
+        if (escolha < 0) { return }
+        var acao = opcoes.get(escolha)
+        if (acao == "comprar") { this.avisar(api.comprar(item.id), "item comprado") }
+        if (acao == "equipar") { this.avisar(api.equipar(item.id), "item equipado") }
+        if (acao == "desequipar") { this.avisar(api.desequipar(item.id), "item removido") }
+    }
+
+    void colecoes() {
+        var api = LojaApi(this.cliente)
+        var colecoes = LojaApi.colecoesDe(api.colecoes())
+        if (colecoes.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhuma coleção aberta")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < colecoes.size(); i = i + 1) {
+            var c = colecoes.get(i)
+            var nome = ""
+            if (c.name != null) { nome = c.name }
+            println(Lista.item(nome, this.janela(c)))
+            opcoes.add(nome)
+        }
+        var escolha = Entrada.menu("coleções", opcoes, "voltar")
+        if (escolha < 0) { return }
+        this.looks(colecoes.get(escolha))
+    }
+
+    void looks(LojaColecao colecao) {
+        var api = LojaApi(this.cliente)
+        if (colecao.looks == null || colecao.looks.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem looks nesta coleção")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < colecao.looks.size(); i = i + 1) {
+            var look = colecao.looks.get(i)
+            var titulo = ""
+            if (look.title != null) { titulo = look.title }
+            var estado = ""
+            if ("" + look.equipped == "true") { estado = "equipado" }
+            else if ("" + look.owned == "true") { estado = "seu" }
+            println(Lista.item(titulo, estado))
+            opcoes.add(titulo)
+        }
+        var escolha = Entrada.menu("looks", opcoes, "voltar")
+        if (escolha < 0) { return }
+        var look = colecao.looks.get(escolha)
+        var acoes = listOf<String>()
+        if ("" + look.owned == "true") {
+            if ("" + look.equipped == "true") {
+                acoes.add("desequipar")
+            } else {
+                acoes.add("equipar")
+            }
+        } else if ("" + colecao.available == "true") {
+            acoes.add("comprar")
+        }
+        if (acoes.size() == 0) {
+            println(Tema.mudo("indisponível"))
+            Entrada.pausar()
+            return
+        }
+        var acao = Entrada.menu("look", acoes, "voltar")
+        if (acao < 0) { return }
+        var escolhida = acoes.get(acao)
+        if (escolhida == "comprar") { this.avisar(api.comprarLook(look.id), "look comprado") }
+        if (escolhida == "equipar") { this.avisar(api.equiparLook(look.id), "look equipado") }
+        if (escolhida == "desequipar") { this.avisar(api.desequiparLook(look.id), "look removido") }
+    }
+
+    void status() {
+        var texto = Entrada.textoObrigatorio("texto do status")
+        var icone = Entrada.texto("ícone (opcional)")
+        this.avisar(LojaApi(this.cliente).meuStatus(texto, icone), "status atualizado")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String nome(ItemLoja item) {
+        if (item.name != null) { return item.name }
+        return item.id
+    }
+
+    String resumo(ItemLoja item) {
+        var texto = ""
+        if (item.priceMf != null) { texto = String.valueOf(item.priceMf) + " faíscas" }
+        if (item.kind != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + item.kind
+        }
+        if ("" + item.equipped == "true") { texto = texto + " · equipado" }
+        else if ("" + item.owned == "true") { texto = texto + " · seu" }
+        return texto
+    }
+
+    String janela(LojaColecao colecao) {
+        if (colecao.available != null && "" + colecao.available == "false") { return "fechada" }
+        if (colecao.windows == null || colecao.windows.size() == 0) { return "" }
+        var janela = colecao.windows.get(0)
+        var texto = ""
+        if (janela.start != null) { texto = janela.start }
+        if (janela.end != null) {
+            if (texto.length > 0) { texto = texto + " até " }
+            texto = texto + janela.end
+        }
+        return texto
+    }
+}

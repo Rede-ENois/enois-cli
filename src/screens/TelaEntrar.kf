@@ -1,0 +1,54 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Config
+import core.Entrada
+import core.Sessao
+import core.Tema
+import ui.Caixa
+import ui.Menu
+
+class TelaEntrar {
+
+    Cliente cliente
+    Config config
+    Sessao sessao
+
+    public constructor(Cliente cliente, Config config, Sessao sessao) {
+        this.cliente = cliente
+        this.config = config
+        this.sessao = sessao
+    }
+
+    Bool executar() {
+        print(Ansi.LIMPAR)
+        println(Menu.topo("énois", ""))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Caixa.simples(Tema.destaque("entrar") + "\n" + Tema.suave("alvo: " + this.config.alvo + " · " + this.config.urlApi)))
+        var email = Entrada.textoObrigatorio("e-mail")
+        var senha = Entrada.secreta("senha")
+        println(Tema.mudo("conectando…"))
+        var resultado = this.cliente.entrar(email, senha)
+        if (resultado.startsWith("2fa:")) {
+            var desafio = resultado.substring(4)
+            println(Tema.alerta("segundo fator exigido"))
+            var codigo = Entrada.textoObrigatorio("código do autenticador")
+            resultado = this.cliente.verificar2fa(desafio, codigo)
+        }
+        if (!resultado.startsWith("ok")) {
+            println(Tema.erro(resultado.substring(5)))
+            Entrada.pausar()
+            return false
+        }
+        var nome = ""
+        if (this.sessao.usuario != null) { nome = this.sessao.usuario.nome }
+        println(Tema.ok("entrou como " + nome))
+        return true
+    }
+
+    void provarFeed() {
+        TelaFeed(this.cliente).executar()
+    }
+}

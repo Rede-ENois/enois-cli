@@ -1,0 +1,119 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaModeracao {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("moderação"))
+            var estado = ModeracaoApi(this.cliente).meuEstado()
+            if (estado.ok()) {
+                println(Caixa.simples(estado.corpo))
+            }
+            var opcoes = listOf("painel de votação", "minhas denúncias")
+            var escolha = Entrada.menu("moderação", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.painel()
+            } else {
+                this.minhas()
+            }
+        }
+    }
+
+    void painel() {
+        var itens = ModeracaoApi.painelDe(ModeracaoApi(this.cliente).meusRelatos())
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("painel de votação"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nada na fila de moderação")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var p = itens.get(i)
+            opcoes.add(this.texto(p.reason) + " · " + this.votos(p))
+            println(Lista.item(this.texto(p.reason), this.votos(p)))
+        }
+        var escolha = Entrada.menu("denúncia", opcoes, "voltar")
+        if (escolha < 0) { return }
+        this.analisar(itens.get(escolha))
+    }
+
+    void analisar(DenunciaPainel p) {
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("denúncia · " + this.texto(p.reason)))
+        println(Tema.mudo("alvo " + this.texto(p.targetType) + " · autor " + this.texto(p.author)))
+        if (p.content != null) { println(Caixa.simples(p.content)) }
+        if (p.description != null) { println(Tema.suave(p.description)) }
+        println(Tema.mudo(this.votos(p) + " · seu voto: " + this.texto(p.myVote)))
+        var voto = Entrada.menu("seu voto", listOf("punir", "arquivar"), "voltar")
+        if (voto < 0) { return }
+        var nota = Entrada.texto("nota da decisão")
+        var id = this.texto(p.reportId)
+        var r = ModeracaoApi(this.cliente).votarDenuncia(id, voto == 0, nota)
+        if (r.ok()) {
+            println(Tema.ok(r.corpo))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void minhas() {
+        var itens = ModeracaoApi.denunciasDe(ModeracaoApi(this.cliente).minhasDenuncias())
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("minhas denúncias"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("você não denunciou nada")))
+            Entrada.pausar()
+            return
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var d = itens.get(i)
+            println(Lista.item(this.texto(d.reason), this.texto(d.status)))
+            if (d.description != null) { println("  " + Tema.suave(d.description)) }
+            println("  " + Tema.mudo(this.texto(d.targetType) + " · " + this.texto(d.createdAt)))
+        }
+        Entrada.pausar()
+    }
+
+    String votos(DenunciaPainel p) {
+        var texto = ""
+        if (p.punishVotes != null) { texto = String.valueOf(p.punishVotes) + " punir" }
+        if (p.dismissVotes != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(p.dismissVotes) + " arquivar"
+        }
+        if (p.quorum != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "quórum " + String.valueOf(p.quorum)
+        }
+        return texto
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+}

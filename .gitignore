@@ -1,0 +1,8 @@
+# artefatos de build do kof
+build/
+*.jar
+*.class
+
+# estado local do CLI (nunca versionar sessão/config)
+*.local.kf
+enois-cli.config.json

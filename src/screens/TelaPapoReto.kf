@@ -1,0 +1,87 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaPapoReto {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = PapoRetoApi.assuntosDe(PapoRetoApi(this.cliente).publicacoes("", "24h"))
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("papo reto"))
+            println(Tema.mudo("do que a rede está falando agora"))
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("sem assunto quente nas últimas horas")))
+                Entrada.pausar()
+                return
+            }
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                var a = itens.get(i)
+                var assunto = this.texto(a.subject)
+                println(Lista.item(assunto, this.resumo(a)))
+                opcoes.add(assunto)
+            }
+            var escolha = Entrada.menu("assuntos", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else {
+                var escolhido = itens.get(escolha)
+                var assunto = this.texto(escolhido.subject)
+                this.linhaDoTempo(assunto)
+            }
+        }
+    }
+
+    void linhaDoTempo(String assunto) {
+        var itens = PapoRetoApi.timelineDe(PapoRetoApi(this.cliente).linhaDoTempo(assunto, "24h"))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("linha do tempo · " + assunto))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem falas neste assunto")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var p = itens.get(i)
+            var hora = this.texto(p.hora)
+            var falas = ""
+            if (p.falas != null) { falas = String.valueOf(p.falas) + " falas" }
+            println(Lista.item(hora, falas))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor) {
+        if (valor != null) { return valor }
+        return ""
+    }
+
+    String resumo(ReclameAssunto a) {
+        var texto = ""
+        if (a.pontuacao != null) { texto = String.valueOf(a.pontuacao) + " de calor" }
+        if (a.pessoas != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(a.pessoas) + " pessoas"
+        }
+        if (a.crescimento != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "crescendo " + String.valueOf(a.crescimento)
+        }
+        return texto
+    }
+}

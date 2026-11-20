@@ -1,0 +1,73 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ColecoesApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? cursor, Int limite) {
+        return this.cliente.get("/colecoes" + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta obter(String colecaoId) {
+        return this.cliente.get("/colecoes/" + ConsultaTextos.caminho(colecaoId))
+    }
+
+    Resposta criar(String nome, String? descricao) {
+        return this.cliente.post("/colecoes",
+            json.encode(mapOf("name", nome, "description", descricao)))
+    }
+
+    Resposta editar(String colecaoId, String nome, String? descricao) {
+        return this.cliente.patch("/colecoes/" + ConsultaTextos.caminho(colecaoId),
+            json.encode(mapOf("name", nome, "description", descricao)))
+    }
+
+    Resposta apagar(String colecaoId) {
+        return this.cliente.delete("/colecoes/" + ConsultaTextos.caminho(colecaoId))
+    }
+
+    Resposta minhas(String postId) {
+        return this.cliente.get("/colecoes/minhas" + Consulta.par("postId", postId))
+    }
+
+    Resposta posts(String colecaoId, String? cursor, Int limite) {
+        return this.cliente.get("/colecoes/" + ConsultaTextos.caminho(colecaoId)
+            + "/posts" + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta guardarPost(String colecaoId, String postId) {
+        return this.cliente.post("/colecoes/" + ConsultaTextos.caminho(colecaoId) + "/posts",
+            json.encode(mapOf("postId", postId)))
+    }
+
+    Resposta tirarPost(String colecaoId, String postId) {
+        return this.cliente.delete("/colecoes/" + ConsultaTextos.caminho(colecaoId)
+            + "/posts/" + ConsultaTextos.caminho(postId))
+    }
+
+    static PaginaColecaoPosts paginaPosts(Resposta r) {
+        if (!r.ok()) { return PaginaColecaoPosts(listOf<ColecaoPost>(), null) }
+        try {
+            return json.decode<PaginaColecaoPosts>(r.corpo)
+        } catch (String e) {
+            return PaginaColecaoPosts(listOf<ColecaoPost>(), null)
+        }
+    }
+
+    static PaginaColecoes pagina(Resposta r) {
+        if (!r.ok()) { return PaginaColecoes(listOf<Colecao>(), null) }
+        try {
+            return json.decode<PaginaColecoes>(r.corpo)
+        } catch (String e) {
+            return PaginaColecoes(listOf<Colecao>(), null)
+        }
+    }
+}

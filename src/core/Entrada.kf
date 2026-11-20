@@ -1,0 +1,90 @@
+package core
+
+class Entrada {
+
+    static Bool ativa = true
+
+    static String linha() {
+        var bruto = readLine()
+        if (bruto == null) {
+            Entrada.ativa = false
+            return ""
+        }
+        return bruto
+    }
+
+    static Int menu(String titulo, List<String> opcoes, String rotuloSaida) {
+        var n = opcoes.size()
+        println(Tema.destaque(titulo))
+        for (var i = 0; i < n; i = i + 1) {
+            println("  " + Ansi.padEsquerda(String.valueOf(i + 1), 2) + ". " + opcoes.get(i))
+        }
+        println("  " + Ansi.padEsquerda("0", 2) + ". " + Tema.suave(rotuloSaida))
+        var digitado = Entrada.numero("Sua escolha", 0, n)
+        if (digitado <= 0) { return -1 }
+        return digitado - 1
+    }
+
+    static Int numero(String pergunta, Int minimo, Int maximo) {
+        while (Entrada.ativa) {
+            println(Tema.suave(pergunta + " [" + String.valueOf(minimo) + "-" + String.valueOf(maximo) + "]:"))
+            var texto = Entrada.linha().trim()
+            if (texto.length == 0) { continue }
+            var n = -1
+            var valido = true
+            try {
+                n = Integer.parseInt(texto)
+            } catch (String e) {
+                valido = false
+            }
+            if (!valido || n < minimo || n > maximo) {
+                println(Tema.erro("  Escolha um número entre " + String.valueOf(minimo) + " e " + String.valueOf(maximo) + "."))
+                continue
+            }
+            return n
+        }
+        return -1
+    }
+
+    static String texto(String rotulo) {
+        println(Tema.suave(rotulo + ":"))
+        return Entrada.linha().trim()
+    }
+
+    static String textoObrigatorio(String rotulo) {
+        while (Entrada.ativa) {
+            var t = Entrada.texto(rotulo)
+            if (t.length > 0) { return t }
+            println(Tema.erro("  Este campo não pode ficar vazio."))
+        }
+        return ""
+    }
+
+    static String secreta(String rotulo) {
+        println(Tema.suave(rotulo + ":"))
+        var bruto = Entrada.linha()
+        var visivel = ""
+        for (var i = 0; i < bruto.length; i = i + 1) {
+            visivel = visivel + "•"
+        }
+        println("  " + Tema.mudo(visivel))
+        return bruto.trim()
+    }
+
+    static Bool confirmar(String pergunta) {
+        while (Entrada.ativa) {
+            println(Tema.suave(pergunta + " [s/n]:"))
+            var t = Entrada.linha().trim().toLowerCase()
+            if (t.length == 0) { return false }
+            if (t == "s" || t == "sim" || t == "y" || t == "yes") { return true }
+            if (t == "n" || t == "nao" || t == "não" || t == "no") { return false }
+            println(Tema.erro("  Responda s (sim) ou n (não)."))
+        }
+        return false
+    }
+
+    static void pausar() {
+        println(Tema.mudo("  pressione ENTER para continuar…"))
+        Entrada.linha()
+    }
+}

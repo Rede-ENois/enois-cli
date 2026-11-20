@@ -1,0 +1,65 @@
+package core
+
+import kof.json
+
+class Resposta {
+
+    Int codigo
+    String corpo
+    String headers
+
+    public constructor(Int codigo, String corpo, String headers) {
+        this.codigo = codigo
+        this.corpo = corpo
+        this.headers = headers
+    }
+
+    Bool ok() {
+        return this.codigo >= 200 && this.codigo < 300
+    }
+
+    Map<String, String> comoMapa() {
+        if (this.corpo.length == 0) { return mapOf() }
+        return json.decode<Map>(this.corpo)
+    }
+
+    String headersComoTexto() {
+        return this.headers
+    }
+
+    String header(String nome) {
+        var alvo = nome.toLowerCase()
+        for (var linha in this.headers.split("\n")) {
+            var l = linha.trim()
+            var p = l.indexOf(":")
+            if (p <= 0) { continue }
+            var chave = l.substring(0, p).trim().toLowerCase()
+            if (chave == alvo) {
+                return l.substring(p + 1).trim()
+            }
+        }
+        return ""
+    }
+
+    String codigoDeErro() {
+        if (this.ok()) { return "" }
+        var m = this.comoMapa()
+        var c = m.get("code")
+        if (c == null) { return "" }
+        return c
+    }
+
+    String mensagem() {
+        var m = this.comoMapa()
+        var msg = m.get("message")
+        if (msg == null) {
+            if (this.codigo == 401) { return "sessão expirada — entre de novo" }
+            if (this.codigo == 403) { return "sem permissão para isso" }
+            if (this.codigo == 404) { return "não encontrado" }
+            if (this.codigo == 429) { return "muitas tentativas — espera um pouco" }
+            if (this.codigo == 0) { return "não foi possível conectar ao servidor" }
+            return "erro " + this.codigo
+        }
+        return msg
+    }
+}

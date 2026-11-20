@@ -1,0 +1,172 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaFeed {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var r = FeedApi(this.cliente).listar(null, 10)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            if (!r.ok()) {
+                println(Tema.erro(r.mensagem()))
+                Entrada.pausar()
+                return
+            }
+            var pagina = FeedApi.paginaFeed(r)
+            var itens = pagina.items
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            if (itens == null || itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("feed vazio — siga alguém pelo Explorar")))
+                Entrada.pausar()
+                return
+            }
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(this.card(itens.get(i)))
+            }
+            var proximo = ""
+            if (pagina.nextCursor != null) { proximo = pagina.nextCursor }
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                opcoes.add(this.resumo(itens.get(i)))
+            }
+            if (proximo.length > 0) { opcoes.add("carregar mais") }
+            var escolha = Entrada.menu("feed", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == itens.size()) {
+                r = FeedApi(this.cliente).listar(proximo, 10)
+            } else {
+                TelaPost(this.cliente).executar(itens.get(escolha))
+                r = FeedApi(this.cliente).listar(null, 10)
+            }
+        }
+    }
+
+    String resumo(PostResumo p) {
+        var quem = ""
+        if (p.authorName != null) { quem = p.authorName + ": " }
+        var trecho = ""
+        if (p.content != null) { trecho = p.content }
+        if (trecho.length > 48) { trecho = trecho.substring(0, 48) + "…" }
+        if (trecho.length == 0) { trecho = "(mídia)" }
+        return quem + trecho
+    }
+
+    String card(PostResumo p) {
+        var conteudo = this.linhaAutor(p)
+        var corpo = this.corpo(p)
+        if (corpo.length > 0) { conteudo = conteudo + "\n" + corpo }
+        conteudo = conteudo + "\n" + this.linhaRodape(p)
+        var linhas = Caixa.cartao(conteudo)
+        var saida = ""
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            if (i > 0) { saida = saida + "\n" }
+            saida = saida + linhas.get(i)
+        }
+        return saida
+    }
+
+    String corpo(PostResumo p) {
+        var corpo = ""
+        if (p.content != null) { corpo = p.content }
+        if ("" + p.repostWithOpinion == "true" && p.repostOfContent != null) {
+            corpo = corpo + "\n" + Tema.mudo("↳ " + p.repostOfContent)
+        }
+        return corpo
+    }
+
+    String linhaAutor(PostResumo p) {
+        var nome = ""
+        if (p.authorName != null) { nome = p.authorName }
+        if (p.authorUsername != null) { nome = nome + " @" + p.authorUsername }
+        var extras = ""
+        if (p.authorBadge != null && p.authorBadge.length > 0) {
+            extras = extras + " · " + p.authorBadge
+        }
+        if (p.type != null && p.type.length > 0) {
+            extras = extras + " · " + Tema.suave(tipoEmTexto(p.type))
+        }
+        var linha = Tema.destaque(nome + extras)
+        if (p.repostOfAuthor != null && p.repostOfAuthor.length > 0) {
+            linha = Tema.mudo("↻ @" + p.repostOfAuthor) + "\n" + linha
+        }
+        return linha
+    }
+
+    String linhaRodape(PostResumo p) {
+        var reacoes = 0
+        var comentarios = 0
+        if (p.counters != null) {
+            var c = p.counters
+            if (c.reactions != null) { reacoes = c.reactions }
+            if (c.comments != null) { comentarios = c.comments }
+        }
+        var rodape = Tema.suave("♥ " + String.valueOf(reacoes) + "   💬 " + String.valueOf(comentarios))
+        if (p.poll != null) {
+            rodape = rodape + "\n" + this.linhaEnquete(p.poll)
+        }
+        return rodape
+    }
+
+    String linhaEnquete(Enquete e) {
+        var opcoes = e.options
+        if (opcoes == null || opcoes.size() == 0) { return "" }
+        var total = 0
+        if (e.totalVotes != null) { total = e.totalVotes }
+        var linhas = ""
+        for (var i = 0; i < opcoes.size(); i = i + 1) {
+            var votos = 0
+            if (e.counts != null && i < e.counts.size()) { votos = e.counts.get(i) }
+            var fatia = 0
+            if (total > 0) { fatia = (votos * 20) / total }
+            var barra = ""
+            for (var b = 0; b < 20; b = b + 1) {
+                if (b < fatia) {
+                    barra = barra + "█"
+                } else {
+                    barra = barra + "░"
+                }
+            }
+            linhas = linhas + Tema.suave(barra + " " + String.valueOf(votos)) + " " + opcoes.get(i) + "\n"
+        }
+        var resumo = Tema.mudo(String.valueOf(total) + " votos")
+        if (linhas.length > 0) { resumo = linhas + resumo }
+        return resumo
+    }
+
+    static String tipoEmTexto(String tipo) {
+        if (tipo == "INSIGHT") { return "insight" }
+        if (tipo == "ARTICLE") { return "artigo" }
+        if (tipo == "QUESTION") { return "pergunta" }
+        if (tipo == "PROJECT") { return "projeto" }
+        if (tipo == "OPPORTUNITY") { return "oportunidade" }
+        if (tipo == "PAGE") { return "página" }
+        if (tipo == "NEWS") { return "notícia" }
+        if (tipo == "TUTORIAL") { return "tutorial" }
+        if (tipo == "REVIEW") { return "resenha" }
+        if (tipo == "BUSINESS") { return "profissional" }
+        if (tipo == "DIVERTIDO") { return "divertido" }
+        if (tipo == "MOMENT") { return "momento" }
+        if (tipo == "INSTANTE") { return "instante" }
+        if (tipo == "BLOG") { return "blog" }
+        if (tipo == "POLL") { return "enquete" }
+        if (tipo == "COMPLAINT") { return "reclamação" }
+        return tipo
+    }
+}

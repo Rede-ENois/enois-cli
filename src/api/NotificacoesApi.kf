@@ -1,0 +1,42 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class NotificacoesApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? cursor, Int limite, String contexto) {
+        return this.cliente.get("/notifications" + Consulta.query(listOf(
+            Consulta.pagina(cursor, limite),
+            Consulta.par("context", contexto))))
+    }
+
+    Resposta resumo(String contexto) {
+        return this.cliente.get("/notifications/unread-summary" + Consulta.query(listOf(
+            Consulta.par("context", contexto))))
+    }
+
+    Resposta marcarLida(String id) {
+        return this.cliente.post("/notifications/" + ConsultaTextos.caminho(id) + "/read", "")
+    }
+
+    Resposta marcarTodasLidas() {
+        return this.cliente.post("/notifications/read-all", "")
+    }
+
+    Resposta preferencias() {
+        return this.cliente.get("/me/notification-preferences")
+    }
+
+    static PaginaNotificacao pagina(Resposta r) {
+        if (!r.ok()) { return PaginaNotificacao(listOf(), null) }
+        return json.decode<PaginaNotificacao>(r.corpo)
+    }
+}

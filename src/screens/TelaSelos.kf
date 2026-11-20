@@ -1,0 +1,53 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Sessao
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaSelos {
+
+    Cliente cliente
+    Sessao sessao
+
+    public constructor(Cliente cliente, Sessao sessao) {
+        this.cliente = cliente
+        this.sessao = sessao
+    }
+
+    void executar() {
+        var usuario = ""
+        if (this.sessao.usuario != null) { usuario = this.sessao.usuario.usuario }
+        var itens = SelosApi.selosDe(SelosApi(this.cliente).selosDeUsuario(usuario))
+        print(Ansi.LIMPAR)
+        println(Menu.topo("énois", ""))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Tema.destaque("selos"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum selo conquistado ainda")))
+            Entrada.pausar()
+            return
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var s = itens.get(i)
+            var nome = ""
+            if (s.name != null) { nome = s.name }
+            var categoria = ""
+            if (s.categoryName != null) { categoria = s.categoryName }
+            println(Lista.item(nome, categoria))
+            if (s.description != null) { println("  " + Tema.suave(s.description)) }
+            var evidencia = ""
+            if (s.evidenceCount != null) { evidencia = String.valueOf(s.evidenceCount) }
+            if (s.minCount != null) {
+                evidencia = evidencia + " / " + String.valueOf(s.minCount)
+            }
+            if (evidencia.trim().length > 0) { println("  " + Tema.mudo(evidencia)) }
+        }
+        Entrada.pausar()
+    }
+}

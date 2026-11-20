@@ -1,0 +1,110 @@
+package api
+
+record Vaga(
+    String id,
+    String? title,
+    String? company,
+    String? logo,
+    String? location,
+    String? type,
+    String? level,
+    String? salaryLabel,
+    List<String>? skills,
+    String? postedAt,
+    Int? matchScore,
+    Troolean? applied,
+    Troolean? saved,
+    Troolean? owner,
+    String? description,
+    String? status,
+    Int? applicationsCount,
+    String? companySlug,
+    Long? salaryMin,
+    Long? salaryMax,
+    String? salaryPeriod,
+    Troolean? salaryNotInformed,
+    String? applicationDeadline,
+    String? sourceType,
+    String? sourceUrl
+)
+
+record PaginaVagas(List<Vaga>? items, String? nextCursor)
+
+record Candidatura(String id, String? jobId, String? jobTitle, String? jobCompany, String? status,
+                   String? stageName, String? feedback, String? reviewedAt, String? appliedAt)
+
+record CandidatoResumo(String? userId, String? username, String? name, String? headline,
+                       String? avatar, Int? experienceYears, Int? reputation)
+
+record InscricaoVaga(String id, String? jobId, String? status, String? appliedAt,
+                     Int? answersCount, CandidatoResumo? candidate, String? message,
+                     String? feedback)
+
+record Freela(String id, String? username, String? title, String? scope, Long? budgetMin,
+              Long? budgetMax, String? deadline, String? paymentMethod, String? status,
+              String? createdAt, Troolean? owned)
+
+record PaginaFreelas(List<Freela>? items, String? nextCursor)
+
+record Mentor(String id, String? userId, List<String>? expertise, Double? rating, Int? sessions,
+              String? price, String? banner, Long? sparksPrice, String? roomMode, String? nextSlot)
+
+record PaginaMentores(List<Mentor>? items, String? nextCursor)
+
+record VagaMentor(String id, String? startsAt, String? endsAt, Troolean? available)
+
+record PaginaVagasMentor(List<VagaMentor>? items, String? nextCursor)
+
+record SessaoMentoria(String id, String? mentorId, String? mentorUsername, String? mentorName,
+                      String? mentorAvatar, String? slotId, String? startsAt, String? endsAt,
+                      String? message, String? status, Long? priceSparks, String? roomUrl,
+                      String? roomMode, String? createdAt)
+
+record Compromisso(String id, String? scope, String? kind, String? title, String? description,
+                   String? startsAt, String? endsAt, String? timeZoneId, Troolean? allDay,
+                   String? state, String? sourceType, String? sourceId, String? createdAt,
+                   String? updatedAt, String? cancelledAt, String? seriesId, String? recurrence)
+
+record ItemAgenda(Compromisso? entry, Troolean? owner, String? participation)
+
+record DetalheAgenda(Compromisso? entry, Troolean? owner, String? participation,
+                     List<ParticipanteAgenda>? participants)
+
+record ParticipanteAgenda(String id, String? entryId, String? username, String? state,
+                          String? invitedAt, String? respondedAt)
+
+record Servico(String id, String? username, String? slug, String? title, String? description,
+               String? link, String? category, String? status, String? reviewNote, Troolean? owned)
+
+record OfertaServico(String id, String? sellerId, String? sellerName, String? sellerAvatar,
+                     String? category, String? title, String? description, String? deliverables,
+                     Long? price, String? currency, Int? deliveryDays, String? status,
+                     String? createdAt)
+
+record PedidoServico(String id, String? category, String? title, String? description,
+                     String? deliverables, Long? budgetMin, Long? budgetMax, String? deadline,
+                     String? status, String? createdAt)
+
+record ContratoServico(String id, String? listingId, String? requestId, String? buyerId,
+                       String? sellerId, Long? price, String? escrowState, String? deliverableNote,
+                       String? createdAt, String? acceptedAt)
+
+record VitrineServico(List<OfertaServico>? ofertas, List<PedidoServico>? pedidos)
+
+record PropostaServico(String id, String? requestId, String? userId, String? message, Long? price,
+                       String? status, String? createdAt)
+
+record MeusServicos(List<OfertaServico>? ofertas, List<ContratoServico>? contratosComoComprador,
+                    List<ContratoServico>? contratosComoVendedor)
+
+record ParBusca(String? id, String? nome, String? usuario, String? avatar, String? pedidoId,
+                String? status, String? objetivo, String? assunto)
+
+record ParDupla(String id, String? objetivo, String? comecouEm, String? semana,
+                Troolean? meuCheckin, Troolean? checkinDoPar)
+
+record MetaPopular(String? chave, String? objetivo, Int? buscas)
+
+record MeusPares(ParBusca? pedidoAberto, List<ParDupla>? duplas)
+
+record PaginaPares(List<ParBusca>? items, String? nextCursor)

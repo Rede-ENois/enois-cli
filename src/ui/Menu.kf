@@ -1,0 +1,27 @@
+package ui
+
+import core.Ansi
+import core.Entrada
+import core.Tema
+
+class Menu {
+
+    static String topo(String nomeApp, String usuario) {
+        var largura = Ansi.LARGURA_CONTEUDO
+        var linha = ""
+        linha = linha + Tema.destaque(nomeApp)
+        if (usuario.length > 0) {
+            linha = linha + "  " + Tema.suave("@" + usuario)
+        }
+        return Ansi.padDireita(linha, largura)
+    }
+
+    static Int principal(List<String> opcoes, String rotuloSaida) {
+        return Entrada.menu("menu", opcoes, rotuloSaida)
+    }
+
+    static Int submenu(String titulo, List<String> opcoes, String rotuloSaida) {
+        println("")
+        return Entrada.menu(titulo, opcoes, rotuloSaida)
+    }
+}

@@ -1,0 +1,69 @@
+package core
+
+import kof.json
+
+class Config {
+
+    static String URL_PRODUCAO = "https://api.enois.ia.br/api"
+    static String URL_QA = "https://enois-api-qa.b7cloud.tech/api"
+
+    static String ORIGEM_PRODUCAO = "https://enois.ia.br"
+    static String ORIGEM_QA = "https://enois-qa.b7cloud.tech"
+
+    static String dirEstado() {
+        return "/home/mel/.config/enois-cli"
+    }
+
+    String alvo
+    String urlApi
+    String origem
+
+    public constructor() {
+        this.alvo = "producao"
+        this.urlApi = URL_PRODUCAO
+        this.origem = ORIGEM_PRODUCAO
+    }
+
+    void usaAlvo(String novo) {
+        this.alvo = novo
+        if (novo == "qa") {
+            this.urlApi = URL_QA
+            this.origem = ORIGEM_QA
+        } else {
+            this.urlApi = URL_PRODUCAO
+            this.origem = ORIGEM_PRODUCAO
+        }
+    }
+
+    String comoJson() {
+        return json.encode(mapOf(
+            "alvo", this.alvo,
+            "urlApi", this.urlApi,
+            "origem", this.origem))
+    }
+
+    static Config deMapa(Map<String, String> m) {
+        var c = Config()
+        var alvo = m.get("alvo")
+        if (alvo != null) { c.alvo = alvo }
+        var url = m.get("urlApi")
+        if (url != null) { c.urlApi = url }
+        var origem = m.get("origem")
+        if (origem != null) { c.origem = origem }
+        return c
+    }
+
+    static Config carregar() {
+        var c = Config()
+        var caminho = dirEstado() + "/config.json"
+        var bruto = readFile(caminho)
+        if (bruto == null) { return c }
+        var m = json.decode<Map>(bruto)
+        return deMapa(m)
+    }
+
+    Bool salvar() {
+        File(dirEstado()).mkdirs()
+        return File(dirEstado() + "/config.json").writeText(this.comoJson())
+    }
+}

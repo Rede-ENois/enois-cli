@@ -1,0 +1,73 @@
+package core
+
+class Tema {
+
+    static String RESET = "\u001b[0m"
+    static String NEGRITO = "\u001b[1m"
+    static String APAgada = "\u001b[2m"
+
+    static String FUNDO = "\u001b[48;2;21;17;28m"
+    static String CARTAO = "\u001b[48;2;31;25;41m"
+    static String CARTAO_ALTO = "\u001b[48;2;42;34;53m"
+
+    static String TEXTO = "\u001b[38;2;243;238;247m"
+    static String TEXTO_SUAVE = "\u001b[38;2;185;174;198m"
+    static String TEXTO_MUDO = "\u001b[38;2;114;105;124m"
+
+    static String PRIMARIO = "\u001b[38;2;167;139;250m"
+    static String FUNDO_PRIMARIO = "\u001b[48;2;103;70;245m"
+    static String TEXTO_SO_PRIMARIO = "\u001b[38;2;21;17;28m"
+
+    static String BORDA_SUAVE = "\u001b[38;2;52;41;63m"
+    static String BORDA_FORTE = "\u001b[38;2;143;127;161m"
+
+    static String DESTRUTIVO = "\u001b[38;2;249;128;128m"
+    static String SUCESSO = "\u001b[38;2;110;231;183m"
+    static String AVISO = "\u001b[38;2;251;191;36m"
+    static String INFO = "\u001b[38;2;147;197;253m"
+
+    static String FUNDO_SUCESSO = "\u001b[48;2;6;78;59m"
+    static String FUNDO_AVISO = "\u001b[48;2;69;26;3m"
+    static String FUNDO_DESTRUTIVO = "\u001b[48;2;127;29;29m"
+    static String FUNDO_MUDO = "\u001b[48;2;55;52;60m"
+
+    static String pinta(String estilo, String texto) {
+        return estilo + texto + RESET
+    }
+
+    static String comFundo(String fundo, String estiloTexto, String texto) {
+        return fundo + estiloTexto + texto + RESET
+    }
+
+    static String destaque(String texto) {
+        return NEGRITO + PRIMARIO + texto + RESET
+    }
+
+    static String texto(String conteudo) {
+        return TEXTO + conteudo + RESET
+    }
+
+    static String suave(String texto) {
+        return TEXTO_SUAVE + texto + RESET
+    }
+
+    static String mudo(String texto) {
+        return TEXTO_MUDO + texto + RESET
+    }
+
+    static String erro(String texto) {
+        return NEGRITO + DESTRUTIVO + texto + RESET
+    }
+
+    static String ok(String texto) {
+        return NEGRITO + SUCESSO + texto + RESET
+    }
+
+    static String alerta(String texto) {
+        return NEGRITO + AVISO + texto + RESET
+    }
+
+    static String progresso(String texto) {
+        return NEGRITO + SUCESSO + texto + RESET
+    }
+}

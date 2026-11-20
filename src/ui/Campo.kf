@@ -1,0 +1,32 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+class Campo {
+
+    static String rotulo(String texto) {
+        return Tema.suave(texto + ":")
+    }
+
+    static String valor(String texto, Bool segredo) {
+        if (!segredo) { return Tema.texto(texto) }
+        var visivel = ""
+        for (var i = 0; i < texto.length; i = i + 1) {
+            visivel = visivel + "•"
+        }
+        return Tema.texto(visivel)
+    }
+
+    static String dica(String texto) {
+        return Tema.mudo("  " + texto)
+    }
+
+    static String erro(String texto) {
+        return Tema.erro("  ⚠ " + texto)
+    }
+
+    static String desabilitado(String texto) {
+        return Tema.mudo(texto)
+    }
+}

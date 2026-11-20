@@ -1,0 +1,121 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaMurais {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = MuraisApi.pagina(MuraisApi(this.cliente).listar(null, 20)).items
+            var murais = listOf<Mural>()
+            if (itens != null) { murais = itens }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("murais"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < murais.size(); i = i + 1) {
+                println(Lista.item(this.titulo(murais.get(i)), this.resumo(murais.get(i))))
+                opcoes.add(this.titulo(murais.get(i)))
+            }
+            if (murais.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhum mural criado")))
+            }
+            opcoes.add("criar mural")
+            var escolha = Entrada.menu("murais", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < murais.size()) {
+                this.abrir(murais.get(escolha))
+            } else {
+                this.criar()
+            }
+        }
+    }
+
+    void abrir(Mural m) {
+        var api = MuraisApi(this.cliente)
+        var atual = MuraisApi.unico(api.obter(m.id))
+        print(Ansi.LIMPAR)
+        println(Caixa.simples(this.cartao(atual)))
+        var contribuicoes = MuraisApi.contribuicoesDe(api.contribuicoes(atual.id, null, 20))
+        if (contribuicoes.size() == 0) {
+            println(Caixa.simples(Lista.vazia("mural ainda vazio")))
+        }
+        var posts = listOf<PostResumo>()
+        var opcoes = listOf<String>()
+        for (var i = 0; i < contribuicoes.size(); i = i + 1) {
+            var post = contribuicoes.get(i).post
+            if (post != null) {
+                posts.add(post)
+                var trecho = ""
+                if (post.content != null) { trecho = post.content }
+                if (trecho.length > 56) { trecho = trecho.substring(0, 56) + "…" }
+                println(Lista.item(trecho, ""))
+                opcoes.add(trecho)
+            }
+        }
+        opcoes.add("contribuir com um post")
+        var escolha = Entrada.menu(this.titulo(atual), opcoes, "voltar")
+        if (escolha < 0) { return }
+        if (escolha < posts.size()) {
+            TelaPost(this.cliente).executar(posts.get(escolha))
+        } else {
+            var postId = Entrada.textoObrigatorio("id do post")
+            this.avisar(api.contribuir(atual.id, postId), "post adicionado ao mural")
+        }
+    }
+
+    void criar() {
+        var titulo = Entrada.textoObrigatorio("título do mural")
+        var descricao = Entrada.texto("descrição (opcional)")
+        this.avisar(MuraisApi(this.cliente).criar(titulo, descricao), "mural criado")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String titulo(Mural m) {
+        if (m.title != null) { return m.title }
+        return m.id
+    }
+
+    String resumo(Mural m) {
+        var texto = ""
+        if (m.contributions != null) { texto = String.valueOf(m.contributions) + " posts" }
+        if (m.owner != null && m.owner.name != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "por " + m.owner.name
+        }
+        return texto
+    }
+
+    String cartao(Mural m) {
+        var texto = this.titulo(m)
+        if (m.description != null) { texto = texto + "\n" + m.description }
+        var rodape = this.resumo(m)
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.mudo(rodape) }
+        return texto
+    }
+}

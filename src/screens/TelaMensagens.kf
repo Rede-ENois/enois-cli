@@ -1,0 +1,127 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Sessao
+import core.Tema
+import ui.Badge
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaMensagens {
+
+    Cliente cliente
+    Sessao sessao
+
+    public constructor(Cliente cliente, Sessao sessao) {
+        this.cliente = cliente
+        this.sessao = sessao
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var r = MensagensApi(this.cliente).listar(null, 20, "SOCIAL")
+            if (!r.ok()) {
+                println(Tema.erro(r.mensagem()))
+                Entrada.pausar()
+                return
+            }
+            var pagina = MensagensApi.paginaConversas(r)
+            var itens = pagina.items
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("mensagens"))
+            println("")
+            if (itens == null || itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma conversa — comece uma pelo perfil de alguém")))
+                rodando = false
+            } else {
+                var opcoes = listOf<String>()
+                for (var i = 0; i < itens.size(); i = i + 1) {
+                    opcoes.add(this.titulo(itens.get(i)))
+                }
+                var escolha = Entrada.menu("conversas", opcoes, "voltar")
+                if (escolha < 0) {
+                    rodando = false
+                } else {
+                    var conversa = itens.get(escolha)
+                    this.conversa(conversa.id)
+                }
+            }
+        }
+    }
+
+    String titulo(Conversa c) {
+        var t = ""
+        if (c.title != null && c.title.length > 0) {
+            t = c.title
+        } else {
+            var participantes = c.participantIds
+            if (participantes != null && participantes.size() > 0) {
+                t = participantes.get(0)
+            }
+        }
+        var ultima = ""
+        if (c.lastMessage != null && c.lastMessage.length > 0) {
+            ultima = " — " + c.lastMessage
+        }
+        var naoLida = false
+        if (c.unread != null && c.unread > 0) { naoLida = true }
+        var marca = ""
+        if (naoLida) { marca = Badge.primaria("nova") + " " }
+        return marca + t + Tema.suave(ultima)
+    }
+
+    void conversa(String id) {
+        var meuId = ""
+        if (this.sessao.usuario != null) { meuId = this.sessao.usuario.id }
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var r = MensagensApi(this.cliente).listarMensagens(id, null, 50)
+            if (!r.ok()) {
+                println(Tema.erro(r.mensagem()))
+                Entrada.pausar()
+                return
+            }
+            MensagensApi(this.cliente).marcarLida(id)
+            var pagina = MensagensApi.paginaMensagens(r)
+            var itens = pagina.items
+            print(Ansi.LIMPAR)
+            println(Tema.destaque("conversa"))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            if (itens != null) {
+                for (var i = 0; i < itens.size(); i = i + 1) {
+                    println(this.bolha(itens.get(i), meuId))
+                }
+            }
+            var texto = Entrada.texto("mensagem (vazio para voltar)")
+            if (texto.length == 0 || !Entrada.ativa) {
+                rodando = false
+            } else {
+                var enviada = MensagensApi(this.cliente).enviar(id, texto)
+                if (!enviada.ok()) {
+                    println(Tema.erro(enviada.mensagem()))
+                }
+            }
+        }
+    }
+
+    String bolha(Mensagem m, String meuId) {
+        var texto = ""
+        if ("" + m.e2e == "true") {
+            texto = "🔒 mensagem criptografada"
+        } else if (m.text != null) {
+            texto = m.text
+        }
+        var ehMinha = m.from != null && m.from == meuId && meuId.length > 0
+        if (ehMinha) {
+            return Tema.suave("      " + texto)
+        }
+        return Tema.texto(texto)
+    }
+}

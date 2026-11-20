@@ -1,0 +1,214 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaRoleplay {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = RoleplayApi.pagina(RoleplayApi(this.cliente).listar(null, null, 20)).items
+            var campanhas = listOf<Campanha>()
+            if (itens != null) { campanhas = itens }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("mesa de rpg"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < campanhas.size(); i = i + 1) {
+                println(Lista.item(this.titulo(campanhas.get(i)), this.resumo(campanhas.get(i))))
+                opcoes.add(this.titulo(campanhas.get(i)))
+            }
+            if (campanhas.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma campanha aberta")))
+            }
+            opcoes.add("sistemas")
+            opcoes.add("nova campanha")
+            var escolha = Entrada.menu("campanhas", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < campanhas.size()) {
+                this.abrir(campanhas.get(escolha))
+            } else if (escolha == campanhas.size()) {
+                this.sistemas()
+            } else {
+                this.criar()
+            }
+        }
+    }
+
+    void abrir(Campanha c) {
+        var api = RoleplayApi(this.cliente)
+        var atual = RoleplayApi.unica(api.obter(this.chave(c)))
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartao(atual)))
+            var opcoes = listOf("mesas", "membros", "pedidos")
+            if ("" + atual.joined == "true") { opcoes.add("sair") } else { opcoes.add("entrar") }
+            var escolha = Entrada.menu(this.titulo(atual), opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.mesas(atual)
+            } else if (escolha == 1) {
+                this.membros(atual)
+            } else if (escolha == 2) {
+                this.pedidos(atual)
+            } else if (opcoes.get(escolha) == "entrar") {
+                this.avisar(api.entrar(atual.id), "você entrou na campanha")
+                atual = RoleplayApi.unica(api.obter(atual.id))
+            } else {
+                this.avisar(api.sair(atual.id), "você saiu da campanha")
+                atual = RoleplayApi.unica(api.obter(atual.id))
+            }
+        }
+    }
+
+    void sistemas() {
+        var itens = RoleplayApi.sistemasDe(RoleplayApi(this.cliente).sistemas())
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("sistemas"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum sistema disponível")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var s = itens.get(i)
+            var nome = ""
+            if (s.label != null) { nome = s.label }
+            var familia = ""
+            if (s.family != null) { familia = s.family }
+            println(Lista.item(nome, familia))
+        }
+        Entrada.pausar()
+    }
+
+    void mesas(Campanha c) {
+        var itens = RoleplayApi.mesasDe(RoleplayApi(this.cliente).mesas(c.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("mesas · " + this.titulo(c)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhuma mesa aberta")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var m = itens.get(i)
+            var nome = ""
+            if (m.name != null) { nome = m.name }
+            var estado = "fechada"
+            if ("" + m.open == "true") { estado = "aberta" }
+            println(Lista.item(nome, estado))
+        }
+        Entrada.pausar()
+    }
+
+    void membros(Campanha c) {
+        var itens = RoleplayApi.membrosDe(RoleplayApi(this.cliente).membros(c.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("membros · " + this.titulo(c)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem membros visíveis")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var m = itens.get(i)
+            var nome = ""
+            if (m.name != null) { nome = m.name }
+            var papel = ""
+            if (m.role != null) { papel = m.role }
+            println(Lista.item(nome, papel))
+        }
+        Entrada.pausar()
+    }
+
+    void pedidos(Campanha c) {
+        var api = RoleplayApi(this.cliente)
+        var itens = RoleplayApi.pedidosDe(api.pedidos(c.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("pedidos · " + this.titulo(c)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var p = itens.get(i)
+            var nome = ""
+            if (p.name != null) { nome = p.name }
+            opcoes.add(nome)
+        }
+        var escolha = Entrada.menu("pedidos", opcoes, "voltar")
+        if (escolha < 0) { return }
+        var acao = Entrada.menu(opcoes.get(escolha), listOf("aprovar", "recusar"), "voltar")
+        var pedidoId = ""
+        var pedido = itens.get(escolha)
+        if (pedido.id != null) { pedidoId = pedido.id }
+        if (acao == 0) {
+            this.avisar(api.aprovar(c.id, pedidoId), "pedido aprovado")
+        } else if (acao == 1) {
+            this.avisar(api.recusar(c.id, pedidoId), "pedido recusado")
+        }
+    }
+
+    void criar() {
+        var nome = Entrada.textoObrigatorio("nome da campanha")
+        var descricao = Entrada.texto("descrição (opcional)")
+        this.avisar(RoleplayApi(this.cliente).criar(nome, descricao), "campanha criada")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String chave(Campanha c) {
+        if (c.slug != null) { return c.slug }
+        return c.id
+    }
+
+    String titulo(Campanha c) {
+        if (c.name != null) { return c.name }
+        return c.id
+    }
+
+    String resumo(Campanha c) {
+        var texto = ""
+        if (c.gameSystem != null) { texto = c.gameSystem }
+        if (c.members != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(c.members) + " jogadores"
+        }
+        if (c.status != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + c.status
+        }
+        return texto
+    }
+
+    String cartao(Campanha c) {
+        var texto = this.titulo(c)
+        if (c.setting != null) { texto = texto + "\n" + Tema.suave(c.setting) }
+        if (c.description != null) { texto = texto + "\n" + c.description }
+        var rodape = this.resumo(c)
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.mudo(rodape) }
+        if ("" + c.joined == "true") { texto = texto + "\n" + Tema.ok("você participa") }
+        return texto
+    }
+}

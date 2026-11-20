@@ -1,0 +1,100 @@
+package api
+
+record Jogo(
+    String id,
+    String? username,
+    String? slug,
+    String? title,
+    String? description,
+    String? shortDescription,
+    String? cover,
+    String? icon,
+    String? url,
+    String? status,
+    List<String>? genres,
+    Int? plays,
+    Int? favorites,
+    String? publishedAt,
+    Troolean? owned,
+    Troolean? favorited,
+    String? stage,
+    Int? priceCoins,
+    String? version
+)
+
+record PaginaJogos(List<Jogo>? items, String? nextCursor)
+
+record AvaliacaoJogo(String id, String? userId, String? username, String? name, String? avatar,
+                     Int? rating, String? body, String? createdAt, String? updatedAt)
+
+record ResumoNotasJogo(Double? average, Long? reviews, Long? comments)
+
+record ComentarioJogo(String id, String? authorId, String? authorName, String? authorUsername,
+                      String? content, String? createdAt, Int? reactions)
+
+record ComentariosJogo(Long? count, List<ComentarioJogo>? items)
+
+record EmpresaResumo(String id, String? slug, String? name, String? description, String? sector,
+                     String? location, String? logo, String? cover)
+
+record EmpresaDiretorio(String? kind, String? slug, String? name, String? logo, String? sector,
+                        String? location, Long? openJobs, Long? openProjects, Long? followers)
+
+record EstatisticasEmpresa(Long? openProjects, Long? completedProjects, Long? openJobs,
+                           Long? followers)
+
+record MicroProjeto(String id, String? companyId, String? title, String? problem, String? scope,
+                    String? deliverables, String? acceptanceCriteria, Long? budget, String? deadline,
+                    String? status, String? createdAt, String? myProposal, Int? proposalCount)
+
+record PropostaMicroProjeto(String id, String? projectId, String? userId, String? message,
+                            Long? price, String? status, String? createdAt)
+
+record SistemaRoleplay(String id, String? label, String? family, String? author, String? license,
+                       String? officialUrl, Troolean? builtIn)
+
+record MembroRoleplay(String? userId, String? username, String? name, String? avatar, String? role,
+                      String? joinedAt)
+
+record PedidoRoleplay(String? id, String? userId, String? username, String? name, String? avatar,
+                      String? message, String? createdAt)
+
+record MesaRoleplay(String? id, String? campaignId, String? name, String? ownerId,
+                    Troolean? open, String? createdAt)
+
+record Denuncia(String id, String? reporterId, String? targetType, String? targetId, String? reason,
+                String? description, String? status, String? createdAt)
+
+record DenunciaPainel(String? reportId, String? targetType, String? targetId, String? reason,
+                      String? description, String? createdAt, String? reporter, String? authorId,
+                      String? author, String? content, Int? punishVotes, Int? dismissVotes,
+                      String? myVote, Int? quorum)
+
+record Selo(String? type, String? name, String? description, String? category, String? categoryName,
+            String? grantedAt, Int? evidenceCount, Int? minCount, Int? maxCount, String? emblem)
+
+record ReclameAssunto(String? subject, String? status, Double? pontuacao, Long? falasPost,
+                      Long? falasComentario, Long? pessoas, Long? falasUltimaHora, Double? crescimento)
+
+record IntervaloFalas(String? hora, Long? falas)
+
+record Chamada(String id, String? kind, String? modality, String? conversationId, String? groupId,
+               String? topicId, String? eventId, String? initiatorId, String? displayName,
+               String? state, String? createdAt, Int? participantCount, Troolean? isInitiator,
+               String? myState)
+
+record ProjetoUsuario(String id, String? title, String? description, String? banner, String? icon,
+                      List<String>? stack, String? repoUrl, String? status, String? html)
+
+record Preferencias(List<String>? likedTopics, List<String>? blockedTopics,
+                    List<String>? disabledModules, Troolean? nightRestReminder,
+                    Troolean? liteMode, Troolean? batataMode, Troolean? hideReposts,
+                    Troolean? whatsNewEnabled)
+
+record PreferenciasAviso(Troolean? weeklyDigest, Troolean? pushSocial, Troolean? pushMessages,
+                         Troolean? pushGroups, Troolean? pushJobs, Troolean? pushSystem,
+                         Troolean? communityProjects, String? updatedAt)
+
+record PaginaMembrosRoleplay(List<MembroRoleplay>? items, String? nextCursor)
+record PaginaPedidosRoleplay(List<PedidoRoleplay>? items, String? nextCursor)
+record PaginaMesasRoleplay(List<MesaRoleplay>? items, String? nextCursor)

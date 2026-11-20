@@ -1,0 +1,155 @@
+package core
+
+import kof.json
+
+class Cliente {
+
+    Config config
+    Sessao sessao
+
+    public constructor(Config config, Sessao sessao) {
+        this.config = config
+        this.sessao = sessao
+    }
+
+    String cabecalhosBase() {
+        return "Accept: application/json\n"
+            + "X-Client-Origin: " + this.config.origem
+    }
+
+    String cabecalhos(Bool escrita) {
+        var h = this.cabecalhosBase()
+        if (this.sessao.logado()) {
+            h = h + "\nX-Session-Token: " + this.sessao.token
+        }
+        if (escrita) {
+            h = h + "\nX-CSRF-Protection: 1\nContent-Type: application/json"
+        }
+        return h
+    }
+
+    String url(String caminho) {
+        var c = caminho
+        if (c.startsWith("/")) { c = c.substring(1) }
+        return this.config.urlApi + "/" + c
+    }
+
+    Resposta get(String caminho) {
+        return this.enviar("GET", caminho, "", false)
+    }
+
+    Resposta post(String caminho, String corpoJson) {
+        return this.enviar("POST", caminho, corpoJson, true)
+    }
+
+    Resposta put(String caminho, String corpoJson) {
+        return this.enviar("PUT", caminho, corpoJson, true)
+    }
+
+    Resposta patch(String caminho, String corpoJson) {
+        return this.enviar("PATCH", caminho, corpoJson, true)
+    }
+
+    Resposta delete(String caminho) {
+        return this.enviar("DELETE", caminho, "", true)
+    }
+
+    Resposta enviar(String metodo, String caminho, String corpo, Bool escrita) {
+        var r = this.disparar(metodo, caminho, corpo, escrita)
+        if (r.codigo == 401 && this.sessao.renova.length > 0) {
+            var renovou = this.renovar()
+            if (renovou) {
+                r = this.disparar(metodo, caminho, corpo, escrita)
+            }
+        }
+        return r
+    }
+
+    Resposta disparar(String metodo, String caminho, String corpo, Bool escrita) {
+        http.timeout(15)
+        http.retry(1)
+        try {
+            var res = http.send(metodo, this.url(caminho), corpo, this.cabecalhos(escrita))
+            return Resposta(res.status(), res.body(), res.headers())
+        } catch (String e) {
+            return Resposta(0, "{\"code\":\"REDE\",\"message\":\"falha de rede: " + e + "\"}", "")
+        }
+    }
+
+    Bool renovar() {
+        if (this.sessao.renova.length == 0) { return false }
+        var corpo = json.encode(mapOf("refreshToken", this.sessao.renova))
+        try {
+            var res = http.send("POST", this.url("/auth/refresh"), corpo,
+                "Accept: application/json\nContent-Type: application/json\n"
+                + "X-Client-Origin: " + this.config.origem)
+            if (res.status() != 200) { return false }
+            var nova = Sessao.deResposta(res.headers())
+            if (nova.token.length == 0) { return false }
+            this.sessao.token = nova.token
+            if (nova.renova.length > 0) { this.sessao.renova = nova.renova }
+            this.sessao.salvar()
+            return true
+        } catch (String e) {
+            return false
+        }
+    }
+
+    String entrar(String email, String senha) {
+        var corpo = json.encode(mapOf("email", email, "password", senha))
+        var r = this.disparar("POST", "/auth/login", corpo, true)
+        if (r.codigo == 202) {
+            var m = r.comoMapa()
+            var desafio = m.get("challengeId")
+            if (desafio == null) { desafio = "" }
+            return "2fa:" + desafio
+        }
+        if (!r.ok()) { return "erro:" + r.mensagem() }
+        var nova = Sessao.deResposta(r.headersComoTexto())
+        if (nova.token.length == 0) { return "erro:servidor não devolveu a sessão" }
+        this.sessao.token = nova.token
+        this.sessao.renova = nova.renova
+        this.carregarEu()
+        this.sessao.salvar()
+        return "ok"
+    }
+
+    String verificar2fa(String challengeId, String codigo) {
+        var corpo = json.encode(mapOf("challengeId", challengeId, "code", codigo))
+        var r = this.disparar("POST", "/auth/2fa/verify", corpo, true)
+        if (!r.ok()) { return "erro:" + r.mensagem() }
+        var nova = Sessao.deResposta(r.headersComoTexto())
+        if (nova.token.length == 0) { return "erro:servidor não devolveu a sessão" }
+        this.sessao.token = nova.token
+        this.sessao.renova = nova.renova
+        this.carregarEu()
+        this.sessao.salvar()
+        return "ok"
+    }
+
+    void carregarEu() {
+        var r = this.get("/auth/me")
+        if (!r.ok()) { return }
+        var m = r.comoMapa()
+        var nome = valor(m, "name")
+        var login = valor(m, "username")
+        var email = valor(m, "email")
+        var avatar = valor(m, "avatar")
+        var id = valor(m, "id")
+        var faisca = 0
+        var rawFaisca = m.get("spark")
+        if (rawFaisca != null) { faisca = Integer.parseInt(rawFaisca) }
+        this.sessao.usuario = Usuario(id, nome, login, email, avatar, faisca)
+    }
+
+    static String valor(Map<String, String> m, String chave) {
+        var v = m.get(chave)
+        if (v == null) { return "" }
+        return v
+    }
+
+    void sair() {
+        this.post("/auth/logout", "{}")
+        this.sessao.limpar()
+    }
+}

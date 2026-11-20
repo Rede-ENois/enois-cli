@@ -1,0 +1,167 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class GruposApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? termo, String? cursor, Int limite) {
+        return this.cliente.get("/groups" + Consulta.query(listOf(
+            Consulta.par("query", termo),
+            Consulta.par("cursor", cursor),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta meus(Int limite) {
+        return this.cliente.get("/groups/mine" + Consulta.query(listOf(
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta obter(String slugOuId) {
+        return this.cliente.get("/groups/" + ConsultaTextos.caminho(slugOuId))
+    }
+
+    Resposta criar(String nome, String? descricao) {
+        return this.cliente.post("/groups",
+            json.encode(mapOf("name", nome, "description", descricao)))
+    }
+
+    Resposta editar(String grupoId, String nome, String descricao) {
+        return this.cliente.patch("/groups/" + ConsultaTextos.caminho(grupoId),
+            json.encode(mapOf("name", nome, "description", descricao)))
+    }
+
+    Resposta entrar(String grupoId) {
+        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId) + "/join", "{}")
+    }
+
+    Resposta sair(String grupoId) {
+        return this.cliente.delete("/groups/" + ConsultaTextos.caminho(grupoId) + "/members/me")
+    }
+
+    Resposta membros(String grupoId) {
+        return this.cliente.get("/groups/" + ConsultaTextos.caminho(grupoId) + "/members")
+    }
+
+    Resposta pedidos(String grupoId) {
+        return this.cliente.get("/groups/" + ConsultaTextos.caminho(grupoId) + "/requests")
+    }
+
+    Resposta aprovar(String grupoId, String pedidoId) {
+        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId)
+            + "/requests/" + ConsultaTextos.caminho(pedidoId) + "/approve", "{}")
+    }
+
+    Resposta recusar(String grupoId, String pedidoId) {
+        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId)
+            + "/requests/" + ConsultaTextos.caminho(pedidoId) + "/reject", "{}")
+    }
+
+    Resposta topicos(String grupoId) {
+        return this.cliente.get("/groups/" + ConsultaTextos.caminho(grupoId) + "/topics")
+    }
+
+    Resposta posts(String grupoId, String? topicoId, String? cursor, Int limite) {
+        return this.cliente.get("/groups/" + ConsultaTextos.caminho(grupoId) + "/posts"
+            + Consulta.query(listOf(
+                Consulta.par("topicId", topicoId),
+                Consulta.par("cursor", cursor),
+                Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta publicar(String grupoId, String topicoId, String conteudo) {
+        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId) + "/posts",
+            json.encode(mapOf("topicId", topicoId, "content", conteudo)))
+    }
+
+    Resposta apagarPost(String grupoId, String postId) {
+        return this.cliente.delete("/groups/" + ConsultaTextos.caminho(grupoId)
+            + "/posts/" + ConsultaTextos.caminho(postId))
+    }
+
+    Resposta reagir(String grupoId, String postId, String tipo) {
+        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId)
+            + "/posts/" + ConsultaTextos.caminho(postId) + "/reactions",
+            json.encode(mapOf("type", tipo)))
+    }
+
+    Resposta desreagir(String grupoId, String postId) {
+        return this.cliente.delete("/groups/" + ConsultaTextos.caminho(grupoId)
+            + "/posts/" + ConsultaTextos.caminho(postId) + "/reactions")
+    }
+
+    Resposta encerrar(String grupoId) {
+        return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId) + "/close", "{}")
+    }
+
+    static List<MembroGrupo> membrosDe(Resposta r) {
+        if (!r.ok()) { return listOf<MembroGrupo>() }
+        try {
+            var pagina = json.decode<PaginaMembrosGrupo>(r.corpo)
+            if (pagina.items == null) { return listOf<MembroGrupo>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<MembroGrupo>()
+        }
+    }
+
+    static List<PedidoGrupo> pedidosDe(Resposta r) {
+        if (!r.ok()) { return listOf<PedidoGrupo>() }
+        try {
+            var pagina = json.decode<PaginaPedidosGrupo>(r.corpo)
+            if (pagina.items == null) { return listOf<PedidoGrupo>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<PedidoGrupo>()
+        }
+    }
+
+    static List<TopicoGrupo> topicosDe(Resposta r) {
+        if (!r.ok()) { return listOf<TopicoGrupo>() }
+        try {
+            var pagina = json.decode<PaginaTopicos>(r.corpo)
+            if (pagina.items == null) { return listOf<TopicoGrupo>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<TopicoGrupo>()
+        }
+    }
+
+    static List<PostGrupo> postsDe(Resposta r) {
+        if (!r.ok()) { return listOf<PostGrupo>() }
+        try {
+            var pagina = json.decode<PaginaPostsGrupo>(r.corpo)
+            if (pagina.items == null) { return listOf<PostGrupo>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<PostGrupo>()
+        }
+    }
+
+    static Grupo unico(Resposta r) {
+        var vazio = Grupo("", null, null, null, null, null, null, null, null, null,
+            null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<Grupo>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static PaginaGrupos pagina(Resposta r) {
+        if (!r.ok()) { return PaginaGrupos(listOf<Grupo>(), null) }
+        try {
+            return json.decode<PaginaGrupos>(r.corpo)
+        } catch (String e) {
+            return PaginaGrupos(listOf<Grupo>(), null)
+        }
+    }
+}

@@ -1,0 +1,309 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaGrupos {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = GruposApi.pagina(GruposApi(this.cliente).listar(null, null, 24)).items
+            var grupos = listOf<Grupo>()
+            if (itens != null) { grupos = itens }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("grupos"))
+            var total = grupos.size()
+            var opcoes = listOf<String>()
+            if (total == 0) {
+                println(Caixa.simples(Lista.vazia("nenhum grupo encontrado")))
+            }
+            for (var i = 0; i < grupos.size(); i = i + 1) {
+                println(Lista.item(this.nome(grupos.get(i)), this.resumo(grupos.get(i))))
+                opcoes.add(this.nome(grupos.get(i)))
+            }
+            opcoes.add("meus grupos")
+            opcoes.add("criar grupo")
+            var escolha = Entrada.menu("descobrir", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < total) {
+                this.abrir(grupos.get(escolha))
+            } else if (escolha == total) {
+                this.lista()
+            } else if (escolha == total + 1) {
+                this.criar()
+            }
+        }
+    }
+
+    void lista() {
+        var itens = GruposApi.pagina(GruposApi(this.cliente).meus(24)).items
+        if (itens == null || itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("você ainda não participa de nenhum grupo")))
+            Entrada.pausar()
+            return
+        }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("meus grupos"))
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            println(Lista.item(this.nome(itens.get(i)), this.resumo(itens.get(i))))
+            opcoes.add(this.nome(itens.get(i)))
+        }
+        var escolha = Entrada.menu("meus grupos", opcoes, "voltar")
+        if (escolha >= 0) { this.abrir(itens.get(escolha)) }
+    }
+
+    void abrir(Grupo g) {
+        var api = GruposApi(this.cliente)
+        var atual = GruposApi.unico(api.obter(g.id))
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartao(atual)))
+            var opcoes = listOf("posts", "membros", "tópicos")
+            if ("" + atual.joined == "true") {
+                opcoes.add("publicar")
+                opcoes.add("pedidos")
+                opcoes.add("sair")
+            } else {
+                opcoes.add("pedir para entrar")
+            }
+            if (atual.viewerRole != null && atual.viewerRole == "OWNER") { opcoes.add("encerrar grupo") }
+            var escolha = Entrada.menu(this.nome(atual), opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.posts(atual)
+            } else if (escolha == 1) {
+                this.membros(atual)
+            } else if (escolha == 2) {
+                this.topicos(atual)
+            } else {
+                var acao = opcoes.get(escolha)
+                if (acao == "publicar") { this.publicar(atual) }
+                if (acao == "pedidos") { this.pedidos(atual) }
+                if (acao == "sair") { this.avisar(api.sair(atual.id), "você saiu do grupo") }
+                if (acao == "pedir para entrar") { this.avisar(api.entrar(atual.id), "pedido enviado") }
+                if (acao == "encerrar grupo") {
+                    if (Entrada.confirmar("encerrar o grupo " + this.nome(atual) + "?")) {
+                        this.avisar(api.encerrar(atual.id), "grupo encerrado")
+                    }
+                }
+                atual = GruposApi.unico(api.obter(atual.id))
+            }
+        }
+    }
+
+    void posts(Grupo g) {
+        var api = GruposApi(this.cliente)
+        var itens = GruposApi.postsDe(api.posts(g.id, null, null, 24))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("posts · " + this.nome(g)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum post ainda")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var p = itens.get(i)
+            var autor = ""
+            if (p.authorName != null) { autor = p.authorName }
+            var trecho = ""
+            if (p.content != null) { trecho = p.content }
+            if (trecho.length > 56) { trecho = trecho.substring(0, 56) + "…" }
+            println(Lista.item(autor, trecho))
+            opcoes.add(trecho)
+        }
+        var escolha = Entrada.menu("posts", opcoes, "voltar")
+        if (escolha >= 0) { this.post(g, itens.get(escolha)) }
+    }
+
+    void post(Grupo g, PostGrupo p) {
+        var api = GruposApi(this.cliente)
+        print(Ansi.LIMPAR)
+        println(Caixa.simples(this.cartaoPost(p)))
+        var escolha = Entrada.menu("post", listOf("reagir", "apagar"), "voltar")
+        if (escolha == 0) {
+            this.avisar(api.reagir(g.id, p.id, "LIKE"), "reação enviada")
+        } else if (escolha == 1) {
+            if (Entrada.confirmar("apagar este post?")) {
+                this.avisar(api.apagarPost(g.id, p.id), "post apagado")
+            }
+        }
+    }
+
+    void publicar(Grupo g) {
+        var api = GruposApi(this.cliente)
+        var topicos = GruposApi.topicosDe(api.topicos(g.id))
+        if (topicos.size() == 0) {
+            println(Caixa.simples(Lista.vazia("o grupo ainda não tem tópicos")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < topicos.size(); i = i + 1) {
+            opcoes.add(this.texto(topicos.get(i).name, topicos.get(i).id))
+        }
+        var escolha = Entrada.menu("em qual tópico?", opcoes, "cancelar")
+        if (escolha < 0) { return }
+        var topico = topicos.get(escolha)
+        var topicoId = ""
+        if (topico.id != null) { topicoId = topico.id }
+        var conteudo = Entrada.textoObrigatorio("conteúdo do post")
+        this.avisar(api.publicar(g.id, topicoId, conteudo), "post publicado")
+    }
+
+    void membros(Grupo g) {
+        var itens = GruposApi.membrosDe(GruposApi(this.cliente).membros(g.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("membros · " + this.nome(g)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem membros visíveis")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var m = itens.get(i)
+            var nome = this.texto(m.name, m.userId)
+            var usuario = ""
+            if (m.username != null) { usuario = " @" + m.username }
+            var papel = ""
+            if (m.role != null) { papel = " · " + m.role }
+            println(Lista.item(nome + usuario, papel))
+        }
+        Entrada.pausar()
+    }
+
+    void pedidos(Grupo g) {
+        var api = GruposApi(this.cliente)
+        var itens = GruposApi.pedidosDe(api.pedidos(g.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("pedidos · " + this.nome(g)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var p = itens.get(i)
+            opcoes.add(this.texto(p.name, p.username))
+        }
+        var escolha = Entrada.menu("pedidos", opcoes, "voltar")
+        if (escolha < 0) { return }
+        var pedido = itens.get(escolha)
+        var pedidoId = ""
+        if (pedido.id != null) { pedidoId = pedido.id }
+        var acao = Entrada.menu(this.texto(pedido.name, pedido.username),
+            listOf("aprovar", "recusar"), "voltar")
+        if (acao == 0) {
+            this.avisar(api.aprovar(g.id, pedidoId), "pedido aprovado")
+        } else if (acao == 1) {
+            this.avisar(api.recusar(g.id, pedidoId), "pedido recusado")
+        }
+    }
+
+    void topicos(Grupo g) {
+        var itens = GruposApi.topicosDe(GruposApi(this.cliente).topicos(g.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("tópicos · " + this.nome(g)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum tópico criado")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var t = itens.get(i)
+            var descricao = ""
+            if (t.description != null) { descricao = t.description }
+            var estado = ""
+            if (t.status != null) { estado = " · " + t.status }
+            println(Lista.item(this.texto(t.name, t.id), descricao + estado))
+        }
+        Entrada.pausar()
+    }
+
+    void criar() {
+        var nome = Entrada.textoObrigatorio("nome do grupo")
+        var descricao = Entrada.texto("descrição (opcional)")
+        this.avisar(GruposApi(this.cliente).criar(nome, descricao), "grupo criado")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String texto(String? valor, String? alternativa) {
+        if (valor != null) { return valor }
+        if (alternativa != null) { return alternativa }
+        return ""
+    }
+
+    String nome(Grupo g) {
+        if (g.name != null) { return g.name }
+        return g.id
+    }
+
+    String resumo(Grupo g) {
+        var texto = ""
+        if (g.topic != null) { texto = g.topic }
+        if (g.members != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(g.members) + " membros"
+        }
+        if ("" + g.joined == "true") {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "participando"
+        } else if ("" + g.requestPending == "true") {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + "pedido enviado"
+        }
+        return texto
+    }
+
+    String cartao(Grupo g) {
+        var texto = this.nome(g)
+        if (g.topic != null) { texto = texto + "\n" + Tema.suave(g.topic) }
+        if (g.description != null) { texto = texto + "\n" + g.description }
+        var rodape = this.resumo(g)
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.mudo(rodape) }
+        if (g.joinMode != null) { texto = texto + "\n" + Tema.mudo("entrada: " + g.joinMode) }
+        return texto
+    }
+
+    String cartaoPost(PostGrupo p) {
+        var texto = ""
+        if (p.authorName != null) { texto = p.authorName }
+        if (p.authorUsername != null) { texto = texto + " @" + p.authorUsername }
+        var conteudo = this.texto(p.content, null)
+        if (conteudo.length > 0) { texto = texto + "\n" + conteudo }
+        var rodape = ""
+        if (p.reactions != null) { rodape = String.valueOf(p.reactions) + " reações" }
+        if (p.comments != null) {
+            if (rodape.length > 0) { rodape = rodape + " · " }
+            rodape = rodape + String.valueOf(p.comments) + " comentários"
+        }
+        if (p.pinned != null && "" + p.pinned == "true") { rodape = "fixado · " + rodape }
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.mudo(rodape) }
+        return texto
+    }
+}

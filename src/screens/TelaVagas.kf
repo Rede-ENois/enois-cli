@@ -1,0 +1,207 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaVagas {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var termo = Entrada.texto("buscar vaga (enter para todas)")
+            var itens = VagasApi.pagina(VagasApi(this.cliente).listar(termo, null, 20)).items
+            var vagas = listOf<Vaga>()
+            if (itens != null) { vagas = itens }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("vagas"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < vagas.size(); i = i + 1) {
+                println(Lista.item(this.titulo(vagas.get(i)), this.resumo(vagas.get(i))))
+                opcoes.add(this.titulo(vagas.get(i)))
+            }
+            if (vagas.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma vaga encontrada")))
+            }
+            opcoes.add("minhas vagas")
+            opcoes.add("candidaturas")
+            opcoes.add("salvas")
+            var escolha = Entrada.menu("oportunidades", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < vagas.size()) {
+                this.abrir(vagas.get(escolha))
+            } else if (escolha == vagas.size()) {
+                this.lista(VagasApi(this.cliente).minhas(null, 20), "minhas vagas")
+            } else if (escolha == vagas.size() + 1) {
+                this.candidaturas()
+            } else {
+                this.lista(VagasApi(this.cliente).salvas(null, 20), "vagas salvas")
+            }
+        }
+    }
+
+    void lista(Resposta r, String titulo) {
+        var itens = VagasApi.pagina(r).items
+        if (itens == null || itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nada por aqui")))
+            Entrada.pausar()
+            return
+        }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque(titulo))
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            println(Lista.item(this.titulo(itens.get(i)), this.resumo(itens.get(i))))
+            opcoes.add(this.titulo(itens.get(i)))
+        }
+        var escolha = Entrada.menu(titulo, opcoes, "voltar")
+        if (escolha >= 0) { this.abrir(itens.get(escolha)) }
+    }
+
+    void abrir(Vaga v) {
+        var api = VagasApi(this.cliente)
+        print(Ansi.LIMPAR)
+        println(Caixa.simples(this.cartao(v)))
+        var opcoes = listOf<String>()
+        if ("" + v.applied == "true") {
+            opcoes.add("ver candidaturas")
+        } else {
+            opcoes.add("candidatar")
+        }
+        if ("" + v.saved == "true") {
+            opcoes.add("dessalvar")
+        } else {
+            opcoes.add("salvar")
+        }
+        var escolha = Entrada.menu(this.titulo(v), opcoes, "voltar")
+        if (escolha < 0) { return }
+        var acao = opcoes.get(escolha)
+        if (acao == "candidatar") {
+            this.avisar(api.candidatar(v.id), "candidatura enviada")
+        } else if (acao == "salvar") {
+            this.avisar(api.salvar(v.id), "vaga salva")
+        } else if (acao == "dessalvar") {
+            this.avisar(api.dessalvar(v.id), "vaga removida dos salvos")
+        } else if (acao == "ver candidaturas") {
+            this.candidaturasDaVaga(v)
+        }
+    }
+
+    void candidaturasDaVaga(Vaga v) {
+        var r = VagasApi(this.cliente).candidaturasDaVaga(v.id, 30)
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("candidaturas · " + this.titulo(v)))
+        if (!r.ok()) {
+            println(Tema.erro(r.mensagem()))
+            Entrada.pausar()
+            return
+        }
+        var itens = VagasApi.inscricoesDe(r)
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhuma candidatura ainda")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var inscricao = itens.get(i)
+            var nome = ""
+            var candidato = inscricao.candidate
+            if (candidato != null) {
+                if (candidato.name != null) { nome = candidato.name }
+                if (nome.length == 0 && candidato.username != null) { nome = candidato.username }
+            }
+            var estado = ""
+            if (inscricao.status != null) { estado = inscricao.status }
+            println(Lista.item(nome, estado))
+        }
+        Entrada.pausar()
+    }
+
+    void candidaturas() {
+        var itens = VagasApi.candidaturasDe(VagasApi(this.cliente).minhasCandidaturas(null, 30))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("minhas candidaturas"))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("você ainda não se candidatou")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var c = itens.get(i)
+            var titulo = ""
+            if (c.jobTitle != null) { titulo = c.jobTitle }
+            var estado = ""
+            if (c.status != null) { estado = c.status }
+            if (c.jobCompany != null) {
+                if (estado.length > 0) { estado = estado + " · " }
+                estado = estado + c.jobCompany
+            }
+            println(Lista.item(titulo, estado))
+        }
+        Entrada.pausar()
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String titulo(Vaga v) {
+        if (v.title != null) { return v.title }
+        return v.id
+    }
+
+    String resumo(Vaga v) {
+        var texto = ""
+        if (v.company != null) { texto = v.company }
+        if (v.location != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + v.location
+        }
+        if (v.salaryLabel != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + v.salaryLabel
+        }
+        if ("" + v.applied == "true") { texto = texto + " · candidatado" }
+        return texto
+    }
+
+    String cartao(Vaga v) {
+        var texto = this.titulo(v)
+        var rodape = this.resumo(v)
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.suave(rodape) }
+        if (v.level != null) { texto = texto + "\n" + Tema.mudo("nível: " + v.level) }
+        if (v.type != null) { texto = texto + "\n" + Tema.mudo("regime: " + v.type) }
+        if (v.description != null) { texto = texto + "\n" + v.description }
+        if (v.skills != null && v.skills.size() > 0) {
+            var skills = ""
+            for (var i = 0; i < v.skills.size(); i = i + 1) {
+                if (i > 0) { skills = skills + " · " }
+                skills = skills + v.skills.get(i)
+            }
+            texto = texto + "\n" + Tema.suave(skills)
+        }
+        if (v.applicationsCount != null) {
+            texto = texto + "\n" + Tema.mudo(String.valueOf(v.applicationsCount) + " candidaturas")
+        }
+        if (v.applicationDeadline != null) {
+            texto = texto + "\n" + Tema.mudo("até " + v.applicationDeadline)
+        }
+        return texto
+    }
+}

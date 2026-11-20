@@ -1,0 +1,88 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class RedeApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta buscarPessoas(String termo, String? cursor, Int limite) {
+        return this.cliente.get("/network/users" + Consulta.query(listOf(
+            Consulta.par("query", termo),
+            Consulta.par("cursor", cursor),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta sugestoes(Int limite) {
+        return this.cliente.get("/network/suggestions" + Consulta.par("limit",
+            Consulta.numero(limite)))
+    }
+
+    Resposta pedidosPendentes(String? cursor, Int limite) {
+        return this.cliente.get("/network/requests" + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta conectar(String usuarioId) {
+        return this.cliente.post("/network/connections/"
+            + ConsultaTextos.caminho(usuarioId), "{}")
+    }
+
+    Resposta desconectar(String usuarioId) {
+        return this.cliente.delete("/network/connections/"
+            + ConsultaTextos.caminho(usuarioId))
+    }
+
+    Resposta aceitar(String usuarioId) {
+        return this.cliente.put("/network/connections/"
+            + ConsultaTextos.caminho(usuarioId) + "/accept", "{}")
+    }
+
+    static List<PessoaRede> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<PessoaRede>() }
+        try {
+            return json.decode<List<PessoaRede>>(r.corpo)
+        } catch (String e) {
+            return listOf<PessoaRede>()
+        }
+    }
+
+    static List<PessoaPedido> pedidosDe(Resposta r) {
+        if (!r.ok()) { return listOf<PessoaPedido>() }
+        try {
+            var pagina = json.decode<PaginaPedidos>(r.corpo)
+            if (pagina.items == null) { return listOf<PessoaPedido>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<PessoaPedido>()
+        }
+    }
+
+    Resposta estadoDaConexao(String usuarioId) {
+        return this.cliente.get("/network/connections/"
+            + ConsultaTextos.caminho(usuarioId) + "/status")
+    }
+
+    Resposta bloquear(String usuarioId) {
+        return this.cliente.post("/network/blocks/"
+            + ConsultaTextos.caminho(usuarioId), "{}")
+    }
+
+    Resposta desbloquear(String usuarioId) {
+        return this.cliente.delete("/network/blocks/" + ConsultaTextos.caminho(usuarioId))
+    }
+
+    Resposta silenciar(String usuarioId) {
+        return this.cliente.post("/network/mutes/"
+            + ConsultaTextos.caminho(usuarioId), "{}")
+    }
+
+    Resposta dessilenciar(String usuarioId) {
+        return this.cliente.delete("/network/mutes/" + ConsultaTextos.caminho(usuarioId))
+    }
+}

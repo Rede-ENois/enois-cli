@@ -1,0 +1,44 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ParesEstudoApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta meus() {
+        return this.cliente.get("/study-pairs/me")
+    }
+
+    Resposta buscar(String? objetivo) {
+        return this.cliente.get("/study-pairs/requests" + Consulta.par("goal", objetivo))
+    }
+
+    Resposta metasPopulares() {
+        return this.cliente.get("/study-pairs/goals/popular")
+    }
+
+    Resposta pedir(String objetivo, String? assunto) {
+        return this.cliente.post("/study-pairs/requests",
+            json.encode(mapOf("goal", objetivo, "topic", assunto)))
+    }
+
+    Resposta cancelarPedido() {
+        return this.cliente.delete("/study-pairs/requests/current")
+    }
+
+    Resposta checkin(String duplaId, String nota) {
+        return this.cliente.post("/study-pairs/" + ConsultaTextos.caminho(duplaId) + "/checkins",
+            json.encode(mapOf("note", nota)))
+    }
+
+    Resposta encerrar(String duplaId) {
+        return this.cliente.post("/study-pairs/" + ConsultaTextos.caminho(duplaId) + "/end", "{}")
+    }
+}

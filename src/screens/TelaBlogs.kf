@@ -1,0 +1,176 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaBlogs {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = BlogsApi.listaDe(BlogsApi(this.cliente).listar(20, null))
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("blogs"))
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(Lista.item(this.titulo(itens.get(i)), this.resumo(itens.get(i))))
+                opcoes.add(this.titulo(itens.get(i)))
+            }
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhum blog publicado")))
+            }
+            opcoes.add("meu blog")
+            var escolha = Entrada.menu("blogs", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < itens.size()) {
+                this.abrir(this.slug(itens.get(escolha)))
+            } else {
+                this.meu()
+            }
+        }
+    }
+
+    void meu() {
+        var r = BlogsApi(this.cliente).meu()
+        if (!r.ok()) {
+            println(Caixa.simples(Lista.vazia("você ainda não tem blog — crie um")))
+            var titulo = Entrada.texto("título do blog (enter para cancelar)")
+            if (titulo.length == 0) { return }
+            var descricao = Entrada.texto("descrição (opcional)")
+            this.avisar(BlogsApi(this.cliente).criarMeu(titulo, descricao), "blog criado")
+            return
+        }
+        this.blog(BlogsApi.unico(r), true)
+    }
+
+    void abrir(String slug) {
+        this.blog(BlogsApi.unico(BlogsApi(this.cliente).obter(slug)), false)
+    }
+
+    void blog(BlogTerminal blog, Bool dono) {
+        var api = BlogsApi(this.cliente)
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartao(blog)))
+            var posts = listOf<PostBlog>()
+            if (blog.items != null) { posts = blog.items }
+            var opcoes = listOf<String>()
+            for (var i = 0; i < posts.size(); i = i + 1) {
+                println(Lista.item(this.tituloPost(posts.get(i)), this.trecho(posts.get(i))))
+                opcoes.add(this.tituloPost(posts.get(i)))
+            }
+            var acoes = listOf<String>()
+            if (dono) {
+                acoes.add("publicar post")
+            } else if ("" + blog.subscribed == "true") {
+                acoes.add("cancelar inscrição")
+            } else {
+                acoes.add("inscrever")
+            }
+            for (var i = 0; i < acoes.size(); i = i + 1) { opcoes.add(acoes.get(i)) }
+            var escolha = Entrada.menu(this.tituloBlog(blog), opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < posts.size()) {
+                print(Ansi.LIMPAR)
+                println(Caixa.card(this.tituloPost(posts.get(escolha)), this.corpo(posts.get(escolha))))
+                Entrada.pausar()
+            } else {
+                var acao = opcoes.get(escolha)
+                if (acao == "publicar post") {
+                    var titulo = Entrada.textoObrigatorio("título")
+                    var corpo = Entrada.textoObrigatorio("texto do post")
+                    this.avisar(api.publicar(titulo, corpo, "MARKDOWN"), "post publicado")
+                } else if (acao == "inscrever") {
+                    this.avisar(api.inscrever(this.slugBlog(blog)), "inscrito no blog")
+                } else if (acao == "cancelar inscrição") {
+                    this.avisar(api.desinscrever(this.slugBlog(blog)), "inscrição cancelada")
+                }
+                var slug = this.slugBlog(blog)
+                if (slug.length > 0) { blog = BlogsApi.unico(api.obter(slug)) }
+            }
+        }
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String slug(ResumoBlog b) {
+        if (b.slug != null) { return b.slug }
+        return ""
+    }
+
+    String titulo(ResumoBlog b) {
+        if (b.title != null) { return b.title }
+        return this.slug(b)
+    }
+
+    String resumo(ResumoBlog b) {
+        var texto = ""
+        if (b.authorName != null) { texto = b.authorName }
+        if (b.posts != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(b.posts) + " posts"
+        }
+        return texto
+    }
+
+    String tituloBlog(BlogTerminal b) {
+        if (b.title != null) { return b.title }
+        return b.id
+    }
+
+    String slugBlog(BlogTerminal b) {
+        if (b.slug != null) { return b.slug }
+        return ""
+    }
+
+    String cartao(BlogTerminal b) {
+        var texto = this.tituloBlog(b)
+        if (b.authorName != null) { texto = texto + "\n" + Tema.suave(b.authorName) }
+        if (b.description != null) { texto = texto + "\n" + b.description }
+        if (b.posts != null) {
+            texto = texto + "\n" + Tema.mudo(String.valueOf(b.posts) + " posts")
+        }
+        return texto
+    }
+
+    String tituloPost(PostBlog p) {
+        if (p.title != null) { return p.title }
+        return p.id
+    }
+
+    String corpo(PostBlog p) {
+        if (p.body != null) { return p.body }
+        return ""
+    }
+
+    String trecho(PostBlog p) {
+        var texto = this.corpo(p)
+        if (texto.length > 60) { return texto.substring(0, 60) + "…" }
+        return texto
+    }
+}

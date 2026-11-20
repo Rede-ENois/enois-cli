@@ -1,0 +1,73 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class PerfilApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta eu() {
+        return this.cliente.get("/me")
+    }
+
+    Resposta porUsuario(String usuario) {
+        return this.cliente.get("/users/" + ConsultaTextos.caminho(usuario))
+    }
+
+    Resposta porId(String id) {
+        return this.cliente.get("/users/by-id/" + ConsultaTextos.caminho(id))
+    }
+
+    Resposta rede(String usuario, String tipo) {
+        var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/" + tipo
+        return this.cliente.get(caminho)
+    }
+
+    Resposta buscar(String termo) {
+        return this.cliente.get("/users/search" + Consulta.query(listOf(
+            Consulta.par("q", termo))))
+    }
+
+    Resposta editar(String nome, String bio) {
+        var corpo = ""
+        if (bio.length > 0) {
+            corpo = json.encode(mapOf("name", nome, "bio", bio))
+        } else {
+            corpo = json.encode(mapOf("name", nome))
+        }
+        return this.cliente.patch("/me/profile", corpo)
+    }
+
+    static Perfil perfil(Resposta r) {
+        if (!r.ok()) { return Perfil("", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null) }
+        try {
+            return json.decode<Perfil>(r.corpo)
+        } catch (String e) {
+            return Perfil("", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+        }
+    }
+
+    static List<PessoaRede> redeDe(Resposta r) {
+        if (!r.ok()) { return listOf() }
+        try {
+            return json.decode<List<PessoaRede>>(r.corpo)
+        } catch (String e) {
+            return listOf()
+        }
+    }
+
+    static List<UsuarioBusca> buscaDe(Resposta r) {
+        if (!r.ok()) { return listOf() }
+        try {
+            return json.decode<List<UsuarioBusca>>(r.corpo)
+        } catch (String e) {
+            return listOf()
+        }
+    }
+}

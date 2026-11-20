@@ -1,0 +1,34 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class BuscaApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta buscar(String termo, String? tipos, Int limite) {
+        return this.cliente.get("/search" + Consulta.query(listOf(
+            Consulta.par("q", termo),
+            Consulta.par("types", tipos),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta pessoas(String termo) {
+        return this.cliente.get("/users/search" + Consulta.par("q", termo))
+    }
+
+    static PaginaBusca pagina(Resposta r) {
+        if (!r.ok()) { return PaginaBusca(listOf<ResultadoBusca>(), null) }
+        try {
+            return json.decode<PaginaBusca>(r.corpo)
+        } catch (String e) {
+            return PaginaBusca(listOf<ResultadoBusca>(), null)
+        }
+    }
+}

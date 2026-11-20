@@ -1,0 +1,27 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+class Badge {
+
+    static String primaria(String texto) {
+        return Tema.comFundo(Tema.FUNDO_PRIMARIO, Tema.TEXTO_SO_PRIMARIO, " " + texto + " ")
+    }
+
+    static String sucesso(String texto) {
+        return Tema.comFundo(Tema.FUNDO_SUCESSO, Tema.TEXTO, " " + texto + " ")
+    }
+
+    static String alerta(String texto) {
+        return Tema.comFundo(Tema.FUNDO_AVISO, Tema.TEXTO, " " + texto + " ")
+    }
+
+    static String erro(String texto) {
+        return Tema.comFundo(Tema.FUNDO_DESTRUTIVO, Tema.TEXTO, " " + texto + " ")
+    }
+
+    static String neutra(String texto) {
+        return Tema.comFundo(Tema.FUNDO_MUDO, Tema.TEXTO_SUAVE, " " + texto + " ")
+    }
+}

@@ -1,0 +1,93 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class MensagensApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? cursor, Int limite, String contexto) {
+        return this.cliente.get("/conversations" + Consulta.query(listOf(
+            Consulta.pagina(cursor, limite),
+            Consulta.par("context", contexto))))
+    }
+
+    Resposta abrirDireta(String idUsuario) {
+        var corpo = json.encode(mapOf("userId", idUsuario))
+        return this.cliente.post("/conversations/direct", corpo)
+    }
+
+    Resposta abrirCorporativa(String idUsuario) {
+        var corpo = json.encode(mapOf("userId", idUsuario))
+        return this.cliente.post("/conversations/business-direct", corpo)
+    }
+
+    Resposta obter(String idConversa) {
+        return this.cliente.get("/conversations/" + ConsultaTextos.caminho(idConversa))
+    }
+
+    Resposta listarMensagens(String idConversa, String? cursor, Int limite) {
+        var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa) + "/messages"
+        return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta enviar(String idConversa, String texto) {
+        var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa) + "/messages"
+        var corpo = json.encode(mapOf("text", texto))
+        return this.cliente.post(caminho, corpo)
+    }
+
+    Resposta reagir(String idConversa, String idMensagem, String tipo) {
+        var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa)
+            + "/messages/" + ConsultaTextos.caminho(idMensagem) + "/reactions"
+        var corpo = json.encode(mapOf("type", tipo))
+        return this.cliente.post(caminho, corpo)
+    }
+
+    Resposta marcarLida(String idConversa) {
+        return this.cliente.post("/conversations/" + ConsultaTextos.caminho(idConversa) + "/read", "")
+    }
+
+    Resposta buscar(String termo, Int limite) {
+        return this.cliente.get("/conversations/search" + Consulta.query(listOf(
+            Consulta.par("q", termo),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta naoLidas(String contexto) {
+        return this.cliente.get("/conversations/unread-count" + Consulta.query(listOf(
+            Consulta.par("context", contexto))))
+    }
+
+    Resposta esconder(List<String> ids) {
+        var corpo = json.encode(mapOf("ids", ids))
+        return this.cliente.post("/conversations/hide", corpo)
+    }
+
+    Resposta restaurar(List<String> ids) {
+        var corpo = json.encode(mapOf("ids", ids))
+        return this.cliente.post("/conversations/unhide", corpo)
+    }
+
+    Resposta arquivadas(String? cursor, Int limite, String contexto) {
+        return this.cliente.get("/conversations/archived" + Consulta.query(listOf(
+            Consulta.pagina(cursor, limite),
+            Consulta.par("context", contexto))))
+    }
+
+    static PaginaConversa paginaConversas(Resposta r) {
+        if (!r.ok()) { return PaginaConversa(listOf(), null) }
+        return json.decode<PaginaConversa>(r.corpo)
+    }
+
+    static PaginaMensagens paginaMensagens(Resposta r) {
+        if (!r.ok()) { return PaginaMensagens(listOf(), null) }
+        return json.decode<PaginaMensagens>(r.corpo)
+    }
+}

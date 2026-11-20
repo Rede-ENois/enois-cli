@@ -1,0 +1,94 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class FeedApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? cursor, Int limite) {
+        return this.cliente.get("/feed" + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta corporativo(String? cursor, Int limite) {
+        return this.cliente.get("/feed/corporate" + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta porUsuario(String usuario, String? cursor, Int limite) {
+        var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/posts"
+        return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta corporativoPorUsuario(String usuario, String? cursor, Int limite) {
+        var caminho = "/corporate/" + ConsultaTextos.caminho(usuario) + "/posts"
+        return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta respostas(String usuario, String? cursor, Int limite) {
+        var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/replies"
+        return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta salvos(String? cursor, Int limite) {
+        return this.cliente.get("/feed/saved" + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta obter(String id) {
+        return this.cliente.get("/feed/posts/" + ConsultaTextos.caminho(id))
+    }
+
+    Resposta publicar(String conteudo) {
+        var corpo = json.encode(mapOf(
+            "type", "INSIGHT",
+            "content", conteudo))
+        return this.cliente.post("/feed/posts", corpo)
+    }
+
+    Resposta votarEnquete(String id, Int opcao) {
+        var corpo = json.encode(mapOf("option", opcao))
+        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/poll/vote", corpo)
+    }
+
+    Resposta marcarVisto(String vistoAte) {
+        var corpo = json.encode(mapOf("seenUntil", vistoAte))
+        return this.cliente.post("/feed/seen", corpo)
+    }
+
+    Resposta apagar(String id) {
+        return this.cliente.delete("/feed/posts/" + ConsultaTextos.caminho(id))
+    }
+
+    Resposta restaurar(String id) {
+        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/restore", "")
+    }
+
+    Resposta editar(String id, String conteudo) {
+        var corpo = json.encode(mapOf("content", conteudo))
+        return this.cliente.patch("/feed/posts/" + ConsultaTextos.caminho(id), corpo)
+    }
+
+    Resposta salvar(String id) {
+        return this.cliente.post("/feed/posts/" + ConsultaTextos.caminho(id) + "/save", "")
+    }
+
+    static PaginaPost paginaPost(Resposta r) {
+        if (!r.ok()) { return PaginaPost(listOf(), null) }
+        return json.decode<PaginaPost>(r.corpo)
+    }
+
+    static PaginaFeed paginaFeed(Resposta r) {
+        if (!r.ok()) { return PaginaFeed(listOf(), null, null) }
+        return json.decode<PaginaFeed>(r.corpo)
+    }
+
+    static Bool paginaVazia(PaginaPost p) {
+        if (p.items == null) { return true }
+        return p.items.size() == 0
+    }
+}

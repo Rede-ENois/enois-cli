@@ -1,0 +1,106 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaColecoes {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var r = ColecoesApi(this.cliente).listar(null, 24)
+            var itens = ColecoesApi.pagina(r).items
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("coleções"))
+            if (itens == null || itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma coleção — crie uma para organizar seus salvos")))
+                Entrada.pausar()
+                return
+            }
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                var c = itens.get(i)
+                var contagem = 0
+                if (c.postCount != null) { contagem = c.postCount }
+                var titulo = ""
+                if (c.title != null) { titulo = c.title }
+                println(Tema.destaque(titulo) + Tema.suave(" · " + String.valueOf(contagem) + " posts"))
+                if (c.description != null) { println("  " + c.description) }
+            }
+            println("")
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                opcoes.add(itens.get(i).title)
+            }
+            opcoes.add("nova coleção")
+            var escolha = Entrada.menu("coleções", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == itens.size()) {
+                this.criar()
+            } else {
+                this.colecao(itens.get(escolha))
+            }
+        }
+    }
+
+    void criar() {
+        var titulo = Entrada.textoObrigatorio("título da coleção")
+        var descricao = Entrada.texto("descrição (opcional)")
+        var r = ColecoesApi(this.cliente).criar(titulo, descricao)
+        if (r.ok()) {
+            println(Tema.ok("coleção criada"))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    void colecao(Colecao c) {
+        var r = ColecoesApi(this.cliente).posts(c.id, null, 24)
+        if (!r.ok()) {
+            println(Tema.erro(r.mensagem()))
+            Entrada.pausar()
+            return
+        }
+        var itens = ColecoesApi.paginaPosts(r).items
+        var titulo = ""
+        if (c.title != null) { titulo = c.title }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque(titulo))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        if (itens == null || itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("coleção vazia")))
+            Entrada.pausar()
+            return
+        }
+        var posts = listOf<PostResumo>()
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var post = itens.get(i).post
+            if (post != null) {
+                posts.add(post)
+                var trecho = ""
+                if (post.content != null) { trecho = post.content }
+                if (trecho.length > 48) { trecho = trecho.substring(0, 48) + "…" }
+                opcoes.add(trecho)
+            }
+        }
+        var escolha = Entrada.menu(titulo, opcoes, "voltar")
+        if (escolha < 0) { return }
+        TelaPost(this.cliente).executar(posts.get(escolha))
+    }
+}
