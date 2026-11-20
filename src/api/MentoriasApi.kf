@@ -1,0 +1,87 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class MentoriasApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? especialidade, String? termo, String? cursor, Int limite) {
+        return this.cliente.get("/mentors" + Consulta.query(listOf(
+            Consulta.par("expertise", especialidade),
+            Consulta.par("query", termo),
+            Consulta.par("cursor", cursor),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta obter(String mentorId) {
+        return this.cliente.get("/mentors/" + ConsultaTextos.caminho(mentorId))
+    }
+
+    Resposta criar(List<String> especialidades, String preco) {
+        var lista = ""
+        for (var e in especialidades) {
+            if (lista.length > 0) { lista = lista + "," }
+            lista = lista + "\"" + e + "\""
+        }
+        return this.cliente.post("/mentors",
+            "{\"expertise\":[" + lista + "],\"price\":\"" + preco + "\"}")
+    }
+
+    Resposta editar(String mentorId, List<String> especialidades, String preco) {
+        var lista = ""
+        for (var e in especialidades) {
+            if (lista.length > 0) { lista = lista + "," }
+            lista = lista + "\"" + e + "\""
+        }
+        return this.cliente.patch("/mentors/" + ConsultaTextos.caminho(mentorId),
+            "{\"expertise\":[" + lista + "],\"price\":\"" + preco + "\"}")
+    }
+
+    Resposta apagar(String mentorId) {
+        return this.cliente.delete("/mentors/" + ConsultaTextos.caminho(mentorId))
+    }
+
+    Resposta vagas(String mentorId) {
+        return this.cliente.get("/mentors/" + ConsultaTextos.caminho(mentorId) + "/slots")
+    }
+
+    Resposta criarVaga(String mentorId, String comecaEm) {
+        return this.cliente.post("/mentors/" + ConsultaTextos.caminho(mentorId) + "/slots",
+            json.encode(mapOf("startsAt", comecaEm)))
+    }
+
+    Resposta apagarVaga(String mentorId, String vagaId) {
+        return this.cliente.delete("/mentors/" + ConsultaTextos.caminho(mentorId)
+            + "/slots/" + ConsultaTextos.caminho(vagaId))
+    }
+
+    Resposta agendar(String mentorId, String vagaId) {
+        return this.cliente.post("/mentors/" + ConsultaTextos.caminho(mentorId) + "/sessions",
+            json.encode(mapOf("slotId", vagaId)))
+    }
+
+    Resposta entrarNaSala(String mentorId, String sessaoId) {
+        return this.cliente.post("/mentors/" + ConsultaTextos.caminho(mentorId)
+            + "/sessions/" + ConsultaTextos.caminho(sessaoId) + "/join", "{}")
+    }
+
+    Resposta minhasSessoes() {
+        return this.cliente.get("/mentors/sessions/mine")
+    }
+
+    static PaginaMentores pagina(Resposta r) {
+        if (!r.ok()) { return PaginaMentores(listOf<Mentor>(), null) }
+        try {
+            return json.decode<PaginaMentores>(r.corpo)
+        } catch (String e) {
+            return PaginaMentores(listOf<Mentor>(), null)
+        }
+    }
+}

@@ -1,0 +1,75 @@
+package api
+
+record Vaga(
+    String id,
+    String? titulo,
+    String? empresa,
+    String? local,
+    String? tipo,
+    String? nivel,
+    String? salario,
+    List<String>? habilidades,
+    String? publicadaEm,
+    Int? pontuacao,
+    String? descricao,
+    Troolean? candidatei,
+    Troolean? salvei,
+    Troolean? minha,
+    String? status
+)
+
+record PaginaVagas(List<Vaga>? items, String? nextCursor)
+
+record Freela(
+    String id,
+    String? titulo,
+    String? descricao,
+    String? orcamento,
+    String? prazo,
+    String? autor,
+    String? criadoEm,
+    String? status
+)
+
+record PaginaFreelas(List<Freela>? items, String? nextCursor)
+
+record Mentor(
+    String id,
+    String? usuarioId,
+    List<String>? especialidades,
+    String? avaliacao,
+    Int? sessoes,
+    String? preco,
+    Int? precoFaiscas,
+    String? proximaVaga
+)
+
+record PaginaMentores(List<Mentor>? items, String? nextCursor)
+
+record Compromisso(
+    String id,
+    String? escopo,
+    String? tipo,
+    String? titulo,
+    String? descricao,
+    String? comecaEm,
+    String? terminaEm,
+    String? fuso,
+    Troolean? diaInteiro,
+    String? estado,
+    String? recorrencia
+)
+
+record ItemAgenda(Compromisso? entrada, Troolean? souDono, Troolean? minhaParticipacao)
+
+record ParBusca(String? id, String? nome, String? usuario, String? avatar, String? pedidoId,
+                String? status, String? objetivo, String? assunto)
+
+record ParDupla(String id, String? objetivo, String? comecouEm, String? semana,
+                Troolean? meuCheckin, Troolean? checkinDoPar)
+
+record MetaPopular(String? chave, String? objetivo, Int? buscas)
+
+record MeusPares(ParBusca? pedidoAberto, List<ParDupla>? duplas)
+
+record PaginaPares(List<ParBusca>? items, String? nextCursor)

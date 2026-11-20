@@ -1,0 +1,57 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class FreelancesApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? termo, String? cursor, Int limite) {
+        return this.cliente.get("/freelances" + Consulta.query(listOf(
+            Consulta.par("q", termo),
+            Consulta.par("cursor", cursor),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta meus() {
+        return this.cliente.get("/me/freelances")
+    }
+
+    Resposta criar(String titulo, String descricao) {
+        return this.cliente.post("/freelances",
+            json.encode(mapOf("title", titulo, "description", descricao)))
+    }
+
+    Resposta editar(String freelaId, String titulo, String descricao) {
+        return this.cliente.patch("/freelances/" + ConsultaTextos.caminho(freelaId),
+            json.encode(mapOf("title", titulo, "description", descricao)))
+    }
+
+    Resposta apagar(String freelaId) {
+        return this.cliente.delete("/freelances/" + ConsultaTextos.caminho(freelaId))
+    }
+
+    Resposta encerrar(String freelaId) {
+        return this.cliente.post("/freelances/" + ConsultaTextos.caminho(freelaId) + "/close", "{}")
+    }
+
+    Resposta propor(String freelaId, String mensagem) {
+        return this.cliente.post("/freelances/" + ConsultaTextos.caminho(freelaId) + "/proposals",
+            json.encode(mapOf("message", mensagem)))
+    }
+
+    static PaginaFreelas pagina(Resposta r) {
+        if (!r.ok()) { return PaginaFreelas(listOf<Freela>(), null) }
+        try {
+            return json.decode<PaginaFreelas>(r.corpo)
+        } catch (String e) {
+            return PaginaFreelas(listOf<Freela>(), null)
+        }
+    }
+}
