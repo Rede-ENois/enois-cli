@@ -1,0 +1,66 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class EmpresasApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta diretorio(String? termo, String? setor, Int limite) {
+        return this.cliente.get("/empresas/diretorio" + Consulta.query(listOf(
+            Consulta.par("query", termo),
+            Consulta.par("sector", setor),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta obter(String empresaId) {
+        return this.cliente.get("/empresas/" + ConsultaTextos.caminho(empresaId))
+    }
+
+    Resposta pagina(String slug) {
+        return this.cliente.get("/empresa/" + ConsultaTextos.caminho(slug))
+    }
+
+    Resposta seguir(String empresaId) {
+        return this.cliente.post("/empresas/" + ConsultaTextos.caminho(empresaId)
+            + "/follow", "{}")
+    }
+
+    Resposta deixarDeSeguir(String empresaId) {
+        return this.cliente.delete("/empresas/" + ConsultaTextos.caminho(empresaId) + "/follow")
+    }
+
+    Resposta membros(String empresaId) {
+        return this.cliente.get("/empresas/" + ConsultaTextos.caminho(empresaId) + "/members")
+    }
+
+    Resposta microprojetos(String empresaId) {
+        return this.cliente.get("/empresas/" + ConsultaTextos.caminho(empresaId)
+            + "/microprojetos")
+    }
+
+    Resposta microprojeto(String projetoId) {
+        return this.cliente.get("/microprojetos/" + ConsultaTextos.caminho(projetoId))
+    }
+
+    Resposta concluirMicroprojeto(String projetoId) {
+        return this.cliente.post("/microprojetos/"
+            + ConsultaTextos.caminho(projetoId) + "/complete", "{}")
+    }
+
+    Resposta propostasDoMicroprojeto(String projetoId) {
+        return this.cliente.get("/microprojetos/"
+            + ConsultaTextos.caminho(projetoId) + "/proposals")
+    }
+
+    Resposta escolherProposta(String projetoId, String propostaId) {
+        return this.cliente.post("/microprojetos/" + ConsultaTextos.caminho(projetoId)
+            + "/proposals/" + ConsultaTextos.caminho(propostaId) + "/select", "{}")
+    }
+}

@@ -1,0 +1,72 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ModeracaoApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta historico(String usuario, Int limite) {
+        return this.cliente.get("/admin/moderation/users/"
+            + ConsultaTextos.caminho(usuario) + "/history" + Consulta.par("limit",
+                Consulta.numero(limite)))
+    }
+
+    Resposta advertencias(String usuario) {
+        return this.cliente.get("/admin/moderation/users/"
+            + ConsultaTextos.caminho(usuario) + "/warnings")
+    }
+
+    Resposta advertir(String usuario, String motivo) {
+        return this.cliente.post("/admin/moderation/users/"
+            + ConsultaTextos.caminho(usuario) + "/sanction",
+            json.encode(mapOf("type", "WARNING", "reason", motivo)))
+    }
+
+    Resposta removerAdvertencia(String advertenciaId) {
+        return this.cliente.post("/admin/moderation/warnings/"
+            + ConsultaTextos.caminho(advertenciaId) + "/revoke", "{}")
+    }
+
+    Resposta removerPost(String postId) {
+        return this.cliente.post("/admin/moderation/posts/"
+            + ConsultaTextos.caminho(postId) + "/remove", "{}")
+    }
+
+    Resposta candidaturasModeração(String estado, Int limite) {
+        return this.cliente.get("/admin/moderator-applications" + Consulta.query(listOf(
+            Consulta.par("status", estado),
+            Consulta.par("limit", Consulta.numero(limite)))))
+    }
+
+    Resposta aprovarModeração(String candidaturaId) {
+        return this.cliente.post("/admin/moderator-applications/"
+            + ConsultaTextos.caminho(candidaturaId) + "/approve", "{}")
+    }
+
+    Resposta recusarModeração(String candidaturaId) {
+        return this.cliente.post("/admin/moderator-applications/"
+            + ConsultaTextos.caminho(candidaturaId) + "/reject", "{}")
+    }
+
+    Resposta emails(Int limite) {
+        return this.cliente.get("/admin/emails" + Consulta.par("limit",
+            Consulta.numero(limite)))
+    }
+
+    Resposta ipsBloqueados(Int limite) {
+        return this.cliente.get("/admin/blocked-ips" + Consulta.par("limit",
+            Consulta.numero(limite)))
+    }
+
+    Resposta desbloquearIp(String ip) {
+        return this.cliente.post("/admin/blocked-ips/"
+            + ConsultaTextos.caminho(ip) + "/unblock", "{}")
+    }
+}

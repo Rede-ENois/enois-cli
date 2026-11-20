@@ -1,0 +1,77 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ServicosApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? cursor, Int limite) {
+        return this.cliente.get("/servicos" + Consulta.pagina(cursor, limite))
+    }
+
+    Resposta criarOferta(String titulo, Int preco) {
+        return this.cliente.post("/servicos/ofertas",
+            json.encode(mapOf("title", titulo, "price", Consulta.numero(preco))))
+    }
+
+    Resposta editarOferta(String ofertaId, String titulo, Int preco) {
+        return this.cliente.put("/servicos/ofertas/" + ConsultaTextos.caminho(ofertaId),
+            json.encode(mapOf("title", titulo, "price", Consulta.numero(preco))))
+    }
+
+    Resposta apagarOferta(String ofertaId) {
+        return this.cliente.delete("/servicos/ofertas/" + ConsultaTextos.caminho(ofertaId))
+    }
+
+    Resposta contratoDaOferta(String ofertaId) {
+        return this.cliente.post("/servicos/ofertas/" + ConsultaTextos.caminho(ofertaId)
+            + "/contratar", "{}")
+    }
+
+    Resposta chatDaOferta(String ofertaId) {
+        return this.cliente.post("/servicos/ofertas/" + ConsultaTextos.caminho(ofertaId)
+            + "/chat", "{}")
+    }
+
+    Resposta criarPedido(String titulo, String descricao) {
+        return this.cliente.post("/servicos/pedidos",
+            json.encode(mapOf("title", titulo, "description", descricao)))
+    }
+
+    Resposta propostasDoPedido(String pedidoId) {
+        return this.cliente.get("/servicos/pedidos/"
+            + ConsultaTextos.caminho(pedidoId) + "/propostas")
+    }
+
+    Resposta proporNoPedido(String pedidoId, String mensagem) {
+        return this.cliente.post("/servicos/pedidos/" + ConsultaTextos.caminho(pedidoId)
+            + "/propostas", json.encode(mapOf("message", mensagem)))
+    }
+
+    Resposta escolherProposta(String pedidoId, String propostaId) {
+        return this.cliente.post("/servicos/pedidos/" + ConsultaTextos.caminho(pedidoId)
+            + "/escolher", json.encode(mapOf("proposalId", propostaId)))
+    }
+
+    Resposta aceitarContrato(String contratoId) {
+        return this.cliente.post("/servicos/contratos/"
+            + ConsultaTextos.caminho(contratoId) + "/aceitar", "{}")
+    }
+
+    Resposta entregarContrato(String contratoId) {
+        return this.cliente.post("/servicos/contratos/"
+            + ConsultaTextos.caminho(contratoId) + "/entregar", "{}")
+    }
+
+    Resposta reembolsoContrato(String contratoId) {
+        return this.cliente.post("/servicos/contratos/"
+            + ConsultaTextos.caminho(contratoId) + "/reembolso", "{}")
+    }
+}
