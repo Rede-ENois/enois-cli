@@ -2,10 +2,10 @@ package api
 
 record ResultadoBusca(
     String id,
-    String? tipo,
-    String? titulo,
-    String? subtitulo,
-    String? imagem,
+    String? type,
+    String? title,
+    String? subtitle,
+    String? image,
     String? href
 )
 
@@ -13,52 +13,95 @@ record PaginaBusca(List<ResultadoBusca>? items, String? nextCursor)
 
 record Comunidade(
     String id,
-    String? nome,
-    String? descricao,
-    String? assunto,
-    Int? membros,
-    Troolean? entrou,
+    String? name,
+    String? description,
+    Int? members,
+    String? topic,
+    String? cover,
     String? avatar,
-    String? cidade,
-    String? estado
+    String? bannerHtml,
+    Troolean? joined,
+    String? city,
+    String? state
 )
 
 record PaginaComunidades(List<Comunidade>? items, String? nextCursor)
 
+record MembroComunidade(String? userId, String? username, String? name, String? avatar, String? role)
+record PaginaMembrosComunidade(List<MembroComunidade>? items, String? nextCursor)
+
+record CanalComunidade(String? id, String? name, String? slug, String? topic, String? description, String? createdAt)
+record ListaCanais(List<CanalComunidade>? items)
+
 record Grupo(
     String id,
     String? slug,
-    String? nome,
-    String? descricao,
-    String? assunto,
-    String? modoEntrada,
+    String? name,
+    String? description,
+    String? topic,
+    String? avatar,
+    String? banner,
+    String? joinMode,
     String? status,
-    Int? membros,
-    String? meuPapel,
-    Troolean? entrou,
-    String? criadoEm
+    Int? members,
+    String? viewerRole,
+    Troolean? joined,
+    Troolean? requestPending,
+    String? createdAt
 )
 
 record PaginaGrupos(List<Grupo>? items, String? nextCursor)
 
+record MembroGrupo(String? userId, String? username, String? name, String? avatar, String? role, String? joinedAt)
+record PaginaMembrosGrupo(List<MembroGrupo>? items, String? nextCursor)
+
+record PedidoGrupo(String? id, String? userId, String? username, String? name, String? avatar, String? message, String? createdAt)
+record PaginaPedidosGrupo(List<PedidoGrupo>? items, String? nextCursor)
+
+record TopicoGrupo(String? id, String? name, String? description, Int? position, String? status)
+record ListaTopicos(List<TopicoGrupo>? items)
+record PaginaTopicos(List<TopicoGrupo>? items, String? nextCursor)
+
 record Evento(
     String id,
-    String? titulo,
-    String? data,
-    String? hora,
-    String? formato,
-    String? anfitriao,
-    Int? participantes,
-    String? local,
-    String? linkTransmissao,
-    Troolean? expirado,
-    Troolean? confirmado,
-    String? recorrencia,
+    String? title,
+    String? date,
+    String? time,
+    String? format,
+    String? host,
+    Int? attendees,
+    String? cover,
+    String? streamUrl,
+    String? location,
+    Troolean? expired,
+    Troolean? attending,
+    String? recurrence,
+    String? seriesId,
+    String? nextOccurrenceDate,
+    String? city,
+    String? state,
     Troolean? tamoJunto
 )
 
 record PaginaEventos(List<Evento>? items, String? nextCursor)
 
-record Colecao(String id, String? nome, String? descricao, Int? posts)
-
+record Colecao(String id, String? title, String? description, Int? postCount, String? createdAt)
 record PaginaColecoes(List<Colecao>? items, String? nextCursor)
+record ColecaoPost(String? postId, PostResumo? post, String? adicionadoAt)
+record PaginaColecaoPosts(List<ColecaoPost>? items, String? nextCursor)
+
+record PostGrupo(
+    String id,
+    String? groupId,
+    String? topicId,
+    String? authorName,
+    String? authorUsername,
+    String? authorAvatar,
+    String? content,
+    Troolean? pinned,
+    Int? reactions,
+    Int? comments,
+    String? createdAt
+)
+
+record PaginaPostsGrupo(List<PostGrupo>? items, String? nextCursor)

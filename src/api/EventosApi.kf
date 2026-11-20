@@ -51,6 +51,17 @@ class EventosApi {
             json.encode(mapOf("recurrence", recorrencia)))
     }
 
+    static Evento unico(Resposta r) {
+        var vazio = Evento("", null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<Evento>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
     static PaginaEventos pagina(Resposta r) {
         if (!r.ok()) { return PaginaEventos(listOf<Evento>(), null) }
         try {

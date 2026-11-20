@@ -53,6 +53,15 @@ class ColecoesApi {
             + "/posts/" + ConsultaTextos.caminho(postId))
     }
 
+    static PaginaColecaoPosts paginaPosts(Resposta r) {
+        if (!r.ok()) { return PaginaColecaoPosts(listOf<ColecaoPost>(), null) }
+        try {
+            return json.decode<PaginaColecaoPosts>(r.corpo)
+        } catch (String e) {
+            return PaginaColecaoPosts(listOf<ColecaoPost>(), null)
+        }
+    }
+
     static PaginaColecoes pagina(Resposta r) {
         if (!r.ok()) { return PaginaColecoes(listOf<Colecao>(), null) }
         try {

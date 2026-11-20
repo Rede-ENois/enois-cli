@@ -1,0 +1,42 @@
+package screens
+
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Menu
+
+class TelaExplorar {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("explorar"))
+            println(Tema.mudo("o que você quer descobrir hoje?"))
+            var escolha = Entrada.menu("descobrir",
+                listOf("buscar", "comunidades", "grupos", "eventos", "coleções"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                TelaBusca(this.cliente).executar()
+            } else if (escolha == 1) {
+                TelaComunidades(this.cliente).executar()
+            } else if (escolha == 2) {
+                TelaGrupos(this.cliente).executar()
+            } else if (escolha == 3) {
+                TelaEventos(this.cliente).executar()
+            } else if (escolha == 4) {
+                TelaColecoes(this.cliente).executar()
+            }
+        }
+    }
+}

@@ -1,0 +1,216 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaComunidades {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = this.descoberta()
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("comunidades"))
+            if (itens.size() == 0) {
+                println(Caixa.simples(Lista.vazia("nenhuma comunidade encontrada")))
+            }
+            var opcoes = listOf<String>()
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                println(Lista.item(this.nome(itens.get(i)), this.resumo(itens.get(i))))
+                opcoes.add(this.nome(itens.get(i)))
+            }
+            opcoes.add("minhas comunidades")
+            opcoes.add("favoritas")
+            opcoes.add("criar comunidade")
+            var escolha = Entrada.menu("descobrir", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < itens.size()) {
+                this.abrir(itens.get(escolha))
+            } else if (escolha == itens.size()) {
+                this.lista(ComunidadesApi.pagina(ComunidadesApi(this.cliente).minhas(24)).items, "minhas comunidades")
+            } else if (escolha == itens.size() + 1) {
+                this.lista(ComunidadesApi.pagina(ComunidadesApi(this.cliente).favoritas(24)).items, "favoritas")
+            } else if (escolha == itens.size() + 2) {
+                this.criar()
+            }
+        }
+    }
+
+    List<Comunidade> descoberta() {
+        var itens = ComunidadesApi.pagina(ComunidadesApi(this.cliente).listar(null, null, null, null, null, 24)).items
+        if (itens == null) { return listOf<Comunidade>() }
+        return itens
+    }
+
+    void lista(List<Comunidade>? itens, String titulo) {
+        if (itens == null || itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nada por aqui ainda")))
+            Entrada.pausar()
+            return
+        }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque(titulo))
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            println(Lista.item(this.nome(itens.get(i)), this.resumo(itens.get(i))))
+            opcoes.add(this.nome(itens.get(i)))
+        }
+        var escolha = Entrada.menu(titulo, opcoes, "voltar")
+        if (escolha >= 0) { this.abrir(itens.get(escolha)) }
+    }
+
+    void abrir(Comunidade c) {
+        var api = ComunidadesApi(this.cliente)
+        var atual = ComunidadesApi.unica(api.obter(c.id))
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Caixa.simples(this.cartao(atual)))
+            var opcoes = listOf("mural", "membros", "canais")
+            if ("" + atual.joined == "true") {
+                opcoes.add("sair")
+                opcoes.add("desfavoritar")
+            } else {
+                opcoes.add("entrar")
+                opcoes.add("favoritar")
+            }
+            var escolha = Entrada.menu(this.nome(atual), opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.mural(atual)
+            } else if (escolha == 1) {
+                this.membros(atual)
+            } else if (escolha == 2) {
+                this.canais(atual)
+            } else {
+                var acao = opcoes.get(escolha)
+                if (acao == "entrar") { this.avisar(api.entrar(atual.id), "entrou na comunidade") }
+                if (acao == "sair") { this.avisar(api.sair(atual.id), "saiu da comunidade") }
+                if (acao == "favoritar") { this.avisar(api.favoritar(atual.id), "comunidade favoritada") }
+                if (acao == "desfavoritar") { this.avisar(api.desfavoritar(atual.id), "comunidade removida dos favoritos") }
+                atual = ComunidadesApi.unica(api.obter(atual.id))
+            }
+        }
+    }
+
+    void mural(Comunidade c) {
+        var itens = FeedApi.paginaPost(ComunidadesApi(this.cliente).mural(c.id, null, 24)).items
+        if (itens == null || itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("mural vazio")))
+            Entrada.pausar()
+            return
+        }
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("mural · " + this.nome(c)))
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var p = itens.get(i)
+            var trecho = ""
+            if (p.content != null) { trecho = p.content }
+            if (trecho.length > 56) { trecho = trecho.substring(0, 56) + "…" }
+            opcoes.add(trecho)
+        }
+        var escolha = Entrada.menu("mural", opcoes, "voltar")
+        if (escolha >= 0) { TelaPost(this.cliente).executar(itens.get(escolha)) }
+    }
+
+    void membros(Comunidade c) {
+        var itens = ComunidadesApi.membrosDe(ComunidadesApi(this.cliente).membros(c.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("membros · " + this.nome(c)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("sem membros visíveis")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var m = itens.get(i)
+            var nome = ""
+            if (m.name != null) { nome = m.name }
+            if (nome.length == 0 && m.userId != null) { nome = m.userId }
+            var usuario = ""
+            if (m.username != null) { usuario = " @" + m.username }
+            var papel = ""
+            if (m.role != null) { papel = " · " + m.role }
+            println(Lista.item(nome + usuario, papel))
+        }
+        Entrada.pausar()
+    }
+
+    void canais(Comunidade c) {
+        var itens = ComunidadesApi.canaisDe(ComunidadesApi(this.cliente).canais(c.id))
+        print(Ansi.LIMPAR)
+        println(Tema.destaque("canais · " + this.nome(c)))
+        if (itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum canal criado")))
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var canal = itens.get(i)
+            var nome = ""
+            if (canal.name != null) { nome = canal.name }
+            var assunto = ""
+            if (canal.topic != null) { assunto = canal.topic }
+            println(Lista.item(nome, assunto))
+        }
+        Entrada.pausar()
+    }
+
+    void criar() {
+        var nome = Entrada.textoObrigatorio("nome da comunidade")
+        var descricao = Entrada.texto("descrição (opcional)")
+        this.avisar(ComunidadesApi(this.cliente).criar(nome, descricao), "comunidade criada")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String nome(Comunidade c) {
+        if (c.name != null) { return c.name }
+        return c.id
+    }
+
+    String resumo(Comunidade c) {
+        var texto = ""
+        if (c.topic != null) { texto = c.topic }
+        if (c.members != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(c.members) + " membros"
+        }
+        if (c.city != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + c.city
+        }
+        return texto
+    }
+
+    String cartao(Comunidade c) {
+        var texto = this.nome(c)
+        if (c.topic != null) { texto = texto + "\n" + Tema.suave(c.topic) }
+        if (c.description != null) { texto = texto + "\n" + c.description }
+        var rodape = this.resumo(c)
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.mudo(rodape) }
+        if ("" + c.joined == "true") { texto = texto + "\n" + Tema.ok("você participa") }
+        return texto
+    }
+}

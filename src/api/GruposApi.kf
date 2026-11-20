@@ -101,6 +101,61 @@ class GruposApi {
         return this.cliente.post("/groups/" + ConsultaTextos.caminho(grupoId) + "/close", "{}")
     }
 
+    static List<MembroGrupo> membrosDe(Resposta r) {
+        if (!r.ok()) { return listOf<MembroGrupo>() }
+        try {
+            var pagina = json.decode<PaginaMembrosGrupo>(r.corpo)
+            if (pagina.items == null) { return listOf<MembroGrupo>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<MembroGrupo>()
+        }
+    }
+
+    static List<PedidoGrupo> pedidosDe(Resposta r) {
+        if (!r.ok()) { return listOf<PedidoGrupo>() }
+        try {
+            var pagina = json.decode<PaginaPedidosGrupo>(r.corpo)
+            if (pagina.items == null) { return listOf<PedidoGrupo>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<PedidoGrupo>()
+        }
+    }
+
+    static List<TopicoGrupo> topicosDe(Resposta r) {
+        if (!r.ok()) { return listOf<TopicoGrupo>() }
+        try {
+            var pagina = json.decode<PaginaTopicos>(r.corpo)
+            if (pagina.items == null) { return listOf<TopicoGrupo>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<TopicoGrupo>()
+        }
+    }
+
+    static List<PostGrupo> postsDe(Resposta r) {
+        if (!r.ok()) { return listOf<PostGrupo>() }
+        try {
+            var pagina = json.decode<PaginaPostsGrupo>(r.corpo)
+            if (pagina.items == null) { return listOf<PostGrupo>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<PostGrupo>()
+        }
+    }
+
+    static Grupo unico(Resposta r) {
+        var vazio = Grupo("", null, null, null, null, null, null, null, null, null,
+            null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<Grupo>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
     static PaginaGrupos pagina(Resposta r) {
         if (!r.ok()) { return PaginaGrupos(listOf<Grupo>(), null) }
         try {

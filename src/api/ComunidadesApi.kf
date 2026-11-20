@@ -107,6 +107,36 @@ class ComunidadesApi {
         return this.cliente.delete("/communities/" + ConsultaTextos.caminho(comunidadeId))
     }
 
+    static List<MembroComunidade> membrosDe(Resposta r) {
+        if (!r.ok()) { return listOf<MembroComunidade>() }
+        try {
+            var pagina = json.decode<PaginaMembrosComunidade>(r.corpo)
+            if (pagina.items == null) { return listOf<MembroComunidade>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<MembroComunidade>()
+        }
+    }
+
+    static List<CanalComunidade> canaisDe(Resposta r) {
+        if (!r.ok()) { return listOf<CanalComunidade>() }
+        try {
+            return json.decode<List<CanalComunidade>>(r.corpo)
+        } catch (String e) {
+            return listOf<CanalComunidade>()
+        }
+    }
+
+    static Comunidade unica(Resposta r) {
+        var vazia = Comunidade("", null, null, null, null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazia }
+        try {
+            return json.decode<Comunidade>(r.corpo)
+        } catch (String e) {
+            return vazia
+        }
+    }
+
     static PaginaComunidades pagina(Resposta r) {
         if (!r.ok()) { return PaginaComunidades(listOf<Comunidade>(), null) }
         try {

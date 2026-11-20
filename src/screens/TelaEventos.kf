@@ -1,0 +1,146 @@
+package screens
+
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Resposta
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaEventos {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var itens = EventosApi.pagina(EventosApi(this.cliente).listar(null, null, 24, null)).items
+            var eventos = listOf<Evento>()
+            if (itens != null) { eventos = itens }
+            print(Ansi.LIMPAR)
+            println(Menu.topo("énois", ""))
+            println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+            println(Tema.destaque("eventos"))
+            var total = eventos.size()
+            var opcoes = listOf<String>()
+            if (total == 0) {
+                println(Caixa.simples(Lista.vazia("nenhum evento na agenda")))
+            }
+            for (var i = 0; i < eventos.size(); i = i + 1) {
+                println(Lista.item(this.quando(eventos.get(i)), this.quem(eventos.get(i))))
+                opcoes.add(this.quando(eventos.get(i)))
+            }
+            opcoes.add("criar evento")
+            var escolha = Entrada.menu("agenda", opcoes, "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha < total) {
+                this.abrir(eventos.get(escolha))
+            } else {
+                this.criar()
+            }
+        }
+    }
+
+    void abrir(Evento e) {
+        var api = EventosApi(this.cliente)
+        var atual = EventosApi.unico(api.obter(e.id))
+        print(Ansi.LIMPAR)
+        println(Caixa.simples(this.cartao(atual)))
+        var opcoes = listOf<String>()
+        var expirado = "" + atual.expired == "true"
+        var confirmado = "" + atual.attending == "true"
+        if (expirado) {
+            println(Tema.mudo("este evento já aconteceu"))
+        } else if (confirmado) {
+            println(Tema.ok("presença confirmada"))
+            opcoes.add("cancelar presença")
+        } else {
+            opcoes.add("confirmar presença")
+        }
+        var escolha = Entrada.menu(this.titulo(atual), opcoes, "voltar")
+        if (escolha < 0) { return }
+        if (opcoes.get(escolha) == "confirmar presença") {
+            this.avisar(api.participar(atual.id), "presença confirmada")
+        } else if (opcoes.get(escolha) == "cancelar presença") {
+            this.avisar(api.cancelarPresenca(atual.id), "presença cancelada")
+        }
+    }
+
+    void criar() {
+        var titulo = Entrada.textoObrigatorio("título")
+        var data = Entrada.textoObrigatorio("data (AAAA-MM-DD)")
+        var hora = Entrada.textoObrigatorio("hora (HH:MM)")
+        var formato = Entrada.texto("formato (online, presencial…)")
+        if (formato.length == 0) { formato = "online" }
+        this.avisar(EventosApi(this.cliente).criar(titulo, data, hora, formato), "evento criado")
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+
+    String titulo(Evento e) {
+        if (e.title != null) { return e.title }
+        return e.id
+    }
+
+    String quando(Evento e) {
+        var texto = this.titulo(e)
+        var detalhe = ""
+        if (e.date != null) { detalhe = e.date }
+        if (e.time != null) {
+            if (detalhe.length > 0) { detalhe = detalhe + " " }
+            detalhe = detalhe + e.time
+        }
+        if (detalhe.length > 0) { texto = texto + " · " + detalhe }
+        if ("" + e.tamoJunto == "true") { texto = texto + " · tamo junto" }
+        return texto
+    }
+
+    String quem(Evento e) {
+        var texto = ""
+        if (e.host != null) { texto = e.host }
+        if (e.attendees != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + String.valueOf(e.attendees) + " confirmados"
+        }
+        if (e.format != null) {
+            if (texto.length > 0) { texto = texto + " · " }
+            texto = texto + e.format
+        }
+        return texto
+    }
+
+    String cartao(Evento e) {
+        var texto = this.titulo(e)
+        var detalhe = this.quando(e)
+        if (detalhe.length > 0) { texto = texto + "\n" + detalhe }
+        var rodape = this.quem(e)
+        if (e.location != null) {
+            if (rodape.length > 0) { rodape = rodape + " · " }
+            rodape = rodape + e.location
+        }
+        if (e.streamUrl != null) {
+            if (rodape.length > 0) { rodape = rodape + " · " }
+            rodape = rodape + e.streamUrl
+        }
+        if (rodape.length > 0) { texto = texto + "\n" + Tema.mudo(rodape) }
+        if (e.nextOccurrenceDate != null) {
+            texto = texto + "\n" + Tema.mudo("próxima ocorrência: " + e.nextOccurrenceDate)
+        }
+        return texto
+    }
+}
