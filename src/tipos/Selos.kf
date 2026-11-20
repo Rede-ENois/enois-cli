@@ -1,0 +1,6 @@
+package tipos
+
+record Selo(String? type, String? name, String? description, String? category, String? categoryName,
+            String? grantedAt, Int? evidenceCount, Int? minCount, Int? maxCount, String? emblem)
+
+record SelosDoPost(List<String>? seals, List<String>? mySeals)

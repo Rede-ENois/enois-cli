@@ -1,0 +1,9 @@
+package tipos
+
+record Denuncia(String id, String? reporterId, String? targetType, String? targetId, String? reason,
+                String? description, String? status, String? createdAt)
+
+record DenunciaPainel(String? reportId, String? targetType, String? targetId, String? reason,
+                      String? description, String? createdAt, String? reporter, String? authorId,
+                      String? author, String? content, Int? punishVotes, Int? dismissVotes,
+                      String? myVote, Int? quorum)

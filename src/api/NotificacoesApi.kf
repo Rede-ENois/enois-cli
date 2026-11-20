@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,18 +14,18 @@ class NotificacoesApi {
     }
 
     Resposta listar(String? cursor, Int limite, String contexto) {
-        return this.cliente.get("/notifications" + Consulta.query(listOf(
-            Consulta.pagina(cursor, limite),
-            Consulta.par("context", contexto))))
+        return this.cliente.get("/notifications" + Cliente.query(listOf(
+            Cliente.pagina(cursor, limite),
+            Cliente.par("context", contexto))))
     }
 
     Resposta resumo(String contexto) {
-        return this.cliente.get("/notifications/unread-summary" + Consulta.query(listOf(
-            Consulta.par("context", contexto))))
+        return this.cliente.get("/notifications/unread-summary" + Cliente.query(listOf(
+            Cliente.par("context", contexto))))
     }
 
     Resposta marcarLida(String id) {
-        return this.cliente.post("/notifications/" + ConsultaTextos.caminho(id) + "/read", "")
+        return this.cliente.post("/notifications/" + Cliente.caminho(id) + "/read", "")
     }
 
     Resposta marcarTodasLidas() {
@@ -33,6 +34,30 @@ class NotificacoesApi {
 
     Resposta preferencias() {
         return this.cliente.get("/me/notification-preferences")
+    }
+
+    Resposta salvarPreferencias(String corpo) {
+        return this.cliente.put("/me/notification-preferences", corpo)
+    }
+
+    static String corpoPreferencias(String resumo, String social, String mensagens, String grupos,
+        String vagas, String sistema, String projetos) {
+        return "{\"weeklyDigest\":" + resumo
+            + ",\"pushSocial\":" + social
+            + ",\"pushMessages\":" + mensagens
+            + ",\"pushGroups\":" + grupos
+            + ",\"pushJobs\":" + vagas
+            + ",\"pushSystem\":" + sistema
+            + ",\"communityProjects\":" + projetos + "}"
+    }
+
+    static PreferenciasAviso preferenciasDe(Resposta r) {
+        if (!r.ok()) { return PreferenciasAviso(null, null, null, null, null, null, null, null) }
+        try {
+            return json.decode<PreferenciasAviso>(r.corpo)
+        } catch (String e) {
+            return PreferenciasAviso(null, null, null, null, null, null, null, null)
+        }
     }
 
     static PaginaNotificacao pagina(Resposta r) {

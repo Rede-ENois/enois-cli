@@ -1,0 +1,24 @@
+package tipos
+
+record Evento(
+    String id,
+    String? title,
+    String? date,
+    String? time,
+    String? format,
+    String? host,
+    Int? attendees,
+    String? cover,
+    String? streamUrl,
+    String? location,
+    Troolean? expired,
+    Troolean? attending,
+    String? recurrence,
+    String? seriesId,
+    String? nextOccurrenceDate,
+    String? city,
+    String? state,
+    Troolean? tamoJunto
+)
+
+record PaginaEventos(List<Evento>? items, String? nextCursor)

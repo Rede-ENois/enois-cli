@@ -1,0 +1,14 @@
+package tipos
+
+record Compromisso(String id, String? scope, String? kind, String? title, String? description,
+                   String? startsAt, String? endsAt, String? timeZoneId, Troolean? allDay,
+                   String? state, String? sourceType, String? sourceId, String? createdAt,
+                   String? updatedAt, String? cancelledAt, String? seriesId, String? recurrence)
+
+record ItemAgenda(Compromisso? entry, Troolean? owner, String? participation)
+
+record DetalheAgenda(Compromisso? entry, Troolean? owner, String? participation,
+                     List<ParticipanteAgenda>? participants)
+
+record ParticipanteAgenda(String id, String? entryId, String? username, String? state,
+                          String? invitedAt, String? respondedAt)

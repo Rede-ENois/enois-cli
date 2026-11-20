@@ -15,8 +15,9 @@ O `enois-cli` é o cliente de terminal do Énóis: mesmas telas e funcionalidade
 
 ```
 src/
-  main.kf            ponto de entrada: configuração, sessão, menu raiz
+  main.kf            ponto de entrada: instancia App
   core/              motor do TUI
+    App.kf           laço principal, contextos e navegação
     Ansi.kf          largura, padding, códigos de escape
     Tema.kf          tokens do design system convertidos para ANSI
     Entrada.kf       leitura de linha, menus numerados, confirmação
@@ -25,16 +26,13 @@ src/
     Cliente.kf       HTTP + JSON com os headers que a API exige
     Resposta.kf      status, corpo e mensagem de erro da API
   ui/                componentes visuais reutilizáveis
-    Caixa.kf         painéis com borda e cabeçalho
-    Lista.kf         itens, vazio, agrupamentos
-    Menu.kf          topo da aplicação e blocos de navegação
-    Campo.kf, Badge.kf
-  api/               um arquivo por domínio, com os `record` do contrato
-    Tipos*.kf        os records que espelham os DTOs do backend
+    Caixa.kf, Lista.kf, Menu.kf, Campo.kf, Badge.kf
+  tipos/             um arquivo por domínio de `src/types/application`
+    Feed.kf, Vagas.kf, Carteira.kf, ...
+  api/               um arquivo por módulo de `src/lib/api`
     FeedApi.kf, VagasApi.kf, CarteiraApi.kf, ...
-  screens/           uma tela por área do produto
-    TelaHub*         hubs (explorar, social, trabalho, economia, conta)
-    Tela*            telas de cada área
+  screens/           uma tela por rota do produto
+    TelaFeed.kf, TelaVagas.kf, TelaColagem.kf, ...
   tests/             suíte `kof test` (package tests)
 build/               saída de `kof build` (ignorada pelo git)
 docs/                esta pasta
@@ -55,9 +53,10 @@ pega).
 
 ## Camadas
 
-`main.kf` monta a `Sessao` e a `Config`, instancia o `Cliente` e entrega ao laço
-de telas. Cada tela recebe `(Sessao, Cliente, Tema)` e devolve a próxima tela. Nada
-de estado global escondido: a tela é uma função de renderização + um comando.
+`main.kf` só chama `App().executar()`. O `App` monta `Config`, `Sessao` e
+`Cliente`, mantém o contexto (social ou profissional) e abre cada tela, que
+recebe o `Cliente` — e a `Sessao` quando precisa do usuário logado. Nada de
+estado global escondido: a tela é um laço de renderização + comando.
 
 ## Contrato com a API
 

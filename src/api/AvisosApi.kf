@@ -1,0 +1,37 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class AvisosApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta atual() {
+        return this.cliente.get("/avisos/ativo")
+    }
+
+    Resposta publicar(String titulo, String corpoHtml, String superficie) {
+        return this.cliente.put("/admin/avisos",
+            json.encode(mapOf("title", titulo, "bodyHtml", corpoHtml, "surface", superficie)))
+    }
+
+    Resposta retirar() {
+        return this.cliente.delete("/admin/avisos")
+    }
+
+    static Aviso? unico(Resposta r) {
+        if (r.codigo != 200) { return null }
+        try {
+            return json.decode<Aviso>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+}

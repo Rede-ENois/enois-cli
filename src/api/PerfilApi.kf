@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -17,21 +18,21 @@ class PerfilApi {
     }
 
     Resposta porUsuario(String usuario) {
-        return this.cliente.get("/users/" + ConsultaTextos.caminho(usuario))
+        return this.cliente.get("/users/" + Cliente.caminho(usuario))
     }
 
     Resposta porId(String id) {
-        return this.cliente.get("/users/by-id/" + ConsultaTextos.caminho(id))
+        return this.cliente.get("/users/by-id/" + Cliente.caminho(id))
     }
 
     Resposta rede(String usuario, String tipo) {
-        var caminho = "/users/" + ConsultaTextos.caminho(usuario) + "/" + tipo
+        var caminho = "/users/" + Cliente.caminho(usuario) + "/" + tipo
         return this.cliente.get(caminho)
     }
 
     Resposta buscar(String termo) {
-        return this.cliente.get("/users/search" + Consulta.query(listOf(
-            Consulta.par("q", termo))))
+        return this.cliente.get("/users/search" + Cliente.query(listOf(
+            Cliente.par("q", termo))))
     }
 
     Resposta editar(String nome, String bio) {

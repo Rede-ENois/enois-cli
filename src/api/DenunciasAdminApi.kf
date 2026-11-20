@@ -1,0 +1,38 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class DenunciasAdminApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta pendentes(Int limite) {
+        return this.cliente.get("/admin/reports" + Cliente.par("limit",
+            Cliente.numero(limite)))
+    }
+
+    Resposta revisar(String denunciaId) {
+        return this.cliente.get("/admin/reports/" + Cliente.caminho(denunciaId))
+    }
+
+    Resposta decidir(String denunciaId, String acao, String nota) {
+        return this.cliente.post("/admin/reports/" + Cliente.caminho(denunciaId)
+            + "/" + Cliente.caminho(acao), json.encode(mapOf("note", nota)))
+    }
+
+    static List<DenunciaPainel> painelDe(Resposta r) {
+        if (!r.ok()) { return listOf<DenunciaPainel>() }
+        try {
+            return json.decode<List<DenunciaPainel>>(r.corpo)
+        } catch (String e) {
+            return listOf<DenunciaPainel>()
+        }
+    }
+}

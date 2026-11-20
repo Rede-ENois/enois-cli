@@ -2,6 +2,7 @@ package api
 
 import core.Cliente
 import core.Resposta
+import tipos.*
 import kof.json
 
 class PapoRetoApi {
@@ -12,14 +13,18 @@ class PapoRetoApi {
         this.cliente = cliente
     }
 
-    Resposta publicacoes(String assunto, String janela) {
-        return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
-            + "/publicacoes" + Consulta.par("janela", janela))
+    Resposta assuntos(String? comunidade) {
+        return this.cliente.get("/papo-reto" + Cliente.query(listOf(
+            Cliente.par("comunidade", comunidade))))
     }
 
     Resposta linhaDoTempo(String assunto, String janela) {
-        return this.cliente.get("/papo-reto/" + ConsultaTextos.caminho(assunto)
-            + "/timeline" + Consulta.par("janela", janela))
+        return this.cliente.get("/papo-reto/" + Cliente.caminho(assunto)
+            + "/timeline" + Cliente.par("janela", janela))
+    }
+
+    Resposta analise() {
+        return this.cliente.get("/papo-reto/analise")
     }
 
     static List<ReclameAssunto> assuntosDe(Resposta r) {

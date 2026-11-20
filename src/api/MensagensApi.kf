@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,9 +14,9 @@ class MensagensApi {
     }
 
     Resposta listar(String? cursor, Int limite, String contexto) {
-        return this.cliente.get("/conversations" + Consulta.query(listOf(
-            Consulta.pagina(cursor, limite),
-            Consulta.par("context", contexto))))
+        return this.cliente.get("/conversations" + Cliente.query(listOf(
+            Cliente.pagina(cursor, limite),
+            Cliente.par("context", contexto))))
     }
 
     Resposta abrirDireta(String idUsuario) {
@@ -29,40 +30,40 @@ class MensagensApi {
     }
 
     Resposta obter(String idConversa) {
-        return this.cliente.get("/conversations/" + ConsultaTextos.caminho(idConversa))
+        return this.cliente.get("/conversations/" + Cliente.caminho(idConversa))
     }
 
     Resposta listarMensagens(String idConversa, String? cursor, Int limite) {
-        var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa) + "/messages"
-        return this.cliente.get(caminho + Consulta.pagina(cursor, limite))
+        var caminho = "/conversations/" + Cliente.caminho(idConversa) + "/messages"
+        return this.cliente.get(caminho + Cliente.pagina(cursor, limite))
     }
 
     Resposta enviar(String idConversa, String texto) {
-        var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa) + "/messages"
+        var caminho = "/conversations/" + Cliente.caminho(idConversa) + "/messages"
         var corpo = json.encode(mapOf("text", texto))
         return this.cliente.post(caminho, corpo)
     }
 
     Resposta reagir(String idConversa, String idMensagem, String tipo) {
-        var caminho = "/conversations/" + ConsultaTextos.caminho(idConversa)
-            + "/messages/" + ConsultaTextos.caminho(idMensagem) + "/reactions"
+        var caminho = "/conversations/" + Cliente.caminho(idConversa)
+            + "/messages/" + Cliente.caminho(idMensagem) + "/reactions"
         var corpo = json.encode(mapOf("type", tipo))
         return this.cliente.post(caminho, corpo)
     }
 
     Resposta marcarLida(String idConversa) {
-        return this.cliente.post("/conversations/" + ConsultaTextos.caminho(idConversa) + "/read", "")
+        return this.cliente.post("/conversations/" + Cliente.caminho(idConversa) + "/read", "")
     }
 
     Resposta buscar(String termo, Int limite) {
-        return this.cliente.get("/conversations/search" + Consulta.query(listOf(
-            Consulta.par("q", termo),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/conversations/search" + Cliente.query(listOf(
+            Cliente.par("q", termo),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta naoLidas(String contexto) {
-        return this.cliente.get("/conversations/unread-count" + Consulta.query(listOf(
-            Consulta.par("context", contexto))))
+        return this.cliente.get("/conversations/unread-count" + Cliente.query(listOf(
+            Cliente.par("context", contexto))))
     }
 
     Resposta esconder(List<String> ids) {
@@ -76,9 +77,9 @@ class MensagensApi {
     }
 
     Resposta arquivadas(String? cursor, Int limite, String contexto) {
-        return this.cliente.get("/conversations/archived" + Consulta.query(listOf(
-            Consulta.pagina(cursor, limite),
-            Consulta.par("context", contexto))))
+        return this.cliente.get("/conversations/archived" + Cliente.query(listOf(
+            Cliente.pagina(cursor, limite),
+            Cliente.par("context", contexto))))
     }
 
     static PaginaConversa paginaConversas(Resposta r) {

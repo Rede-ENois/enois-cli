@@ -1,0 +1,6 @@
+package tipos
+
+record ReclameAssunto(String? subject, String? status, Double? pontuacao, Long? falasPost,
+                      Long? falasComentario, Long? pessoas, Long? falasUltimaHora, Double? crescimento)
+
+record IntervaloFalas(String? hora, Long? falas)

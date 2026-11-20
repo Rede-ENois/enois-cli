@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,13 +14,13 @@ class AgendaApi {
     }
 
     Resposta agenda(String de, String ate) {
-        return this.cliente.get("/calendar/entries" + Consulta.query(listOf(
-            Consulta.par("from", de),
-            Consulta.par("to", ate))))
+        return this.cliente.get("/calendar/entries" + Cliente.query(listOf(
+            Cliente.par("from", de),
+            Cliente.par("to", ate))))
     }
 
     Resposta obter(String entradaId) {
-        return this.cliente.get("/calendar/entries/" + ConsultaTextos.caminho(entradaId))
+        return this.cliente.get("/calendar/entries/" + Cliente.caminho(entradaId))
     }
 
     Resposta criar(String titulo, String comecaEm, String terminaEm) {
@@ -28,31 +29,31 @@ class AgendaApi {
     }
 
     Resposta editar(String entradaId, String titulo, String comecaEm, String terminaEm) {
-        return this.cliente.patch("/calendar/entries/" + ConsultaTextos.caminho(entradaId),
+        return this.cliente.patch("/calendar/entries/" + Cliente.caminho(entradaId),
             json.encode(mapOf("title", titulo, "startsAt", comecaEm, "endsAt", terminaEm)))
     }
 
     Resposta cancelar(String entradaId) {
-        return this.cliente.delete("/calendar/entries/" + ConsultaTextos.caminho(entradaId))
+        return this.cliente.delete("/calendar/entries/" + Cliente.caminho(entradaId))
     }
 
     Resposta recorrencia(String entradaId, String cadencia) {
-        return this.cliente.post("/calendar/entries/" + ConsultaTextos.caminho(entradaId)
+        return this.cliente.post("/calendar/entries/" + Cliente.caminho(entradaId)
             + "/series", json.encode(mapOf("recurrence", cadencia)))
     }
 
     Resposta convidar(String entradaId, String usuario) {
-        return this.cliente.post("/calendar/entries/" + ConsultaTextos.caminho(entradaId)
+        return this.cliente.post("/calendar/entries/" + Cliente.caminho(entradaId)
             + "/participants", json.encode(mapOf("username", usuario)))
     }
 
     Resposta participantes(String entradaId) {
-        return this.cliente.get("/calendar/entries/" + ConsultaTextos.caminho(entradaId)
+        return this.cliente.get("/calendar/entries/" + Cliente.caminho(entradaId)
             + "/participants")
     }
 
     Resposta responder(String entradaId, String estado) {
-        return this.cliente.patch("/calendar/entries/" + ConsultaTextos.caminho(entradaId)
+        return this.cliente.patch("/calendar/entries/" + Cliente.caminho(entradaId)
             + "/participants/me", json.encode(mapOf("state", estado)))
     }
 

@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,9 +14,9 @@ class MarketplaceApi {
     }
 
     Resposta listar(String? categoria, Int limite) {
-        return this.cliente.get("/marketplace" + Consulta.query(listOf(
-            Consulta.par("kind", categoria),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/marketplace" + Cliente.query(listOf(
+            Cliente.par("kind", categoria),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta meus() {
@@ -33,26 +34,26 @@ class MarketplaceApi {
     Resposta publicar(String titulo, String categoria, Int preco, String? descricao) {
         return this.cliente.post("/marketplace",
             json.encode(mapOf("title", titulo, "itemKind", categoria,
-                "price", Consulta.numero(preco), "description", descricao)))
+                "price", Cliente.numero(preco), "description", descricao)))
     }
 
     Resposta comprar(String anuncioId) {
-        return this.cliente.post("/marketplace/" + ConsultaTextos.caminho(anuncioId) + "/buy", "{}")
+        return this.cliente.post("/marketplace/" + Cliente.caminho(anuncioId) + "/buy", "{}")
     }
 
     Resposta obterConteudo(String compraId) {
         return this.cliente.get("/marketplace/purchases/"
-            + ConsultaTextos.caminho(compraId) + "/content")
+            + Cliente.caminho(compraId) + "/content")
     }
 
     Resposta liberar(String compraId) {
         return this.cliente.post("/marketplace/purchases/"
-            + ConsultaTextos.caminho(compraId) + "/release", "{}")
+            + Cliente.caminho(compraId) + "/release", "{}")
     }
 
     Resposta reembolsar(String compraId) {
         return this.cliente.post("/marketplace/purchases/"
-            + ConsultaTextos.caminho(compraId) + "/refund", "{}")
+            + Cliente.caminho(compraId) + "/refund", "{}")
     }
 
     static List<Anuncio> anunciosDe(Resposta r) {

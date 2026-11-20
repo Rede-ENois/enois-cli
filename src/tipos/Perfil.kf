@@ -1,0 +1,38 @@
+package tipos
+
+record Perfil(
+    String id,
+    String? username,
+    String? name,
+    String? headline,
+    String? company,
+    String? location,
+    String? avatar,
+    String? avatarUrl,
+    String? banner,
+    String? badge,
+    String? bio,
+    List<String>? skills,
+    List<String>? goals,
+    String? availability,
+    String? portfolio,
+    List<String>? externalLinks,
+    Troolean? openToWork,
+    Troolean? isMentor,
+    Int? connectionsCount,
+    Int? followersCount,
+    Int? reputation,
+    Int? postsCount,
+    List<String>? badges,
+    String? city,
+    String? state,
+    String? statusText
+)
+
+record PessoaRede(String id, String? username, String? name, String? headline, String? avatar)
+
+record PessoaPedido(String? id, String? fromUserId, String? toUserId, String? status, String? direction, PessoaRede? peer)
+
+record PaginaPedidos(List<PessoaPedido>? items, String? nextCursor)
+
+record AutorSimples(String? id, String? name, String? username, String? avatar)

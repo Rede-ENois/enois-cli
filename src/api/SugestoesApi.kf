@@ -1,0 +1,50 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class SugestoesApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta enviar(String alvo, String titulo, String corpo) {
+        return this.cliente.post("/suggestions", json.encode(mapOf(
+            "target", alvo, "title", titulo, "body", corpo)))
+    }
+
+    Resposta minhas(Int limite) {
+        return this.cliente.get("/suggestions/mine" + Cliente.par("limit",
+            Cliente.numero(limite)))
+    }
+
+    Resposta fila(String estado, Int limite) {
+        return this.cliente.get("/admin/suggestions" + Cliente.query(listOf(
+            Cliente.par("status", estado),
+            Cliente.par("limit", Cliente.numero(limite)))))
+    }
+
+    Resposta aprovar(String sugestaoId) {
+        return this.cliente.post("/admin/suggestions/" + Cliente.caminho(sugestaoId)
+            + "/approve", "{}")
+    }
+
+    Resposta recusar(String sugestaoId) {
+        return this.cliente.post("/admin/suggestions/" + Cliente.caminho(sugestaoId)
+            + "/reject", "{}")
+    }
+
+    static List<Sugestao> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<Sugestao>() }
+        try {
+            return json.decode<List<Sugestao>>(r.corpo)
+        } catch (String e) {
+            return listOf<Sugestao>()
+        }
+    }
+}

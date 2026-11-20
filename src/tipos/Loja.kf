@@ -1,0 +1,13 @@
+package tipos
+
+record ItemLoja(String id, String? kind, String? collection, String? name, String? description,
+                Int? priceMf, String? cssRing, Int? releaseOrder, Troolean? available,
+                Troolean? purchasable, Troolean? owned, Troolean? equipped)
+
+record LojaColecao(String id, String? name, Troolean? available, List<JanelaLoja>? windows,
+                   List<LookLoja>? looks)
+
+record JanelaLoja(String? start, String? end)
+
+record LookLoja(String id, String? title, List<String>? items, String? statusIcon,
+                String? statusText, Troolean? owned, Troolean? equipped)

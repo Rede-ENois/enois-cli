@@ -1,0 +1,139 @@
+package core
+
+import api.*
+import screens.*
+import ui.*
+
+class App {
+
+    Config config
+    Sessao sessao
+    Cliente cliente
+
+    public constructor() {
+        this.config = Config.carregar()
+        this.sessao = Sessao.carregar()
+        this.cliente = Cliente(this.config, this.sessao)
+    }
+
+    void executar() {
+        var contexto = "social"
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            var escolha = this.tela(contexto)
+            if (escolha == "sair") { rodando = false }
+            if (escolha == "contexto") {
+                if (contexto == "social") {
+                    contexto = "profissional"
+                } else {
+                    contexto = "social"
+                }
+            }
+            this.abrir(escolha)
+        }
+        println(Tema.mudo("até já"))
+    }
+
+    String tela(String contexto) {
+        print(Ansi.LIMPAR)
+        var usuario = ""
+        if (this.sessao.logado() && this.sessao.usuario != null) {
+            usuario = this.sessao.usuario.usuario
+        }
+        println(Menu.topo("énois", usuario))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        if (!this.sessao.logado()) {
+            println(Tema.mudo("sem sessão · alvo: " + this.config.alvo))
+            var entrada = Entrada.menu("você", listOf("entrar", "trocar alvo"), "encerrar")
+            if (entrada < 0) { return "sair" }
+            if (entrada == 0) { return "entrar" }
+            return "trocar alvo"
+        }
+        println(Tema.ok("sessão ativa") + Tema.mudo(" · " + contexto
+            + " · alvo: " + this.config.alvo))
+        var opcoes = this.opcoes(contexto)
+        var escolha = Entrada.menu("principal", opcoes, "encerrar")
+        if (escolha < 0) { return "sair" }
+        return opcoes.get(escolha)
+    }
+
+    List<String> opcoes(String contexto) {
+        var opcoes = listOf("feed", "mensagens", "rede", "salvos")
+        if (contexto == "social") {
+            opcoes.add("comunidades")
+            opcoes.add("grupos")
+            opcoes.add("eventos")
+            opcoes.add("blogs")
+            opcoes.add("par de estudo")
+        } else {
+            opcoes.add("vagas")
+            opcoes.add("freelances")
+            opcoes.add("serviços")
+            opcoes.add("empresas")
+            opcoes.add("mentoria")
+        }
+        opcoes.add("explorar")
+        opcoes.add("perfil")
+        opcoes.add("notificações")
+        opcoes.add("conta")
+        opcoes.add("trocar interface")
+        opcoes.add("trocar alvo")
+        opcoes.add("sair")
+        return opcoes
+    }
+
+    void abrir(String escolha) {
+        if (escolha == "entrar") {
+            var entrar = TelaEntrar(this.cliente, this.config, this.sessao)
+            if (entrar.executar()) { entrar.provarFeed() }
+        } else if (escolha == "feed") {
+            TelaFeed(this.cliente).executar()
+        } else if (escolha == "mensagens") {
+            TelaMensagens(this.cliente, this.sessao).executar()
+        } else if (escolha == "rede") {
+            TelaRede(this.cliente, this.sessao).executar()
+        } else if (escolha == "salvos") {
+            TelaSalvos(this.cliente).executar()
+        } else if (escolha == "comunidades") {
+            TelaComunidades(this.cliente).executar()
+        } else if (escolha == "grupos") {
+            TelaGrupos(this.cliente).executar()
+        } else if (escolha == "eventos") {
+            TelaEventos(this.cliente).executar()
+        } else if (escolha == "blogs") {
+            TelaBlogs(this.cliente).executar()
+        } else if (escolha == "par de estudo") {
+            TelaParesEstudo(this.cliente).executar()
+        } else if (escolha == "vagas") {
+            TelaVagas(this.cliente).executar()
+        } else if (escolha == "freelances") {
+            TelaFreelances(this.cliente).executar()
+        } else if (escolha == "serviços") {
+            TelaServicos(this.cliente).executar()
+        } else if (escolha == "empresas") {
+            TelaEmpresas(this.cliente).executar()
+        } else if (escolha == "mentoria") {
+            TelaMentoria(this.cliente).executar()
+        } else if (escolha == "explorar") {
+            TelaExplorar(this.cliente, this.sessao).executar()
+        } else if (escolha == "perfil") {
+            TelaPerfil(this.cliente, this.sessao).executar()
+        } else if (escolha == "notificações") {
+            TelaNotificacoes(this.cliente).executar()
+        } else if (escolha == "conta") {
+            TelaConta(this.cliente, this.sessao).executar()
+        } else if (escolha == "trocar alvo") {
+            this.alternarAlvo()
+        }
+    }
+
+    void alternarAlvo() {
+        if (this.config.alvo == "qa") {
+            this.config.usaAlvo("producao")
+        } else {
+            this.config.usaAlvo("qa")
+        }
+        this.config.salvar()
+        println(Tema.suave("alvo: " + this.config.alvo))
+    }
+}

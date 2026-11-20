@@ -1,0 +1,6 @@
+package tipos
+
+record JanelaTermometro(String? periodo, Troolean? amostraSuficiente, Long? manifestacoes,
+                        Long? participantes, String? dominante, List<EmocaoTermometro>? emocoes)
+
+record EmocaoTermometro(String? emocao, Int? porcentagem, Long? contagem)

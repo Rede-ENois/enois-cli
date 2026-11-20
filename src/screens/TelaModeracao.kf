@@ -1,5 +1,6 @@
 package screens
 
+import tipos.*
 import api.*
 import core.Ansi
 import core.Cliente
@@ -81,7 +82,7 @@ class TelaModeracao {
     }
 
     void minhas() {
-        var itens = ModeracaoApi.denunciasDe(ModeracaoApi(this.cliente).minhasDenuncias())
+        var itens = DenunciasApi.listaDe(DenunciasApi(this.cliente).minhas())
         print(Ansi.LIMPAR)
         println(Tema.destaque("minhas denúncias"))
         if (itens.size() == 0) {

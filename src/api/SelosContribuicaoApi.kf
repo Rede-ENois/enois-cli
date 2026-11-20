@@ -1,0 +1,37 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class SelosContribuicaoApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta deUsuario(String usuario) {
+        return this.cliente.get("/users/" + Cliente.caminho(usuario) + "/seals")
+    }
+
+    Resposta criterios() {
+        return this.cliente.get("/seals/criteria")
+    }
+
+    Resposta evidencias(String usuario, String categoria) {
+        return this.cliente.get("/users/" + Cliente.caminho(usuario) + "/seals/"
+            + Cliente.caminho(categoria) + "/evidence")
+    }
+
+    static List<Selo> selosDe(Resposta r) {
+        if (!r.ok()) { return listOf<Selo>() }
+        try {
+            return json.decode<List<Selo>>(r.corpo)
+        } catch (String e) {
+            return listOf<Selo>()
+        }
+    }
+}

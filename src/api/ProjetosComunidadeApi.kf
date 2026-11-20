@@ -1,0 +1,114 @@
+package api
+
+import tipos.*
+import core.Cliente
+import core.Resposta
+import kof.json
+
+class ProjetosComunidadeApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta catalogo(String? termo, String? ordem, Int limite, String? cursor) {
+        return this.cliente.get("/community-projects" + Cliente.query(listOf(
+            Cliente.par("query", termo),
+            Cliente.par("order", ordem),
+            Cliente.par("limit", Cliente.numero(limite)),
+            Cliente.par("cursor", cursor))))
+    }
+
+    Resposta deUsuario(String usuario) {
+        return this.cliente.get("/community-projects/" + Cliente.caminho(usuario))
+    }
+
+    Resposta porSlug(String usuario, String slug) {
+        return this.cliente.get("/community-projects/" + Cliente.caminho(usuario)
+            + "/" + Cliente.caminho(slug))
+    }
+
+    Resposta meus() {
+        return this.cliente.get("/me/community-projects")
+    }
+
+    Resposta enviar(String corpo) {
+        return this.cliente.post("/community-projects", corpo)
+    }
+
+    Resposta editar(String projetoId, String corpo) {
+        return this.cliente.patch("/community-projects/" + Cliente.caminho(projetoId), corpo)
+    }
+
+    Resposta remover(String projetoId) {
+        return this.cliente.delete("/community-projects/" + Cliente.caminho(projetoId))
+    }
+
+    Resposta reenviar(String projetoId) {
+        return this.cliente.post("/community-projects/" + Cliente.caminho(projetoId)
+            + "/resubmit", "{}")
+    }
+
+    Resposta pendentes(Int limite) {
+        return this.cliente.get("/moderation/community-projects?limit="
+            + Cliente.numero(limite))
+    }
+
+    Resposta aprovar(String projetoId, String nota) {
+        return this.cliente.post("/moderation/community-projects/"
+            + Cliente.caminho(projetoId) + "/approve", json.encode(mapOf("note", nota)))
+    }
+
+    Resposta recusar(String projetoId, String nota) {
+        return this.cliente.post("/moderation/community-projects/"
+            + Cliente.caminho(projetoId) + "/reject", json.encode(mapOf("note", nota)))
+    }
+
+    Resposta suspender(String projetoId, String nota) {
+        return this.cliente.post("/admin/community-projects/"
+            + Cliente.caminho(projetoId) + "/suspend", json.encode(mapOf("note", nota)))
+    }
+
+    static String corpoProjeto(String slug, String titulo, String descricao, String resumo,
+        String capa, String url, String repositorio, String tags, String categoria) {
+        return "{\"slug\":" + json.encode(slug)
+            + ",\"title\":" + json.encode(titulo)
+            + ",\"description\":" + json.encode(descricao)
+            + ",\"shortDescription\":" + json.encode(resumo)
+            + ",\"cover\":" + json.encode(capa)
+            + ",\"url\":" + json.encode(url)
+            + ",\"repoUrl\":" + json.encode(repositorio)
+            + ",\"tags\":" + json.encode(tags)
+            + ",\"category\":" + json.encode(categoria) + "}"
+    }
+
+    static List<ProjetoComunidade> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<ProjetoComunidade>() }
+        try {
+            return json.decode<List<ProjetoComunidade>>(r.corpo)
+        } catch (String e) {
+            return listOf<ProjetoComunidade>()
+        }
+    }
+
+    static PaginaProjetosComunidade paginaDe(Resposta r) {
+        var vazio = PaginaProjetosComunidade(listOf<ProjetoComunidade>(), null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<PaginaProjetosComunidade>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static ProjetoComunidade? unico(Resposta r) {
+        if (!r.ok()) { return null }
+        try {
+            return json.decode<ProjetoComunidade>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+}

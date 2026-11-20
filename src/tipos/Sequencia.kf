@@ -1,0 +1,4 @@
+package tipos
+
+record Sequencia(Int? currentDays, Int? longestDays, Troolean? todayDone, Int? freezesAvailable,
+                 String? lastFrozenDay)

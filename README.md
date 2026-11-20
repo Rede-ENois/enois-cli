@@ -18,14 +18,16 @@ Cliente de terminal (TUI) da rede Énóis — as mesmas telas e funcionalidades 
 
 ## Estado do projeto
 
-A TUI cobre as áreas do frontend: feed, perfil, mensagens, notificações,
-explorar (busca, comunidades, grupos, eventos, coleções), social (jogos,
-roleplay, blogs, murais, desafios, papo reto, empresas, projetos, selos),
-trabalho (vagas, freelas, serviços, mentoria, agenda), economia (carteira,
-loja, marketplace) e conta (preferências, avisos, moderação).
+A navegação segue a do frontend: os contextos social e profissional, com as
+seções você, comunidade, trabalho e explorar. Daí saem feed, mensagens, rede,
+salvos, comunidades, grupos, eventos, blogs, par de estudo, vagas, freelances,
+serviços, empresas, mentoria, perfil, notificações e conta, além do explorar
+(murais, coleções, selos, éroleplay, agenda, moderação, jogos, projetos, loja,
+marketplace).
 
-Cada área fala com o contrato real do backend — os `record` em `src/api/Tipos*`
-espelham os DTOs. Detalhes em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
+Cada área fala com o contrato real do backend. `src/api` tem um arquivo por
+módulo de `src/lib/api` do frontend e `src/tipos` um arquivo por domínio de
+`src/types/application`. Detalhes em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
 ## Rodar
 

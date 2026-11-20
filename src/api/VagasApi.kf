@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,18 +14,18 @@ class VagasApi {
     }
 
     Resposta listar(String? termo, String? cursor, Int limite) {
-        return this.cliente.get("/jobs" + Consulta.query(listOf(
-            Consulta.par("q", termo),
-            Consulta.par("cursor", cursor),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/jobs" + Cliente.query(listOf(
+            Cliente.par("q", termo),
+            Cliente.par("cursor", cursor),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta obter(String vagaId) {
-        return this.cliente.get("/jobs/" + ConsultaTextos.caminho(vagaId))
+        return this.cliente.get("/jobs/" + Cliente.caminho(vagaId))
     }
 
     Resposta minhas(String? cursor, Int limite) {
-        return this.cliente.get("/jobs/mine" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/jobs/mine" + Cliente.pagina(cursor, limite))
     }
 
     Resposta minhasCandidaturas(String? cursor, Int limite) {
@@ -37,38 +38,38 @@ class VagasApi {
     }
 
     Resposta editar(String vagaId, String titulo, String empresa) {
-        return this.cliente.put("/jobs/" + ConsultaTextos.caminho(vagaId),
+        return this.cliente.put("/jobs/" + Cliente.caminho(vagaId),
             json.encode(mapOf("title", titulo, "company", empresa)))
     }
 
     Resposta apagar(String vagaId) {
-        return this.cliente.delete("/jobs/" + ConsultaTextos.caminho(vagaId))
+        return this.cliente.delete("/jobs/" + Cliente.caminho(vagaId))
     }
 
     Resposta encerrar(String vagaId) {
-        return this.cliente.post("/jobs/" + ConsultaTextos.caminho(vagaId) + "/close", "{}")
+        return this.cliente.post("/jobs/" + Cliente.caminho(vagaId) + "/close", "{}")
     }
 
     Resposta candidatar(String vagaId) {
-        return this.cliente.post("/jobs/" + ConsultaTextos.caminho(vagaId)
+        return this.cliente.post("/jobs/" + Cliente.caminho(vagaId)
             + "/applications", json.encode(mapOf("answers", "{}")))
     }
 
     Resposta candidaturasDaVaga(String vagaId, Int limite) {
-        return this.cliente.get("/jobs/" + ConsultaTextos.caminho(vagaId)
-            + "/applications" + Consulta.par("limit", Consulta.numero(limite)))
+        return this.cliente.get("/jobs/" + Cliente.caminho(vagaId)
+            + "/applications" + Cliente.par("limit", Cliente.numero(limite)))
     }
 
     Resposta salvas(String? cursor, Int limite) {
-        return this.cliente.get("/jobs/saved" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/jobs/saved" + Cliente.pagina(cursor, limite))
     }
 
     Resposta salvar(String vagaId) {
-        return this.cliente.post("/jobs/" + ConsultaTextos.caminho(vagaId) + "/saves", "{}")
+        return this.cliente.post("/jobs/" + Cliente.caminho(vagaId) + "/saves", "{}")
     }
 
     Resposta dessalvar(String vagaId) {
-        return this.cliente.delete("/jobs/" + ConsultaTextos.caminho(vagaId) + "/saves")
+        return this.cliente.delete("/jobs/" + Cliente.caminho(vagaId) + "/saves")
     }
 
     static List<InscricaoVaga> inscricoesDe(Resposta r) {

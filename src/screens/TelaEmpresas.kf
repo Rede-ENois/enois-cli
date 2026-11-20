@@ -1,5 +1,6 @@
 package screens
 
+import tipos.*
 import api.*
 import core.Ansi
 import core.Cliente
@@ -127,15 +128,12 @@ class TelaEmpresas {
             }
             for (var i = 0; i < propostas.size(); i = i + 1) {
                 var proposta = propostas.get(i)
-                var valor = ""
-                if (proposta.price != null) { valor = String.valueOf(proposta.price) }
-                println(Lista.item(valor, this.texto(proposta.message)))
+                println(Lista.item(this.texto(proposta.status), this.texto(proposta.message)))
             }
             Entrada.pausar()
         } else if (escolha == 1) {
             var mensagem = Entrada.textoObrigatorio("sua proposta")
-            var valor = Entrada.numero("valor em faíscas", 1, 100000000)
-            this.avisar(api.propor(p.id, mensagem, valor), "proposta enviada")
+            this.avisar(api.propor(p.id, mensagem), "proposta enviada")
         }
     }
 

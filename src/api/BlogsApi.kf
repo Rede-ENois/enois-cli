@@ -1,0 +1,75 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class BlogsApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(Int limite, String? termo) {
+        return this.cliente.get("/blogs" + Cliente.query(listOf(
+            Cliente.par("limit", Cliente.numero(limite)),
+            Cliente.par("query", termo))))
+    }
+
+    Resposta obter(String slug) {
+        return this.cliente.get("/blogs/" + Cliente.caminho(slug))
+    }
+
+    Resposta meu() {
+        return this.cliente.get("/blogs/me")
+    }
+
+    Resposta criarMeu(String titulo, String? descricao) {
+        return this.cliente.put("/blogs/me",
+            json.encode(mapOf("title", titulo, "description", descricao)))
+    }
+
+    Resposta publicar(String titulo, String corpo, String formato) {
+        return this.cliente.post("/blogs/me/posts",
+            json.encode(mapOf("title", titulo, "body", corpo, "bodyFormat", formato)))
+    }
+
+    Resposta editarPost(String postId, String titulo, String corpo) {
+        return this.cliente.patch("/blogs/me/posts/" + Cliente.caminho(postId),
+            json.encode(mapOf("title", titulo, "body", corpo)))
+    }
+
+    Resposta apagarPost(String postId) {
+        return this.cliente.delete("/blogs/me/posts/" + Cliente.caminho(postId))
+    }
+
+    Resposta inscrever(String slug) {
+        return this.cliente.post("/blogs/" + Cliente.caminho(slug) + "/subscription", "{}")
+    }
+
+    Resposta desinscrever(String slug) {
+        return this.cliente.delete("/blogs/" + Cliente.caminho(slug) + "/subscription")
+    }
+
+    static List<ResumoBlog> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<ResumoBlog>() }
+        try {
+            return json.decode<List<ResumoBlog>>(r.corpo)
+        } catch (String e) {
+            return listOf<ResumoBlog>()
+        }
+    }
+
+    static BlogTerminal unico(Resposta r) {
+        var vazio = BlogTerminal("", null, null, null, null, null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<BlogTerminal>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+}

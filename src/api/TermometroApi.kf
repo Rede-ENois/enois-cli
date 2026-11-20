@@ -1,0 +1,28 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class TermometroApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta painel() {
+        return this.cliente.get("/termometro")
+    }
+
+    static List<JanelaTermometro> janelasDe(Resposta r) {
+        if (!r.ok()) { return listOf<JanelaTermometro>() }
+        try {
+            return json.decode<List<JanelaTermometro>>(r.corpo)
+        } catch (String e) {
+            return listOf<JanelaTermometro>()
+        }
+    }
+}

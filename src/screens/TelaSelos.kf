@@ -1,5 +1,6 @@
 package screens
 
+import tipos.*
 import api.*
 import core.Ansi
 import core.Cliente
@@ -23,7 +24,7 @@ class TelaSelos {
     void executar() {
         var usuario = ""
         if (this.sessao.usuario != null) { usuario = this.sessao.usuario.usuario }
-        var itens = SelosApi.selosDe(SelosApi(this.cliente).selosDeUsuario(usuario))
+        var itens = SelosContribuicaoApi.selosDe(SelosContribuicaoApi(this.cliente).deUsuario(usuario))
         print(Ansi.LIMPAR)
         println(Menu.topo("énois", ""))
         println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))

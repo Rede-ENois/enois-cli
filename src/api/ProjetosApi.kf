@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -17,7 +18,7 @@ class ProjetosApi {
     }
 
     Resposta deUsuario(String usuario) {
-        return this.cliente.get("/users/" + ConsultaTextos.caminho(usuario) + "/projects")
+        return this.cliente.get("/users/" + Cliente.caminho(usuario) + "/projects")
     }
 
     static List<ProjetoUsuario> listaDe(Resposta r) {

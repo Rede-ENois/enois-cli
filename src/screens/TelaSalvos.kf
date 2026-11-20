@@ -1,0 +1,46 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Tema
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class TelaSalvos {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar() {
+        var r = FeedApi(this.cliente).salvos(null, 20)
+        print(Ansi.LIMPAR)
+        println(Menu.topo("énois", ""))
+        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        println(Tema.destaque("salvos"))
+        if (!r.ok()) {
+            println(Tema.erro(r.mensagem()))
+            Entrada.pausar()
+            return
+        }
+        var itens = FeedApi.paginaFeed(r).items
+        if (itens == null || itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nada salvo ainda")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            opcoes.add(TelaFeed(this.cliente).resumo(itens.get(i)))
+        }
+        var escolha = Entrada.menu("guardados", opcoes, "voltar")
+        if (escolha < 0) { return }
+        TelaPost(this.cliente).executar(itens.get(escolha))
+    }
+}

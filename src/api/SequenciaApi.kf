@@ -1,0 +1,28 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class SequenciaApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta minha() {
+        return this.cliente.get("/me/streak")
+    }
+
+    static Sequencia? unica(Resposta r) {
+        if (!r.ok()) { return null }
+        try {
+            return json.decode<Sequencia>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+}

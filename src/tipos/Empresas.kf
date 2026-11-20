@@ -1,0 +1,22 @@
+package tipos
+
+record EmpresaResumo(String id, String? slug, String? name, String? description, String? sector,
+                     String? location, String? logo, String? cover)
+
+record EmpresaDiretorio(String? kind, String? slug, String? name, String? logo, String? sector,
+                        String? location, Long? openJobs, Long? openProjects, Long? followers)
+
+record EstatisticasEmpresa(Long? openProjects, Long? completedProjects, Long? openJobs,
+                          Long? followers)
+
+record PessoaEmpresa(String id, String? username, String? name, String? headline, String? avatar,
+                     String? identity, String? href)
+
+record MicroProjeto(String id, String? companyId, String? title, String? problem, String? scope,
+                    String? deliverables, String? acceptanceCriteria, Long? budget, String? deadline,
+                    String? status, String? createdAt, String? myProposal, Int? proposalCount)
+
+record PropostaMicroProjeto(String id, String? userId, String? message, String? status,
+                            String? proposedAt, PessoaEmpresa? person, String? conversationId)
+
+record DetalheMicroProjeto(MicroProjeto? project, List<PropostaMicroProjeto>? proposals)

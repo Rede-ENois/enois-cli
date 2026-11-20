@@ -1,0 +1,46 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class SelosPostApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta dePosts(List<String> ids) {
+        var juntos = ""
+        for (var i = 0; i < ids.size(); i = i + 1) {
+            if (i > 0) { juntos = juntos + "," }
+            juntos = juntos + ids.get(i)
+        }
+        return this.cliente.get("/feed/posts/seals" + Cliente.par("ids", juntos))
+    }
+
+    Resposta quemSelou(String postId) {
+        return this.cliente.get("/feed/posts/" + Cliente.caminho(postId) + "/seals/people")
+    }
+
+    Resposta selar(String postId, String selo) {
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/seals",
+            json.encode(mapOf("seal", selo)))
+    }
+
+    Resposta retirar(String postId) {
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/seals")
+    }
+
+    static SelosDoPost dePost(Resposta r) {
+        if (!r.ok()) { return SelosDoPost(listOf<String>(), listOf<String>()) }
+        try {
+            return json.decode<SelosDoPost>(r.corpo)
+        } catch (String e) {
+            return SelosDoPost(listOf<String>(), listOf<String>())
+        }
+    }
+}

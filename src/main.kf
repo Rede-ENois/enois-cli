@@ -1,74 +1,9 @@
+import tipos.*
 import core.*
 import api.*
 import ui.*
 import screens.*
 
 main() {
-    var cfg = Config.carregar()
-    var s = Sessao.carregar()
-    var cliente = Cliente(cfg, s)
-    var entrar = TelaEntrar(cliente, cfg, s)
-    var feed = TelaFeed(cliente)
-    var notificacoes = TelaNotificacoes(cliente)
-    var mensagens = TelaMensagens(cliente, s)
-    var perfil = TelaPerfil(cliente, s)
-    var explorar = TelaExplorar(cliente)
-    var trabalho = TelaTrabalho(cliente)
-    var economia = TelaEconomia(cliente)
-    var social = TelaSocial(cliente, s)
-    var conta = TelaConta(cliente, s)
-    var executando = true
-    while (executando && Entrada.ativa) {
-        print(Ansi.LIMPAR)
-        var usuario = ""
-        if (s.logado() && s.usuario != null) { usuario = s.usuario.usuario }
-        println(Menu.topo("énois", usuario))
-        println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
-        var estado = Tema.mudo("sem sessão · alvo: " + cfg.alvo)
-        if (s.logado()) { estado = Tema.ok("sessão ativa") + Tema.mudo(" · alvo: " + cfg.alvo) }
-        println(estado)
-        var opcoes = listOf<String>()
-        if (s.logado()) {
-            opcoes = listOf("feed", "explorar", "social", "trabalho", "economia",
-                "notificações", "mensagens", "perfil", "conta", "sair", "trocar alvo")
-        } else {
-            opcoes = listOf("entrar", "trocar alvo")
-        }
-        var escolha = Entrada.menu("principal", opcoes, "encerrar")
-        if (escolha < 0) {
-            executando = false
-        } else if (opcoes.get(escolha) == "entrar") {
-            if (entrar.executar()) { entrar.provarFeed() }
-        } else if (opcoes.get(escolha) == "notificações") {
-            notificacoes.executar()
-        } else if (opcoes.get(escolha) == "mensagens") {
-            mensagens.executar()
-        } else if (opcoes.get(escolha) == "perfil") {
-            perfil.executar()
-        } else if (opcoes.get(escolha) == "sair") {
-            cliente.sair()
-            println(Tema.mudo("sessão encerrada"))
-        } else if (opcoes.get(escolha) == "feed") {
-            feed.executar()
-        } else if (opcoes.get(escolha) == "explorar") {
-            explorar.executar()
-        } else if (opcoes.get(escolha) == "trabalho") {
-            trabalho.executar()
-        } else if (opcoes.get(escolha) == "economia") {
-            economia.executar()
-        } else if (opcoes.get(escolha) == "social") {
-            social.executar()
-        } else if (opcoes.get(escolha) == "conta") {
-            conta.executar()
-        } else if (opcoes.get(escolha) == "trocar alvo") {
-            if (cfg.alvo == "qa") {
-                cfg.usaAlvo("producao")
-            } else {
-                cfg.usaAlvo("qa")
-            }
-            cfg.salvar()
-            println(Tema.suave("alvo: " + cfg.alvo))
-        }
-    }
-    println(Tema.mudo("até já"))
+    App().executar()
 }

@@ -1,0 +1,97 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class MuraisApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta listar(String? cursor, Int limite) {
+        return this.cliente.get("/murais" + Cliente.pagina(cursor, limite))
+    }
+
+    Resposta obter(String muralId) {
+        return this.cliente.get("/murais/" + Cliente.caminho(muralId))
+    }
+
+    Resposta criar(String titulo, String? descricao) {
+        return this.cliente.post("/murais",
+            json.encode(mapOf("title", titulo, "description", descricao)))
+    }
+
+    Resposta editar(String muralId, String titulo, String descricao) {
+        return this.cliente.patch("/murais/" + Cliente.caminho(muralId),
+            json.encode(mapOf("title", titulo, "description", descricao)))
+    }
+
+    Resposta apagar(String muralId) {
+        return this.cliente.delete("/murais/" + Cliente.caminho(muralId))
+    }
+
+    Resposta minhasColecoes(String postId) {
+        return this.cliente.get("/murais/meus" + Cliente.par("postId", postId))
+    }
+
+    Resposta contribuicoes(String muralId, String? cursor, Int limite) {
+        return this.cliente.get("/murais/" + Cliente.caminho(muralId)
+            + "/contribuicoes" + Cliente.pagina(cursor, limite))
+    }
+
+    Resposta contribuir(String muralId, String postId) {
+        return this.cliente.post("/murais/" + Cliente.caminho(muralId) + "/contribuicoes",
+            json.encode(mapOf("postId", postId)))
+    }
+
+    Resposta retirar(String muralId, String postId) {
+        return this.cliente.delete("/murais/" + Cliente.caminho(muralId)
+            + "/contribuicoes/" + Cliente.caminho(postId))
+    }
+
+    static PaginaMurais pagina(Resposta r) {
+        if (!r.ok()) { return PaginaMurais(listOf<Mural>(), null) }
+        try {
+            return json.decode<PaginaMurais>(r.corpo)
+        } catch (String e) {
+            return PaginaMurais(listOf<Mural>(), null)
+        }
+    }
+
+    static Mural unico(Resposta r) {
+        var vazio = Mural("", null, null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<Mural>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<Contribuicao> contribuicoesDe(Resposta r) {
+        if (!r.ok()) { return listOf<Contribuicao>() }
+        try {
+            var pagina = json.decode<PaginaContribuicoes>(r.corpo)
+            if (pagina.items == null) { return listOf<Contribuicao>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<Contribuicao>()
+        }
+    }
+
+    static List<MuralDoPost> meusDe(Resposta r) {
+        if (!r.ok()) { return listOf<MuralDoPost>() }
+        try {
+            var pagina = json.decode<MeusMurais>(r.corpo)
+            if (pagina.items == null) { return listOf<MuralDoPost>() }
+            return pagina.items
+        } catch (String e) {
+            return listOf<MuralDoPost>()
+        }
+    }
+}

@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,11 +14,11 @@ class ColecoesApi {
     }
 
     Resposta listar(String? cursor, Int limite) {
-        return this.cliente.get("/colecoes" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/colecoes" + Cliente.pagina(cursor, limite))
     }
 
     Resposta obter(String colecaoId) {
-        return this.cliente.get("/colecoes/" + ConsultaTextos.caminho(colecaoId))
+        return this.cliente.get("/colecoes/" + Cliente.caminho(colecaoId))
     }
 
     Resposta criar(String nome, String? descricao) {
@@ -26,31 +27,31 @@ class ColecoesApi {
     }
 
     Resposta editar(String colecaoId, String nome, String? descricao) {
-        return this.cliente.patch("/colecoes/" + ConsultaTextos.caminho(colecaoId),
+        return this.cliente.patch("/colecoes/" + Cliente.caminho(colecaoId),
             json.encode(mapOf("name", nome, "description", descricao)))
     }
 
     Resposta apagar(String colecaoId) {
-        return this.cliente.delete("/colecoes/" + ConsultaTextos.caminho(colecaoId))
+        return this.cliente.delete("/colecoes/" + Cliente.caminho(colecaoId))
     }
 
     Resposta minhas(String postId) {
-        return this.cliente.get("/colecoes/minhas" + Consulta.par("postId", postId))
+        return this.cliente.get("/colecoes/minhas" + Cliente.par("postId", postId))
     }
 
     Resposta posts(String colecaoId, String? cursor, Int limite) {
-        return this.cliente.get("/colecoes/" + ConsultaTextos.caminho(colecaoId)
-            + "/posts" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/colecoes/" + Cliente.caminho(colecaoId)
+            + "/posts" + Cliente.pagina(cursor, limite))
     }
 
     Resposta guardarPost(String colecaoId, String postId) {
-        return this.cliente.post("/colecoes/" + ConsultaTextos.caminho(colecaoId) + "/posts",
+        return this.cliente.post("/colecoes/" + Cliente.caminho(colecaoId) + "/posts",
             json.encode(mapOf("postId", postId)))
     }
 
     Resposta tirarPost(String colecaoId, String postId) {
-        return this.cliente.delete("/colecoes/" + ConsultaTextos.caminho(colecaoId)
-            + "/posts/" + ConsultaTextos.caminho(postId))
+        return this.cliente.delete("/colecoes/" + Cliente.caminho(colecaoId)
+            + "/posts/" + Cliente.caminho(postId))
     }
 
     static PaginaColecaoPosts paginaPosts(Resposta r) {

@@ -1,0 +1,30 @@
+package tipos
+
+record Conversa(
+    String id,
+    String? userId,
+    String? kind,
+    String? context,
+    String? title,
+    List<String>? participantIds,
+    String? lastMessage,
+    String? time,
+    Int? unread,
+    String? lastMessageFrom
+)
+
+record Mensagem(
+    String id,
+    String? conversationId,
+    String? from,
+    String? text,
+    List<String>? mediaIds,
+    String? time,
+    String? myReaction,
+    Troolean? e2e,
+    String? replyToId
+)
+
+record PaginaConversa(List<Conversa>? items, String? nextCursor)
+
+record PaginaMensagens(List<Mensagem>? items, String? nextCursor)

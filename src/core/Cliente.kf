@@ -1,5 +1,6 @@
 package core
 
+import java.net.URLEncoder
 import kof.json
 
 class Cliente {
@@ -151,5 +152,37 @@ class Cliente {
     void sair() {
         this.post("/auth/logout", "{}")
         this.sessao.limpar()
+    }
+
+    static String par(String chave, String? valor) {
+        if (valor == null) { return "" }
+        if (valor.length == 0) { return "" }
+        return URLEncoder.encode(chave, "UTF-8") + "=" + URLEncoder.encode(valor, "UTF-8")
+    }
+
+    static String numero(Int valor) {
+        return String.valueOf(valor)
+    }
+
+    static String query(List<String> pares) {
+        var fora = ""
+        for (var p in pares) {
+            if (p.length == 0) { continue }
+            if (fora.length > 0) { fora = fora + "&" }
+            fora = fora + p
+        }
+        if (fora.length == 0) { return "" }
+        return "?" + fora
+    }
+
+    static String pagina(String? cursor, Int limite) {
+        return Cliente.query(listOf(
+            Cliente.par("cursor", cursor),
+            Cliente.par("limit", Cliente.numero(limite))))
+    }
+
+    static String caminho(String? bruto) {
+        if (bruto == null) { return "" }
+        return URLEncoder.encode(bruto, "UTF-8")
     }
 }

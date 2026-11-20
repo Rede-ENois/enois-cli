@@ -1,0 +1,9 @@
+package tipos
+
+record Anuncio(String id, String? sellerName, String? sellerUsername, String? itemKind,
+               String? itemId, String? title, String? description, Int? price, String? status,
+               String? createdAt)
+
+record Compra(String id, String? listingId, String? buyerId, String? sellerId, Int? price,
+              String? state, String? createdAt, String? decidedAt, String? itemKind,
+              String? title, String? itemId)

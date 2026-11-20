@@ -1,0 +1,13 @@
+package tipos
+
+record Carteira(Int? balance, Int? escala, Int? cotacaoBrlCents, Int? cotacaoBrlMicros,
+                String? chave, List<Lancamento>? entries, Sequencia? streak)
+
+record Lancamento(Int? amount, String? kind, String? message, String? refId, String? createdAt)
+
+record Extrato(List<Lancamento>? entries, Int? page, Int? size, Troolean? hasNext)
+
+record Cotacao(Int? brlCents, Int? brlMicros, Int? escala, String? atualizadaEm,
+               List<PontoCotacao>? historico)
+
+record PontoCotacao(Int? brlCents, Int? brlMicros, String? em)

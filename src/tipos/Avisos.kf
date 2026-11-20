@@ -1,0 +1,4 @@
+package tipos
+
+record Aviso(String id, String? title, String? bodyHtml, String? surface, String? publishedAt,
+             String? updatedAt)

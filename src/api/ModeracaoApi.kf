@@ -2,6 +2,7 @@ package api
 
 import core.Cliente
 import core.Resposta
+import tipos.*
 import kof.json
 
 class ModeracaoApi {
@@ -10,64 +11,6 @@ class ModeracaoApi {
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
-    }
-
-    Resposta historico(String usuario, Int limite) {
-        return this.cliente.get("/admin/moderation/users/"
-            + ConsultaTextos.caminho(usuario) + "/history" + Consulta.par("limit",
-                Consulta.numero(limite)))
-    }
-
-    Resposta advertencias(String usuario) {
-        return this.cliente.get("/admin/moderation/users/"
-            + ConsultaTextos.caminho(usuario) + "/warnings")
-    }
-
-    Resposta advertir(String usuario, String motivo) {
-        return this.cliente.post("/admin/moderation/users/"
-            + ConsultaTextos.caminho(usuario) + "/sanction",
-            json.encode(mapOf("type", "WARNING", "reason", motivo)))
-    }
-
-    Resposta removerAdvertencia(String advertenciaId) {
-        return this.cliente.post("/admin/moderation/warnings/"
-            + ConsultaTextos.caminho(advertenciaId) + "/revoke", "{}")
-    }
-
-    Resposta removerPost(String postId) {
-        return this.cliente.post("/admin/moderation/posts/"
-            + ConsultaTextos.caminho(postId) + "/remove", "{}")
-    }
-
-    Resposta candidaturasModeração(String estado, Int limite) {
-        return this.cliente.get("/admin/moderator-applications" + Consulta.query(listOf(
-            Consulta.par("status", estado),
-            Consulta.par("limit", Consulta.numero(limite)))))
-    }
-
-    Resposta aprovarModeração(String candidaturaId) {
-        return this.cliente.post("/admin/moderator-applications/"
-            + ConsultaTextos.caminho(candidaturaId) + "/approve", "{}")
-    }
-
-    Resposta recusarModeração(String candidaturaId) {
-        return this.cliente.post("/admin/moderator-applications/"
-            + ConsultaTextos.caminho(candidaturaId) + "/reject", "{}")
-    }
-
-    Resposta emails(Int limite) {
-        return this.cliente.get("/admin/emails" + Consulta.par("limit",
-            Consulta.numero(limite)))
-    }
-
-    Resposta ipsBloqueados(Int limite) {
-        return this.cliente.get("/admin/blocked-ips" + Consulta.par("limit",
-            Consulta.numero(limite)))
-    }
-
-    Resposta desbloquearIp(String ip) {
-        return this.cliente.post("/admin/blocked-ips/"
-            + ConsultaTextos.caminho(ip) + "/unblock", "{}")
     }
 
     Resposta meuEstado() {
@@ -81,43 +24,73 @@ class ModeracaoApi {
     Resposta votarDenuncia(String denunciaId, Bool punir, String nota) {
         var voto = "DISMISS"
         if (punir) { voto = "PUNISH" }
-        return this.cliente.post("/moderation/reports/" + ConsultaTextos.caminho(denunciaId)
+        return this.cliente.post("/moderation/reports/" + Cliente.caminho(denunciaId)
             + "/vote", json.encode(mapOf("vote", voto, "note", nota)))
     }
 
-    Resposta denunciasPendentes(Int limite) {
-        return this.cliente.get("/admin/reports" + Consulta.par("limit",
-            Consulta.numero(limite)))
+    Resposta propostas(String estado, Int limite) {
+        return this.cliente.get("/moderation/sanction-proposals" + Cliente.query(listOf(
+            Cliente.par("status", estado),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
-    Resposta revisarDenuncia(String denunciaId) {
-        return this.cliente.get("/admin/reports/" + ConsultaTextos.caminho(denunciaId))
+    Resposta votarProposta(String propostaId, String voto) {
+        return this.cliente.post("/moderation/sanction-proposals/"
+            + Cliente.caminho(propostaId) + "/vote", json.encode(mapOf("vote", voto)))
     }
 
-    Resposta decidirDenuncia(String denunciaId, String acao, String nota) {
-        return this.cliente.post("/admin/reports/" + ConsultaTextos.caminho(denunciaId)
-            + "/" + ConsultaTextos.caminho(acao), json.encode(mapOf("note", nota)))
+    Resposta historico(String usuario, Int limite) {
+        return this.cliente.get("/admin/moderation/users/" + Cliente.caminho(usuario)
+            + "/history" + Cliente.par("limit", Cliente.numero(limite)))
     }
 
-    Resposta minhasDenuncias() {
-        return this.cliente.get("/reports/mine")
+    Resposta advertencias(String usuario) {
+        return this.cliente.get("/admin/moderation/users/" + Cliente.caminho(usuario)
+            + "/warnings")
     }
 
-    Resposta denunciar(String alvoTipo, String alvoId, String motivo, String descricao) {
-        return this.cliente.post("/reports", json.encode(mapOf(
-            "targetType", alvoTipo,
-            "targetId", alvoId,
-            "reason", motivo,
-            "description", descricao)))
+    Resposta advertir(String usuario, String motivo) {
+        return this.cliente.post("/admin/moderation/users/" + Cliente.caminho(usuario)
+            + "/sanction", json.encode(mapOf("type", "WARNING", "reason", motivo)))
     }
 
-    static List<Denuncia> denunciasDe(Resposta r) {
-        if (!r.ok()) { return listOf<Denuncia>() }
-        try {
-            return json.decode<List<Denuncia>>(r.corpo)
-        } catch (String e) {
-            return listOf<Denuncia>()
-        }
+    Resposta removerAdvertencia(String advertenciaId) {
+        return this.cliente.post("/admin/moderation/warnings/"
+            + Cliente.caminho(advertenciaId) + "/revoke", "{}")
+    }
+
+    Resposta removerPost(String postId) {
+        return this.cliente.post("/admin/moderation/posts/" + Cliente.caminho(postId)
+            + "/remove", "{}")
+    }
+
+    Resposta candidaturas(String estado, Int limite) {
+        return this.cliente.get("/admin/moderator-applications" + Cliente.query(listOf(
+            Cliente.par("status", estado),
+            Cliente.par("limit", Cliente.numero(limite)))))
+    }
+
+    Resposta aprovarCandidatura(String candidaturaId) {
+        return this.cliente.post("/admin/moderator-applications/"
+            + Cliente.caminho(candidaturaId) + "/approve", "{}")
+    }
+
+    Resposta recusarCandidatura(String candidaturaId) {
+        return this.cliente.post("/admin/moderator-applications/"
+            + Cliente.caminho(candidaturaId) + "/reject", "{}")
+    }
+
+    Resposta emails(Int limite) {
+        return this.cliente.get("/admin/emails" + Cliente.par("limit", Cliente.numero(limite)))
+    }
+
+    Resposta ipsBloqueados(Int limite) {
+        return this.cliente.get("/admin/blocked-ips" + Cliente.par("limit",
+            Cliente.numero(limite)))
+    }
+
+    Resposta desbloquearIp(String ip) {
+        return this.cliente.post("/admin/blocked-ips/" + Cliente.caminho(ip) + "/unblock", "{}")
     }
 
     static List<DenunciaPainel> painelDe(Resposta r) {

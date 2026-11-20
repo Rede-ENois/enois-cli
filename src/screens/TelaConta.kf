@@ -1,5 +1,6 @@
 package screens
 
+import tipos.*
 import api.*
 import core.Ansi
 import core.Cliente
@@ -50,16 +51,16 @@ class TelaConta {
     }
 
     void preferencias() {
-        var api = ContaApi(this.cliente)
-        var p = ContaApi.preferenciasDe(api.preferencias())
+        var prefs = PreferenciasApi(this.cliente)
+        var p = PreferenciasApi.de(prefs.minhas())
         var gostos = p.likedTopics
         var bloqueados = p.blockedTopics
         var modulos = p.disabledModules
-        var noite = ContaApi.booleanos(p.nightRestReminder)
-        var leve = ContaApi.booleanos(p.liteMode)
-        var batata = ContaApi.booleanos(p.batataMode)
-        var reposts = ContaApi.booleanos(p.hideReposts)
-        var novidades = ContaApi.booleanos(p.whatsNewEnabled)
+        var noite = PreferenciasApi.booleanos(p.nightRestReminder)
+        var leve = PreferenciasApi.booleanos(p.liteMode)
+        var batata = PreferenciasApi.booleanos(p.batataMode)
+        var reposts = PreferenciasApi.booleanos(p.hideReposts)
+        var novidades = PreferenciasApi.booleanos(p.whatsNewEnabled)
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
@@ -86,12 +87,12 @@ class TelaConta {
                 if (escolha == 4) { batata = this.inverter(batata) }
                 if (escolha == 5) { reposts = this.inverter(reposts) }
                 if (escolha == 6) { noite = this.inverter(noite) }
-                var corpo = ContaApi.corpoPreferencias(gostos, bloqueados, modulos, noite, leve,
-                    batata, reposts, novidades)
-                var r = api.salvarPreferencias(corpo)
+                var corpo = PreferenciasApi.corpoPreferencias(gostos, bloqueados, modulos, noite,
+                    leve, batata, reposts, novidades)
+                var r = prefs.salvar(corpo)
                 if (r.ok()) {
                     println(Tema.ok("preferências salvas"))
-                    p = ContaApi.preferenciasDe(api.preferencias())
+                    p = PreferenciasApi.de(prefs.minhas())
                 } else {
                     println(Tema.erro(r.mensagem()))
                     Entrada.pausar()
@@ -117,15 +118,15 @@ class TelaConta {
     }
 
     void avisos() {
-        var api = ContaApi(this.cliente)
-        var a = ContaApi.avisosDe(api.avisos())
-        var resumo = ContaApi.booleanos(a.weeklyDigest)
-        var social = ContaApi.booleanos(a.pushSocial)
-        var mensagens = ContaApi.booleanos(a.pushMessages)
-        var grupos = ContaApi.booleanos(a.pushGroups)
-        var vagas = ContaApi.booleanos(a.pushJobs)
-        var sistema = ContaApi.booleanos(a.pushSystem)
-        var projetos = ContaApi.booleanos(a.communityProjects)
+        var notificacoes = NotificacoesApi(this.cliente)
+        var a = NotificacoesApi.preferenciasDe(notificacoes.preferencias())
+        var resumo = PreferenciasApi.booleanos(a.weeklyDigest)
+        var social = PreferenciasApi.booleanos(a.pushSocial)
+        var mensagens = PreferenciasApi.booleanos(a.pushMessages)
+        var grupos = PreferenciasApi.booleanos(a.pushGroups)
+        var vagas = PreferenciasApi.booleanos(a.pushJobs)
+        var sistema = PreferenciasApi.booleanos(a.pushSystem)
+        var projetos = PreferenciasApi.booleanos(a.communityProjects)
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
@@ -150,12 +151,12 @@ class TelaConta {
                 if (escolha == 4) { vagas = this.inverter(vagas) }
                 if (escolha == 5) { sistema = this.inverter(sistema) }
                 if (escolha == 6) { projetos = this.inverter(projetos) }
-                var corpo = ContaApi.corpoAvisos(resumo, social, mensagens, grupos, vagas,
-                    sistema, projetos)
-                var r = api.salvarAvisos(corpo)
+                var corpo = NotificacoesApi.corpoPreferencias(resumo, social, mensagens, grupos,
+                    vagas, sistema, projetos)
+                var r = notificacoes.salvarPreferencias(corpo)
                 if (r.ok()) {
                     println(Tema.ok("avisos salvos"))
-                    a = ContaApi.avisosDe(api.avisos())
+                    a = NotificacoesApi.preferenciasDe(notificacoes.preferencias())
                 } else {
                     println(Tema.erro(r.mensagem()))
                     Entrada.pausar()

@@ -1,0 +1,15 @@
+package tipos
+
+record Mentor(String id, String? userId, List<String>? expertise, Double? rating, Int? sessions,
+              String? price, String? banner, Long? sparksPrice, String? roomMode, String? nextSlot)
+
+record PaginaMentores(List<Mentor>? items, String? nextCursor)
+
+record VagaMentor(String id, String? startsAt, String? endsAt, Troolean? available)
+
+record PaginaVagasMentor(List<VagaMentor>? items, String? nextCursor)
+
+record SessaoMentoria(String id, String? mentorId, String? mentorUsername, String? mentorName,
+                      String? mentorAvatar, String? slotId, String? startsAt, String? endsAt,
+                      String? message, String? status, Long? priceSparks, String? roomUrl,
+                      String? roomMode, String? createdAt)

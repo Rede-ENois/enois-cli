@@ -1,0 +1,8 @@
+package tipos
+
+record Sugestao(String id, String? target, String? title, String? body, String? status,
+                String? githubIssueUrl, String? createdAt)
+
+record SugestaoAdmin(String id, String? userId, String? target, String? title, String? body,
+                     String? status, String? githubIssueNumber, String? githubIssueUrl,
+                     String? reviewedBy, String? reviewedAt, String? createdAt)

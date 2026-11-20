@@ -1,0 +1,6 @@
+package tipos
+
+record Chamada(String id, String? kind, String? modality, String? conversationId, String? groupId,
+               String? topicId, String? eventId, String? initiatorId, String? displayName,
+               String? state, String? createdAt, Int? participantCount, Troolean? isInitiator,
+               String? myState)

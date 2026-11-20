@@ -1,0 +1,9 @@
+package tipos
+
+record Colecao(String id, String? title, String? description, Int? postCount, String? createdAt)
+
+record PaginaColecoes(List<Colecao>? items, String? nextCursor)
+
+record ColecaoPost(String? postId, PostResumo? post, String? adicionadoAt)
+
+record PaginaColecaoPosts(List<ColecaoPost>? items, String? nextCursor)

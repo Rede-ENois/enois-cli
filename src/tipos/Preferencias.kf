@@ -1,0 +1,10 @@
+package tipos
+
+record Preferencias(List<String>? likedTopics, List<String>? blockedTopics,
+                    List<String>? disabledModules, Troolean? nightRestReminder,
+                    Troolean? liteMode, Troolean? batataMode, Troolean? hideReposts,
+                    Troolean? whatsNewEnabled)
+
+record PreferenciasAviso(Troolean? weeklyDigest, Troolean? pushSocial, Troolean? pushMessages,
+                         Troolean? pushGroups, Troolean? pushJobs, Troolean? pushSystem,
+                         Troolean? communityProjects, String? updatedAt)

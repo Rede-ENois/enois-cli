@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,7 +14,7 @@ class ServicosApi {
     }
 
     Resposta listar(String? cursor, Int limite) {
-        return this.cliente.get("/servicos" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/servicos" + Cliente.pagina(cursor, limite))
     }
 
     Resposta minhasServicos() {
@@ -22,25 +23,25 @@ class ServicosApi {
 
     Resposta criarOferta(String titulo, Int preco) {
         return this.cliente.post("/servicos/ofertas",
-            json.encode(mapOf("title", titulo, "price", Consulta.numero(preco))))
+            json.encode(mapOf("title", titulo, "price", Cliente.numero(preco))))
     }
 
     Resposta editarOferta(String ofertaId, String titulo, Int preco) {
-        return this.cliente.put("/servicos/ofertas/" + ConsultaTextos.caminho(ofertaId),
-            json.encode(mapOf("title", titulo, "price", Consulta.numero(preco))))
+        return this.cliente.put("/servicos/ofertas/" + Cliente.caminho(ofertaId),
+            json.encode(mapOf("title", titulo, "price", Cliente.numero(preco))))
     }
 
     Resposta apagarOferta(String ofertaId) {
-        return this.cliente.delete("/servicos/ofertas/" + ConsultaTextos.caminho(ofertaId))
+        return this.cliente.delete("/servicos/ofertas/" + Cliente.caminho(ofertaId))
     }
 
     Resposta contratoDaOferta(String ofertaId) {
-        return this.cliente.post("/servicos/ofertas/" + ConsultaTextos.caminho(ofertaId)
+        return this.cliente.post("/servicos/ofertas/" + Cliente.caminho(ofertaId)
             + "/contratar", "{}")
     }
 
     Resposta chatDaOferta(String ofertaId) {
-        return this.cliente.post("/servicos/ofertas/" + ConsultaTextos.caminho(ofertaId)
+        return this.cliente.post("/servicos/ofertas/" + Cliente.caminho(ofertaId)
             + "/chat", "{}")
     }
 
@@ -51,32 +52,32 @@ class ServicosApi {
 
     Resposta propostasDoPedido(String pedidoId) {
         return this.cliente.get("/servicos/pedidos/"
-            + ConsultaTextos.caminho(pedidoId) + "/propostas")
+            + Cliente.caminho(pedidoId) + "/propostas")
     }
 
     Resposta proporNoPedido(String pedidoId, String mensagem) {
-        return this.cliente.post("/servicos/pedidos/" + ConsultaTextos.caminho(pedidoId)
+        return this.cliente.post("/servicos/pedidos/" + Cliente.caminho(pedidoId)
             + "/propostas", json.encode(mapOf("message", mensagem)))
     }
 
     Resposta escolherProposta(String pedidoId, String propostaId) {
-        return this.cliente.post("/servicos/pedidos/" + ConsultaTextos.caminho(pedidoId)
+        return this.cliente.post("/servicos/pedidos/" + Cliente.caminho(pedidoId)
             + "/escolher", json.encode(mapOf("proposalId", propostaId)))
     }
 
     Resposta aceitarContrato(String contratoId) {
         return this.cliente.post("/servicos/contratos/"
-            + ConsultaTextos.caminho(contratoId) + "/aceitar", "{}")
+            + Cliente.caminho(contratoId) + "/aceitar", "{}")
     }
 
     Resposta entregarContrato(String contratoId) {
         return this.cliente.post("/servicos/contratos/"
-            + ConsultaTextos.caminho(contratoId) + "/entregar", "{}")
+            + Cliente.caminho(contratoId) + "/entregar", "{}")
     }
 
     Resposta reembolsoContrato(String contratoId) {
         return this.cliente.post("/servicos/contratos/"
-            + ConsultaTextos.caminho(contratoId) + "/reembolso", "{}")
+            + Cliente.caminho(contratoId) + "/reembolso", "{}")
     }
 
     static VitrineServico vitrineDe(Resposta r) {

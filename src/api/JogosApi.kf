@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,14 +14,14 @@ class JogosApi {
     }
 
     Resposta listar(String? termo, String? cursor, Int limite) {
-        return this.cliente.get("/games" + Consulta.query(listOf(
-            Consulta.par("q", termo),
-            Consulta.par("cursor", cursor),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/games" + Cliente.query(listOf(
+            Cliente.par("q", termo),
+            Cliente.par("cursor", cursor),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta perfilDeDev(String usuario) {
-        return this.cliente.get("/games/" + ConsultaTextos.caminho(usuario) + "/profile")
+        return this.cliente.get("/games/" + Cliente.caminho(usuario) + "/profile")
     }
 
     Resposta meuPerfilDev() {
@@ -28,8 +29,8 @@ class JogosApi {
     }
 
     Resposta obter(String usuario, String slug) {
-        return this.cliente.get("/games/" + ConsultaTextos.caminho(usuario)
-            + "/" + ConsultaTextos.caminho(slug))
+        return this.cliente.get("/games/" + Cliente.caminho(usuario)
+            + "/" + Cliente.caminho(slug))
     }
 
     Resposta biblioteca() {
@@ -37,34 +38,34 @@ class JogosApi {
     }
 
     Resposta seguir(String usuario) {
-        return this.cliente.post("/games/" + ConsultaTextos.caminho(usuario) + "/follow", "{}")
+        return this.cliente.post("/games/" + Cliente.caminho(usuario) + "/follow", "{}")
     }
 
     Resposta deixarDeSeguir(String usuario) {
-        return this.cliente.delete("/games/" + ConsultaTextos.caminho(usuario) + "/follow")
+        return this.cliente.delete("/games/" + Cliente.caminho(usuario) + "/follow")
     }
 
     Resposta avaliacoes(String jogoId, Int limite) {
-        return this.cliente.get("/games/" + ConsultaTextos.caminho(jogoId)
-            + "/reviews" + Consulta.par("limit", Consulta.numero(limite)))
+        return this.cliente.get("/games/" + Cliente.caminho(jogoId)
+            + "/reviews" + Cliente.par("limit", Cliente.numero(limite)))
     }
 
     Resposta avaliar(String jogoId, Int nota, String texto) {
-        return this.cliente.post("/games/" + ConsultaTextos.caminho(jogoId) + "/reviews",
-            json.encode(mapOf("rating", Consulta.numero(nota), "body", texto)))
+        return this.cliente.post("/games/" + Cliente.caminho(jogoId) + "/reviews",
+            json.encode(mapOf("rating", Cliente.numero(nota), "body", texto)))
     }
 
     Resposta minhaAvaliacaoApagar(String jogoId) {
-        return this.cliente.delete("/games/" + ConsultaTextos.caminho(jogoId) + "/reviews/mine")
+        return this.cliente.delete("/games/" + Cliente.caminho(jogoId) + "/reviews/mine")
     }
 
     Resposta comentarios(String jogoId, Int limite) {
-        return this.cliente.get("/games/" + ConsultaTextos.caminho(jogoId)
-            + "/comments" + Consulta.par("limit", Consulta.numero(limite)))
+        return this.cliente.get("/games/" + Cliente.caminho(jogoId)
+            + "/comments" + Cliente.par("limit", Cliente.numero(limite)))
     }
 
     Resposta comentar(String jogoId, String texto) {
-        return this.cliente.post("/games/" + ConsultaTextos.caminho(jogoId) + "/comments",
+        return this.cliente.post("/games/" + Cliente.caminho(jogoId) + "/comments",
             json.encode(mapOf("body", texto)))
     }
 
@@ -86,7 +87,7 @@ class JogosApi {
     }
 
     Resposta labirintoHoje(String? data) {
-        return this.cliente.get("/daily-games/maze/today" + Consulta.par("date", data))
+        return this.cliente.get("/daily-games/maze/today" + Cliente.par("date", data))
     }
 
     Resposta iniciarLabirinto() {

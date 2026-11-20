@@ -1,0 +1,5 @@
+package tipos
+
+record Reagente(String? userId, String? type, String? createdAt)
+
+record ListaReacoes(List<Reagente>? reactions)

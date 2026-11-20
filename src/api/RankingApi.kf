@@ -1,0 +1,29 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class RankingApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta chegadas(Int limite) {
+        return this.cliente.get("/profile/ranking" + Cliente.par("limit",
+            Cliente.numero(limite)))
+    }
+
+    static List<Perfil> listaDe(Resposta r) {
+        if (!r.ok()) { return listOf<Perfil>() }
+        try {
+            return json.decode<List<Perfil>>(r.corpo)
+        } catch (String e) {
+            return listOf<Perfil>()
+        }
+    }
+}

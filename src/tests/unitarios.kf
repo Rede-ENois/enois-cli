@@ -1,25 +1,26 @@
 package tests
 
+import tipos.*
 import api.*
 import core.*
 import screens.*
 
 test "consulta ignora par vazio e nulo" {
-    assert(Consulta.par("limit", "") == "")
-    assert(Consulta.par("limit", "20") == "limit=20")
+    assert(Cliente.par("limit", "") == "")
+    assert(Cliente.par("limit", "20") == "limit=20")
 }
 
 test "consulta junta pares com e comercial" {
-    var q = Consulta.query(listOf(Consulta.par("a", "1"), Consulta.par("b", "2")))
+    var q = Cliente.query(listOf(Cliente.par("a", "1"), Cliente.par("b", "2")))
     assert(q == "?a=1&b=2")
 }
 
 test "consulta sem pares nao ganha interrogacao" {
-    assert(Consulta.query(listOf("", "")) == "")
+    assert(Cliente.query(listOf("", "")) == "")
 }
 
 test "caminho escapa espaco" {
-    assert(ConsultaTextos.caminho("a b") == "a+b")
+    assert(Cliente.caminho("a b") == "a+b")
 }
 
 test "cookie extraido do cabecalho bruto" {
@@ -37,7 +38,7 @@ test "largura ignora codigos ansi" {
 }
 
 test "corpo de preferencias leva todas as chaves" {
-    var corpo = ContaApi.corpoPreferencias(listOf<String>("kof"), listOf<String>(),
+    var corpo = PreferenciasApi.corpoPreferencias(listOf<String>("kof"), listOf<String>(),
         listOf<String>(), "true", "false", "null", "true", "false")
     assert(corpo.contains("\"likedTopics\":[\"kof\"]"))
     assert(corpo.contains("\"nightRestReminder\":true"))
@@ -46,7 +47,7 @@ test "corpo de preferencias leva todas as chaves" {
 }
 
 test "corpo de avisos leva todas as chaves" {
-    var corpo = ContaApi.corpoAvisos("true", "false", "null", "true", "false", "null", "true")
+    var corpo = NotificacoesApi.corpoPreferencias("true", "false", "null", "true", "false", "null", "true")
     assert(corpo.contains("\"weeklyDigest\":true"))
     assert(corpo.contains("\"pushMessages\":null"))
     assert(corpo.contains("\"communityProjects\":true"))
@@ -118,23 +119,23 @@ test "todas as telas carregam e formatam" {
     TelaNotificacoes(c).toString()
     TelaMensagens(c, s).toString()
     TelaPerfil(c, s).toString()
-    TelaExplorar(c).toString()
+    TelaExplorar(c, s).toString()
     TelaBusca(c).toString()
     TelaComunidades(c).toString()
     TelaGrupos(c).toString()
     TelaEventos(c).toString()
     TelaColecoes(c).toString()
-    TelaTrabalho(c).toString()
     TelaVagas(c).toString()
-    TelaFreelas(c).toString()
+    TelaFreelances(c).toString()
     TelaServicos(c).toString()
     TelaMentoria(c).toString()
     TelaAgenda(c).toString()
-    TelaEconomia(c).toString()
     TelaCarteira(c).toString()
     TelaLoja(c).toString()
     TelaMarketplace(c).toString()
-    TelaSocial(c, s).toString()
+    TelaRede(c, s).toString()
+    TelaSalvos(c).toString()
+    TelaParesEstudo(c).toString()
     TelaJogos(c).toString()
     TelaRoleplay(c).toString()
     TelaBlogs(c).toString()

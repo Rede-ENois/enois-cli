@@ -1,5 +1,6 @@
 package api
 
+import tipos.*
 import core.Cliente
 import core.Resposta
 import kof.json
@@ -13,34 +14,34 @@ class RedeApi {
     }
 
     Resposta buscarPessoas(String termo, String? cursor, Int limite) {
-        return this.cliente.get("/network/users" + Consulta.query(listOf(
-            Consulta.par("query", termo),
-            Consulta.par("cursor", cursor),
-            Consulta.par("limit", Consulta.numero(limite)))))
+        return this.cliente.get("/network/users" + Cliente.query(listOf(
+            Cliente.par("query", termo),
+            Cliente.par("cursor", cursor),
+            Cliente.par("limit", Cliente.numero(limite)))))
     }
 
     Resposta sugestoes(Int limite) {
-        return this.cliente.get("/network/suggestions" + Consulta.par("limit",
-            Consulta.numero(limite)))
+        return this.cliente.get("/network/suggestions" + Cliente.par("limit",
+            Cliente.numero(limite)))
     }
 
     Resposta pedidosPendentes(String? cursor, Int limite) {
-        return this.cliente.get("/network/requests" + Consulta.pagina(cursor, limite))
+        return this.cliente.get("/network/requests" + Cliente.pagina(cursor, limite))
     }
 
     Resposta conectar(String usuarioId) {
         return this.cliente.post("/network/connections/"
-            + ConsultaTextos.caminho(usuarioId), "{}")
+            + Cliente.caminho(usuarioId), "{}")
     }
 
     Resposta desconectar(String usuarioId) {
         return this.cliente.delete("/network/connections/"
-            + ConsultaTextos.caminho(usuarioId))
+            + Cliente.caminho(usuarioId))
     }
 
     Resposta aceitar(String usuarioId) {
         return this.cliente.put("/network/connections/"
-            + ConsultaTextos.caminho(usuarioId) + "/accept", "{}")
+            + Cliente.caminho(usuarioId) + "/accept", "{}")
     }
 
     static List<PessoaRede> listaDe(Resposta r) {
@@ -65,24 +66,24 @@ class RedeApi {
 
     Resposta estadoDaConexao(String usuarioId) {
         return this.cliente.get("/network/connections/"
-            + ConsultaTextos.caminho(usuarioId) + "/status")
+            + Cliente.caminho(usuarioId) + "/status")
     }
 
     Resposta bloquear(String usuarioId) {
         return this.cliente.post("/network/blocks/"
-            + ConsultaTextos.caminho(usuarioId), "{}")
+            + Cliente.caminho(usuarioId), "{}")
     }
 
     Resposta desbloquear(String usuarioId) {
-        return this.cliente.delete("/network/blocks/" + ConsultaTextos.caminho(usuarioId))
+        return this.cliente.delete("/network/blocks/" + Cliente.caminho(usuarioId))
     }
 
     Resposta silenciar(String usuarioId) {
         return this.cliente.post("/network/mutes/"
-            + ConsultaTextos.caminho(usuarioId), "{}")
+            + Cliente.caminho(usuarioId), "{}")
     }
 
     Resposta dessilenciar(String usuarioId) {
-        return this.cliente.delete("/network/mutes/" + ConsultaTextos.caminho(usuarioId))
+        return this.cliente.delete("/network/mutes/" + Cliente.caminho(usuarioId))
     }
 }
