@@ -2,20 +2,22 @@ package screens
 
 import tipos.*
 import api.*
-import core.Ansi
-import core.Cliente
-import core.Entrada
-import core.Midia
-import core.Tema
+import core.*
 import ui.Caixa
 import ui.Imagem
 import ui.Lista
 import ui.Menu
+import ui.Vista
 
 class TelaFeed {
 
     Cliente cliente
     String contexto
+    Vista vista
+    List<PostResumo> posts = listOf<PostResumo>()
+    String proximo = ""
+    Bool temMais = false
+    String erro = ""
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
@@ -31,13 +33,68 @@ class TelaFeed {
         return this.contexto == "profissional"
     }
 
-    Resposta carregar(String? cursor, Int limite) {
+    Resposta carregar(String cursor, Int limite) {
         if (this.corporativo()) { return FeedApi(this.cliente).corporativo(cursor, limite) }
         return FeedApi(this.cliente).listar(cursor, limite)
     }
 
     void executar() {
-        var r = this.carregar(null, 10)
+        var teclado = Teclado()
+        if (Teclado.disponivel() && teclado.entrar()) {
+            this.executarInterativo(teclado)
+            return
+        }
+        this.executarSimples()
+    }
+
+    void executarInterativo(Teclado teclado) {
+        this.vista = Vista(Vista.alturaPadrao())
+        print(Ansi.OCULTAR_CURSOR)
+        print(Ansi.ALTERNATIVO)
+        println("")
+        this.carregarPagina("")
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            if (this.temMais && this.posts.size() > 0 && this.vista.rolagem.noFim()) {
+                this.carregarPagina(this.proximo)
+            }
+            this.desenhar()
+            teclado.ligarMouse()
+            var tecla = teclado.ler()
+            if (tecla.nome == "clique") {
+                this.clicar(tecla)
+            } else if (tecla.nome == "cima") {
+                this.vista.rolagem.moverFoco(-1)
+            } else if (tecla.nome == "baixo") {
+                this.vista.rolagem.moverFoco(1)
+            } else if (tecla.nome == "roda-cima") {
+                this.vista.rolagem.rolar(-3)
+            } else if (tecla.nome == "roda-baixo") {
+                this.vista.rolagem.rolar(3)
+            } else if (tecla.nome == "enter") {
+                this.abrirFoco()
+            } else if (tecla.nome == "texto") {
+                if (tecla.caractere == "k") {
+                    this.vista.rolagem.moverFoco(-1)
+                } else if (tecla.caractere == "j") {
+                    this.vista.rolagem.moverFoco(1)
+                } else if (tecla.caractere == "r") {
+                    this.recarregar()
+                } else if (tecla.caractere == "q") {
+                    rodando = false
+                }
+            } else if (tecla.nome == "escape" || tecla.nome == "ctrl-c") {
+                rodando = false
+            }
+        }
+        teclado.desligarMouse()
+        Ansi.escrever(Ansi.NORMAL)
+        Ansi.escrever(Ansi.MOSTRAR_CURSOR)
+        teclado.sair()
+    }
+
+    void executarSimples() {
+        var r = this.carregar("", 10)
         var rodando = true
         while (rodando && Entrada.ativa) {
             if (!r.ok()) {
@@ -73,9 +130,76 @@ class TelaFeed {
                 r = this.carregar(proximo, 10)
             } else {
                 TelaPost(this.cliente).executar(itens.get(escolha))
-                r = this.carregar(null, 10)
+                r = this.carregar("", 10)
             }
         }
+    }
+
+    void desenhar() {
+        this.vista.desenhar(
+            Menu.topo("Énóis", ""),
+            Menu.cabecalho(this.titulo(), this.subtitulo()),
+            Menu.rodape("↑↓ move · roda rola · clique abre · enter abre · r recarrega · q volta"))
+    }
+
+    void clicar(Tecla tecla) {
+        var alvo = this.vista.regioes.em(tecla.linha, tecla.coluna)
+        if (alvo.tipo != "item") { return }
+        this.abrirPost(alvo.indice)
+    }
+
+    void abrirFoco() {
+        var indice = this.vista.rolagem.dadoDoBloco(this.vista.rolagem.foco)
+        this.abrirPost(indice)
+    }
+
+    void abrirPost(Int indice) {
+        if (indice < 0 || indice >= this.posts.size()) { return }
+        TelaPost(this.cliente).executar(this.posts.get(indice))
+    }
+
+    void recarregar() {
+        this.posts = listOf<PostResumo>()
+        this.proximo = ""
+        this.temMais = false
+        this.erro = ""
+        this.vista = Vista(Vista.alturaPadrao())
+        this.carregarPagina("")
+    }
+
+    void carregarPagina(String cursor) {
+        var r = this.carregar(cursor, 10)
+        if (!r.ok()) {
+            this.erro = r.mensagem()
+            this.temMais = false
+            this.estadoVazio()
+            return
+        }
+        var pagina = FeedApi.paginaFeed(r)
+        var itens = pagina.items
+        if (itens != null) {
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                var post = itens.get(i)
+                this.posts.add(post)
+                this.vista.adicionar(this.posts.size() - 1, this.linhasDoPost(post))
+            }
+        }
+        var novo = ""
+        if (pagina.nextCursor != null) { novo = pagina.nextCursor }
+        if (novo.length == 0 || novo == this.proximo) {
+            this.temMais = false
+        } else {
+            this.proximo = novo
+            this.temMais = true
+        }
+        this.estadoVazio()
+    }
+
+    void estadoVazio() {
+        if (this.vista.total() > 0) { return }
+        var texto = this.vazio()
+        if (this.erro.length > 0) { texto = this.erro }
+        this.vista.adicionar(-1, Caixa.simples(Lista.vazia(texto)))
     }
 
     String titulo() {
@@ -103,18 +227,32 @@ class TelaFeed {
         return quem + trecho
     }
 
-    String card(PostResumo p) {
+    List<String> linhasDoPost(PostResumo p) {
         var conteudo = this.linhaAutor(p)
         var corpo = this.corpo(p)
         if (corpo.length > 0) { conteudo = conteudo + "\n" + corpo }
-        conteudo = conteudo + "\n" + this.linhaRodape(p)
-        var linhas = Caixa.cartao(conteudo)
-        var saida = ""
-        for (var i = 0; i < linhas.size(); i = i + 1) {
-            if (i > 0) { saida = saida + "\n" }
-            saida = saida + linhas.get(i)
+        var midias = this.totalImagens(p)
+        if (midias > 0) {
+            var rotulo = " mídias"
+            if (midias == 1) { rotulo = " mídia" }
+            conteudo = conteudo + "\n" + Tema.mudo("📷 " + String.valueOf(midias) + rotulo)
         }
-        return saida
+        conteudo = conteudo + "\n" + this.linhaRodape(p)
+        return Caixa.cartao(conteudo)
+    }
+
+    String card(PostResumo p) {
+        return Caixa.juntar(this.linhasDoPost(p))
+    }
+
+    Int totalImagens(PostResumo p) {
+        var anexos = p.media
+        if (anexos == null) { return 0 }
+        var total = 0
+        for (var anexo in anexos) {
+            if (Imagem.eImagem(anexo.mimeType)) { total = total + 1 }
+        }
+        return total
     }
 
     void mostrarImagens(PostResumo p) {

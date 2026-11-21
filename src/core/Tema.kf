@@ -49,6 +49,25 @@ class Tema {
         return fundo + estiloTexto + texto + RESET
     }
 
+    static String comFundoSobre(String fundo, String texto) {
+        if (texto == null) { return fundo + RESET }
+        var saida = fundo
+        var restante = texto
+        var seguindo = true
+        while (seguindo) {
+            var marca = restante.indexOf(Tema.RESET)
+            if (marca < 0) {
+                saida = saida + restante
+                seguindo = false
+            } else {
+                var fim = marca + Tema.RESET.length
+                saida = saida + restante.substring(0, fim) + fundo
+                restante = restante.substring(fim, restante.length)
+            }
+        }
+        return saida + RESET
+    }
+
     static String marca(String texto) {
         return NEGRITO + PRIMARIO + texto + RESET
     }

@@ -1,0 +1,31 @@
+package core
+
+class Regioes {
+
+    List<Regiao> lista = listOf<Regiao>()
+
+    void limpar() {
+        this.lista.clear()
+    }
+
+    void adicionar(Int linha, Int inicio, Int fim, Int indice, String tipo) {
+        this.adicionarFaixa(linha, linha, inicio, fim, indice, tipo)
+    }
+
+    void adicionarFaixa(Int linha, Int linhaFim, Int inicio, Int fim, Int indice, String tipo) {
+        this.lista.add(Regiao(linha, linhaFim, inicio, fim, indice, tipo))
+    }
+
+    Int tamanho() {
+        return this.lista.size()
+    }
+
+    Regiao em(Int linha, Int coluna) {
+        for (var regiao in this.lista) {
+            if (linha < regiao.linha || linha > regiao.linhaFim) { continue }
+            if (coluna < regiao.inicio || coluna > regiao.fim) { continue }
+            return regiao
+        }
+        return Regiao(0, 0, 0, 0, -1, "")
+    }
+}

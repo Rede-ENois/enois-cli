@@ -39,6 +39,39 @@ class TelaPerfil {
         if (escolha == 0) { this.meusPosts() }
     }
 
+    void abrir(String usuario) {
+        print(Ansi.LIMPAR)
+        println(Menu.topo("Énóis", ""))
+        var r = PerfilApi(this.cliente).porUsuario(usuario)
+        if (!r.ok()) {
+            println(Caixa.simples(Lista.vazia("perfil não encontrado")))
+            Entrada.pausar()
+            return
+        }
+        var perfil = PerfilApi.perfil(r)
+        println(this.retrato(perfil))
+        println(Caixa.simples(this.cartao(perfil)))
+        this.postsDoPerfil(usuario)
+    }
+
+    void postsDoPerfil(String usuario) {
+        var r = FeedApi(this.cliente).porUsuario(usuario, null, 10)
+        if (!r.ok()) { return }
+        var itens = FeedApi.paginaFeed(r).items
+        if (itens == null || itens.size() == 0) {
+            println(Caixa.simples(Lista.vazia("nenhum post por aqui")))
+            Entrada.pausar()
+            return
+        }
+        var opcoes = listOf<String>()
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            opcoes.add(TelaFeed(this.cliente).resumo(itens.get(i)))
+        }
+        var escolha = Entrada.menu("posts", opcoes, "voltar")
+        if (escolha < 0) { return }
+        TelaPost(this.cliente).executar(itens.get(escolha))
+    }
+
     String retrato(Perfil perfil) {
         var avatar = ""
         if (perfil.avatar != null) { avatar = perfil.avatar }

@@ -4,8 +4,11 @@ import tipos.*
 import api.*
 import core.*
 import screens.*
+import ui.Abas
 import ui.Badge
+import ui.Bloco
 import ui.Painel
+import ui.Rolagem
 import ui.Seletor
 
 test "consulta ignora par vazio e nulo" {
@@ -383,25 +386,148 @@ test "previa guarda e devolve as linhas" {
 }
 
 test "menu rola dentro da altura do terminal" {
-    var linhas = listOf<String>()
-    for (var i = 0; i < 20; i = i + 1) { linhas.add("l" + String.valueOf(i)) }
+    var linhas = listOf<LinhaMenu>()
+    for (var i = 0; i < 20; i = i + 1) { linhas.add(LinhaMenu("l" + String.valueOf(i), i)) }
     var janela = Seletor.janelaDe(linhas, 15, 6)
     assert(janela.size() == 6)
-    assert(janela.get(0).contains("acima"))
-    assert(janela.get(1).contains("l12"))
-    assert(janela.get(4).contains("l15"))
-    assert(janela.get(5).contains("abaixo"))
+    assert(janela.get(0).texto.contains("acima"))
+    assert(janela.get(1).texto.contains("l12"))
+    assert(janela.get(4).texto.contains("l15"))
+    assert(janela.get(5).texto.contains("abaixo"))
     var fim = Seletor.janelaDe(linhas, 19, 6)
     assert(fim.size() == 6)
-    assert(fim.get(5).contains("l18"))
-    assert(!fim.get(5).contains("abaixo"))
+    assert(fim.get(5).texto.contains("l18"))
+    assert(!fim.get(5).texto.contains("abaixo"))
 }
 
 test "menu curto nao ganha janela" {
-    var linhas = listOf<String>("a", "b", "c")
+    var linhas = listOf<LinhaMenu>(LinhaMenu("a", 0), LinhaMenu("b", 1), LinhaMenu("c", 2))
     assert(Seletor.janelaDe(linhas, 0, 6).size() == 3)
-    var exato = Seletor.janelaDe(listOf<String>("a", "b", "c", "d"), 2, 4)
+    var exato = Seletor.janelaDe(listOf<LinhaMenu>(
+        LinhaMenu("a", 0), LinhaMenu("b", 1), LinhaMenu("c", 2), LinhaMenu("d", 3)), 2, 4)
     assert(exato.size() == 4)
-    assert(exato.get(0) == "a")
+    assert(exato.get(0).texto == "a")
+}
+
+test "clique do mouse traz linha e coluna" {
+    var clique = Teclado.mouseDe("0;12;7M")
+    assert(clique.nome == "clique")
+    assert(clique.linha == 7)
+    assert(clique.coluna == 12)
+}
+
+test "soltar o botao nao vira clique" {
+    assert(Teclado.mouseDe("0;12;7m").nome == "soltar")
+}
+
+test "arrastar o botao tem nome proprio" {
+    assert(Teclado.mouseDe("32;12;7M").nome == "arrastar")
+}
+
+test "roda do mouse aponta para cima e para baixo" {
+    assert(Teclado.mouseDe("64;3;9M").nome == "roda-cima")
+    assert(Teclado.mouseDe("65;3;9M").nome == "roda-baixo")
+}
+
+test "sequencia de mouse incompleta fica desconhecida" {
+    assert(Teclado.mouseDe("0;12").nome == "desconhecida")
+    assert(Teclado.mouseDe("").nome == "desconhecida")
+}
+
+test "regiao devolve o alvo sob o cursor" {
+    var regioes = Regioes()
+    regioes.adicionar(10, 3, 20, 4, "item")
+    var alvo = regioes.em(10, 5)
+    assert(alvo.tipo == "item")
+    assert(alvo.indice == 4)
+}
+
+test "regiao fora da faixa devolve alvo vazio" {
+    var regioes = Regioes()
+    regioes.adicionar(10, 3, 20, 4, "item")
+    var alvo = regioes.em(11, 5)
+    assert(alvo.tipo == "")
+    assert(alvo.indice == -1)
+}
+
+test "abas registram a coluna de cada aba" {
+    var regioes = Regioes()
+    Abas.registrar(regioes, 5, listOf<String>("social", "profissional"), "profissional")
+    var primeira = regioes.em(5, 4)
+    assert(primeira.tipo == "aba")
+    assert(primeira.indice == 0)
+    var segunda = regioes.em(5, 14)
+    assert(segunda.tipo == "aba")
+    assert(segunda.indice == 1)
+}
+
+test "fundo do bloco focado mantem a cor depois do reset" {
+    var pintado = Tema.comFundoSobre(Tema.FUNDO_PRIMARIO_SUAVE, Tema.texto("post"))
+    assert(pintado.contains(Tema.FUNDO_PRIMARIO_SUAVE))
+    assert(pintado.endsWith(Tema.RESET))
+}
+
+test "rolagem mostra exatamente a altura do bloco" {
+    var rolagem = Rolagem(4)
+    rolagem.adicionar(Bloco(0, listOf<String>("a", "b")))
+    rolagem.adicionar(Bloco(1, listOf<String>("c", "d")))
+    var visiveis = rolagem.visiveis()
+    assert(visiveis.size() == 4)
+    assert(visiveis.get(0).contains("a"))
+    assert(visiveis.get(1).contains("b"))
+    assert(visiveis.get(2).contains("c"))
+    assert(visiveis.get(3).contains("d"))
+}
+
+test "rolagem acha o bloco pela linha" {
+    var rolagem = Rolagem(4)
+    rolagem.adicionar(Bloco(0, listOf<String>("a", "b", "c")))
+    rolagem.adicionar(Bloco(1, listOf<String>("d")))
+    assert(rolagem.blocoDaLinha(0) == 0)
+    assert(rolagem.blocoDaLinha(2) == 0)
+    assert(rolagem.blocoDaLinha(3) == 1)
+    assert(rolagem.blocoDaLinha(9) == -1)
+}
+
+test "rolagem move o foco e alinha a janela" {
+    var rolagem = Rolagem(2)
+    for (var i = 0; i < 5; i = i + 1) {
+        rolagem.adicionar(Bloco(i, listOf<String>("linha " + String.valueOf(i))))
+    }
+    rolagem.moverFoco(4)
+    assert(rolagem.foco == 4)
+    assert(rolagem.deslocamento == 3)
+    rolagem.moverFoco(-9)
+    assert(rolagem.foco == 0)
+    assert(rolagem.deslocamento == 0)
+}
+
+test "rolagem limita o deslocamento no fim da lista" {
+    var rolagem = Rolagem(3)
+    for (var i = 0; i < 4; i = i + 1) {
+        rolagem.adicionar(Bloco(i, listOf<String>("linha " + String.valueOf(i))))
+    }
+    rolagem.rolar(50)
+    assert(rolagem.deslocamento == 1)
+    assert(rolagem.noFim())
+}
+
+test "destino quebra o caminho em segmentos" {
+    var partes = Destino.segmentos("/api/feed/posts/abc123")
+    assert(partes.size() == 3)
+    assert(partes.get(0) == "feed")
+    assert(partes.get(1) == "posts")
+    assert(partes.get(2) == "abc123")
+}
+
+test "destino tira a barra final e a query" {
+    var partes = Destino.segmentos("/grupos/enois/")
+    assert(partes.size() == 2)
+    assert(partes.get(1) == "enois")
+}
+
+test "destino acha o parametro da query" {
+    assert(Destino.parametro("/eventos?evento=99", "evento") == "99")
+    assert(Destino.parametro("/eventos?other=1", "evento") == "")
 }
 

@@ -61,7 +61,7 @@ class App {
 
     String painel() {
         var seletor = Seletor(this.config.contexto, this.cliente)
-        var rota = seletor.escolher(this.topo(), "↑↓ navega · enter abre · tab troca contexto · r atualiza · q encerra")
+        var rota = seletor.escolher(this.topo(), "↑↓ navega · roda rola · clique abre · enter abre · tab troca contexto · r atualiza · q encerra")
         this.guardarContexto(seletor.contexto)
         if (rota.length == 0) { return "sair" }
         return rota
@@ -176,7 +176,7 @@ class App {
         } else if (escolha == "perfil") {
             TelaPerfil(this.cliente, this.sessao).executar()
         } else if (escolha == "notificações") {
-            TelaNotificacoes(this.cliente, this.config.contexto).executar()
+            TelaNotificacoes(this.cliente, this.sessao, this.config.contexto).executar()
         } else if (escolha == "conta") {
             TelaConta(this.cliente, this.sessao).executar()
         } else if (escolha == "trocar contexto") {

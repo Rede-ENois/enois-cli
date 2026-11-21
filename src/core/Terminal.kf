@@ -24,6 +24,12 @@ class Terminal {
         return medida
     }
 
+    static Int colunas() {
+        var medida = Terminal.tamanho().colunas
+        if (medida <= 0) { return Terminal.LARGURA_PADRAO }
+        return medida
+    }
+
     static Tamanho tamanho() {
         try {
             var bruto = buffer.alloc(8)

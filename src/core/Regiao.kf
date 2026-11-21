@@ -1,0 +1,3 @@
+package core
+
+record Regiao(Int linha, Int linhaFim, Int inicio, Int fim, Int indice, String tipo)

@@ -1,6 +1,7 @@
 package ui
 
 import core.Ansi
+import core.Regioes
 import core.Tema
 
 class Abas {
@@ -28,5 +29,20 @@ class Abas {
 
     static String grupo(String titulo) {
         return "  " + Tema.mudo(titulo.toUpperCase())
+    }
+
+    static void registrar(Regioes regioes, Int linha, List<String> itens, String ativa) {
+        var coluna = 3
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var item = itens.get(i)
+            var comprimento = item.length
+            if (item == ativa) {
+                regioes.adicionar(linha, coluna, coluna + comprimento + 1, i, "aba")
+                coluna = coluna + comprimento + 3
+            } else {
+                regioes.adicionar(linha, coluna, coluna + comprimento - 1, i, "aba")
+                coluna = coluna + comprimento + 1
+            }
+        }
     }
 }

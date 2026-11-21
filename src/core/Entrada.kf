@@ -14,6 +14,20 @@ class Entrada {
     }
 
     static Int menu(String titulo, List<String> opcoes, String rotuloSaida) {
+        if (!Teclado.disponivel()) { return Entrada.menuNumerado(titulo, opcoes, rotuloSaida) }
+        var teclado = Teclado()
+        if (!teclado.entrar()) { return Entrada.menuNumerado(titulo, opcoes, rotuloSaida) }
+        if (teclado.linhaCursor() < 0) {
+            teclado.sair()
+            return Entrada.menuNumerado(titulo, opcoes, rotuloSaida)
+        }
+        teclado.ligarMouse()
+        var escolha = Entrada.menuInterativo(teclado, titulo, opcoes, rotuloSaida)
+        teclado.sair()
+        return escolha
+    }
+
+    static Int menuNumerado(String titulo, List<String> opcoes, String rotuloSaida) {
         var n = opcoes.size()
         println(Tema.titulo(titulo))
         for (var i = 0; i < n; i = i + 1) {
@@ -23,6 +37,116 @@ class Entrada {
         var digitado = Entrada.numero("Sua escolha", 0, n)
         if (digitado <= 0) { return -1 }
         return digitado - 1
+    }
+
+    static Int menuInterativo(Teclado teclado, String titulo, List<String> opcoes, String rotuloSaida) {
+        var largura = Ansi.LARGURA_CONTEUDO
+        var n = opcoes.size()
+        println(Tema.titulo(titulo))
+        for (var i = 0; i < n; i = i + 1) {
+            println(Entrada.linhaOpcao(i + 1, opcoes.get(i), largura, false))
+        }
+        println("  " + Ansi.padEsquerda("0", 2) + ". " + Tema.suave(rotuloSaida))
+        println(Entrada.dica())
+        var cursor = teclado.linhaCursor()
+        var base = cursor - n - 2
+        var foco = -1
+        var digitos = ""
+        var resultado = -2
+        while (resultado == -2 && Entrada.ativa) {
+            var tecla = teclado.ler()
+            if (tecla.nome == "fim" || tecla.nome == "ctrl-c" || tecla.nome == "escape") {
+                resultado = -1
+            } else if (tecla.nome == "clique") {
+                var alvo = Entrada.alvoNaLinha(tecla.linha, base, n)
+                if (alvo != -2) { resultado = alvo }
+            } else if (tecla.nome == "cima" || tecla.nome == "roda-cima") {
+                var anterior = foco
+                foco = foco - 1
+                if (foco < 0) { foco = n - 1 }
+                Entrada.repintar(anterior, foco, base, opcoes, largura)
+                Ansi.escrever(Ansi.posicao(cursor, 1))
+            } else if (tecla.nome == "baixo" || tecla.nome == "roda-baixo") {
+                var anterior = foco
+                foco = foco + 1
+                if (foco >= n) { foco = 0 }
+                Entrada.repintar(anterior, foco, base, opcoes, largura)
+                Ansi.escrever(Ansi.posicao(cursor, 1))
+            } else if (tecla.nome == "enter") {
+                if (foco >= 0) { resultado = foco }
+            } else if (tecla.nome == "voltar") {
+                if (digitos.length > 0) { digitos = digitos.substring(0, digitos.length - 1) }
+            } else if (tecla.nome == "texto") {
+                var digito = Entrada.digito(tecla.caractere)
+                if (digito < 0) { continue }
+                if (n < 10) {
+                    if (digito == 0) { resultado = -1 }
+                    else { resultado = digito - 1 }
+                    continue
+                }
+                digitos = digitos + tecla.caractere
+                var numero = Teclado.inteiro(digitos)
+                if (numero > n || numero < 1) {
+                    digitos = tecla.caractere
+                    numero = Teclado.inteiro(digitos)
+                }
+                if (numero < 1 || numero > n) {
+                    digitos = ""
+                    continue
+                }
+                var anterior = foco
+                foco = numero - 1
+                Entrada.repintar(anterior, foco, base, opcoes, largura)
+                Ansi.escrever(Ansi.posicao(cursor, 1))
+            }
+        }
+        if (foco >= 0) { Entrada.marcar(base, foco, opcoes, largura) }
+        Ansi.escrever(Ansi.posicao(cursor, 1))
+        return resultado
+    }
+
+    static void repintar(Int anterior, Int atual, Int base, List<String> opcoes, Int largura) {
+        if (anterior >= 0 && anterior < opcoes.size()) {
+            Entrada.pintar(base + anterior, anterior + 1, opcoes.get(anterior), largura, false)
+        }
+        if (atual >= 0 && atual < opcoes.size()) {
+            Entrada.pintar(base + atual, atual + 1, opcoes.get(atual), largura, true)
+        }
+    }
+
+    static void marcar(Int base, Int foco, List<String> opcoes, Int largura) {
+        Entrada.pintar(base + foco, foco + 1, opcoes.get(foco), largura, false)
+    }
+
+    static void pintar(Int linha, Int numero, String texto, Int largura, Bool foco) {
+        if (linha < 1) { return }
+        Ansi.escrever(Ansi.posicao(linha, 1) + Ansi.LIMPAR_LINHA + Entrada.linhaOpcao(numero, texto, largura, foco))
+    }
+
+    static String linhaOpcao(Int numero, String texto, Int largura, Bool foco) {
+        var corpo = Ansi.padEsquerda(String.valueOf(numero), 2) + ". " + Ansi.cortar(texto, largura - 8)
+        if (foco) {
+            return Tema.comFundoSobre(Tema.FUNDO_PRIMARIO_SUAVE, Tema.NEGRITO + Ansi.padDireita("▸ " + corpo, largura))
+        }
+        return "  " + corpo
+    }
+
+    static String dica() {
+        return Tema.mudo("  ↑↓ move · enter escolhe · clique escolhe")
+    }
+
+    static Int alvoNaLinha(Int linha, Int base, Int n) {
+        if (linha < base) { return -2 }
+        if (linha > base + n) { return -2 }
+        if (linha == base + n) { return -1 }
+        return linha - base
+    }
+
+    static Int digito(String caractere) {
+        if (caractere.length != 1) { return -1 }
+        var codigo: Int = caractere.charAt(0) as Int
+        if (codigo < 48 || codigo > 57) { return -1 }
+        return codigo - 48
     }
 
     static Int menuSecoes(String titulo, List<String> secoes, List<List<String>> grupos, String rotuloSaida) {

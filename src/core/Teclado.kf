@@ -1,16 +1,30 @@
 package core
 
-record Tecla(String nome, String caractere)
+record Tecla(String nome, String caractere, Int linha = 0, Int coluna = 0, Int botao = 0)
 
 class Teclado {
 
     static Int BYTES_TERMIOS = 60
-    static Int POSICAO_VMIN = 23
+    static Int POSICAO_IFLAG = 0
+    static Int POSICAO_LFLAG = 12
     static Int POSICAO_VTIME = 22
+    static Int POSICAO_VMIN = 23
+    static Int ICRNL = 256
+    static Int IXON = 1024
+    static Int ISIG = 1
+    static Int ICANON = 2
+    static Int ECHO = 8
+    static Int IEXTEN = 32768
     static Int ESPERA_DECIMOS = 1
+    static Int ESPERA_SEQUENCIA = 3
+    static Int LIMITE_SEQUENCIA = 48
+
+    static Int donos = 0
 
     List<Int> original = listOf<Int>()
-    Bool ativo = false
+    List<Int> pendentes = listOf<Int>()
+    Int profundidade = 0
+    Bool mouse = false
 
     static Bool disponivel() {
         try {
@@ -21,14 +35,22 @@ class Teclado {
     }
 
     Bool entrar() {
-        if (this.ativo) { return true }
+        this.profundidade = this.profundidade + 1
+        if (this.profundidade > 1) { return true }
         var estado = buffer.alloc(64)
-        if (tcgetattr(0, estado) != 0) { return false }
+        if (tcgetattr(0, estado) != 0) {
+            this.profundidade = 0
+            return false
+        }
+        this.original.clear()
         for (var i = 0; i < Teclado.BYTES_TERMIOS; i = i + 1) {
             this.original.add(buffer.peek8(estado, i))
         }
-        this.ativo = true
-        return this.aplicar(1, 0)
+        if (!this.aplicar(1, 0)) {
+            this.profundidade = 0
+            return false
+        }
+        return true
     }
 
     Bool aplicar(Int minimo, Int espera) {
@@ -36,35 +58,139 @@ class Teclado {
         for (var i = 0; i < this.original.size(); i = i + 1) {
             buffer.poke8(estado, i, this.original.get(i))
         }
-        cfmakeraw(estado)
+        var posicaoIflag: Int = Teclado.POSICAO_IFLAG
+        var posicaoLflag: Int = Teclado.POSICAO_LFLAG
         var posicaoVmin: Int = Teclado.POSICAO_VMIN
         var posicaoVtime: Int = Teclado.POSICAO_VTIME
+        var iflag: Int = buffer.peek32(estado, posicaoIflag)
+        buffer.poke32(estado, posicaoIflag, Teclado.semMarcas(iflag, Teclado.ICRNL + Teclado.IXON))
+        var lflag: Int = buffer.peek32(estado, posicaoLflag)
+        var marcas: Int = Teclado.ISIG + Teclado.ICANON + Teclado.ECHO + Teclado.IEXTEN
+        buffer.poke32(estado, posicaoLflag, Teclado.semMarcas(lflag, marcas))
         buffer.poke8(estado, posicaoVmin, minimo)
         buffer.poke8(estado, posicaoVtime, espera)
         return tcsetattr(0, 0, estado) == 0
     }
 
+    static Int semMarcas(Int valor, Int marcas) {
+        return valor - (valor & marcas)
+    }
+
     Bool sair() {
-        if (!this.ativo) { return true }
+        if (this.profundidade == 0) { return true }
+        this.profundidade = this.profundidade - 1
+        if (this.profundidade > 0) { return true }
+        this.desligarMouse()
         var estado = buffer.alloc(64)
         for (var i = 0; i < this.original.size(); i = i + 1) {
             buffer.poke8(estado, i, this.original.get(i))
         }
-        this.ativo = false
         return tcsetattr(0, 0, estado) == 0
     }
 
+    void ligarMouse() {
+        if (this.mouse) { return }
+        this.mouse = true
+        Teclado.donos = Teclado.donos + 1
+        if (Teclado.donos == 1) {
+            Ansi.escrever(Ansi.MOUSE_LIGAR)
+        }
+    }
+
+    void desligarMouse() {
+        if (!this.mouse) { return }
+        this.mouse = false
+        if (Teclado.donos > 0) { Teclado.donos = Teclado.donos - 1 }
+        if (Teclado.donos == 0) {
+            Ansi.escrever(Ansi.MOUSE_DESLIGAR)
+        }
+    }
+
+    void limpar() {
+        this.pendentes.clear()
+        var destino = buffer.alloc(1)
+        this.aplicar(0, 1)
+        var lido = read(0, destino, 1)
+        this.aplicar(0, 0)
+        while (lido > 0) {
+            lido = read(0, destino, 1)
+        }
+        this.aplicar(1, 0)
+    }
+
     Int lerByte() {
+        if (this.pendentes.size() > 0) {
+            var guardado: Int = this.pendentes.get(0)
+            this.pendentes.remove(0)
+            return guardado
+        }
         var destino = buffer.alloc(1)
         if (read(0, destino, 1) <= 0) { return -1 }
         return buffer.peek8(destino, 0)
     }
 
     Int lerByteComEspera() {
-        this.aplicar(0, Teclado.ESPERA_DECIMOS)
+        return this.lerByteComEspera(Teclado.ESPERA_DECIMOS)
+    }
+
+    Int lerByteComEspera(Int decimos) {
+        this.aplicar(0, decimos)
         var lido = this.lerByte()
         this.aplicar(1, 0)
         return lido
+    }
+
+    String lerAte(Int termino) {
+        return this.lerAte(termino, -1)
+    }
+
+    String lerAte(Int termino, Int alternativa) {
+        var lidos = listOf<Int>()
+        var passos = 0
+        while (passos < Teclado.LIMITE_SEQUENCIA) {
+            var lido = this.lerByteComEspera(Teclado.ESPERA_SEQUENCIA)
+            if (lido < 0) { break }
+            lidos.add(lido)
+            if (lido == termino || lido == alternativa) {
+                return Teclado.textoDe(lidos)
+            }
+            passos = passos + 1
+        }
+        for (var lido in lidos) { this.pendentes.add(lido) }
+        return ""
+    }
+
+    static String textoDe(List<Int> bytes) {
+        var texto = ""
+        for (var octeto in bytes) {
+            texto = texto + String.valueOf(octeto as Char)
+        }
+        return texto
+    }
+
+    Int linhaCursor() {
+        Ansi.escrever(Ansi.CONSULTAR_CURSOR)
+        var resposta = this.lerAte(82)
+        if (resposta.length() < 4) { return -1 }
+        if (resposta.substring(0, 2) != Ansi.ESC + "[") { return -1 }
+        var corpo = resposta.substring(2, resposta.length - 1)
+        var partes = corpo.split(";")
+        if (partes.size < 2) { return -1 }
+        return Teclado.inteiro(partes[0])
+    }
+
+    static Int inteiro(String texto) {
+        var limpo = texto.trim()
+        if (limpo.length() == 0) { return -1 }
+        var valor = 0
+        var i = 0
+        while (i < limpo.length()) {
+            var codigo: Int = limpo.charAt(i) as Int
+            if (codigo < 48 || codigo > 57) { return -1 }
+            valor = valor * 10 + (codigo - 48)
+            i = i + 1
+        }
+        return valor
     }
 
     Tecla ler() {
@@ -121,6 +247,7 @@ class Teclado {
     Tecla lerColchete() {
         var terceiro = this.lerByteComEspera()
         if (terceiro < 0) { return Tecla("escape", "") }
+        if (terceiro == 60) { return this.lerMouse() }
         if (terceiro == 65) { return Tecla("cima", "") }
         if (terceiro == 66) { return Tecla("baixo", "") }
         if (terceiro == 67) { return Tecla("direita", "") }
@@ -129,5 +256,33 @@ class Teclado {
         if (terceiro == 70) { return Tecla("fim", "") }
         if (terceiro == 90) { return Tecla("voltar-aba", "") }
         return Tecla("desconhecida", "")
+    }
+
+    Tecla lerMouse() {
+        var corpo = this.lerAte(77, 109)
+        if (corpo == "") { return Tecla("desconhecida", "") }
+        return Teclado.mouseDe(corpo)
+    }
+
+    static Tecla mouseDe(String corpo) {
+        if (corpo.length() < 2) { return Tecla("desconhecida", "") }
+        var soltou = corpo.endsWith("m")
+        var campos = corpo.substring(0, corpo.length - 1).split(";")
+        if (campos.size < 3) { return Tecla("desconhecida", "") }
+        var codigo = Teclado.inteiro(campos[0])
+        var coluna = Teclado.inteiro(campos[1])
+        var linha = Teclado.inteiro(campos[2])
+        if (codigo < 0 || coluna < 0 || linha < 0) { return Tecla("desconhecida", "") }
+        var botao = codigo % 4
+        if (codigo >= 64) {
+            var giro = (codigo - 64) % 4
+            if (giro == 0) { return Tecla("roda-cima", "", linha, coluna, botao) }
+            if (giro == 1) { return Tecla("roda-baixo", "", linha, coluna, botao) }
+            if (giro == 2) { return Tecla("roda-esquerda", "", linha, coluna, botao) }
+            return Tecla("roda-direita", "", linha, coluna, botao)
+        }
+        if (soltou) { return Tecla("soltar", "", linha, coluna, botao) }
+        if (codigo >= 32) { return Tecla("arrastar", "", linha, coluna, botao) }
+        return Tecla("clique", "", linha, coluna, botao)
     }
 }
