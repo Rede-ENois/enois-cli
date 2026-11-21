@@ -1,0 +1,68 @@
+package core
+
+class Base64 {
+
+    static String ALFABETO = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    static Int PASSO = 3
+
+    static String codificar(Int[] bytes) {
+        var partes = listOf<String>()
+        var i = 0
+        while (i + PASSO <= bytes.length) {
+            partes.add(Base64.trio(bytes[i], bytes[i + 1], bytes[i + 2]))
+            i = i + PASSO
+        }
+        if (bytes.length - i == 1) { partes.add(Base64.avulso(bytes[i])) }
+        if (bytes.length - i == 2) { partes.add(Base64.dupla(bytes[i], bytes[i + 1])) }
+        return partes.join("")
+    }
+
+    static Int[] deBytes(Byte[] bytes) {
+        var saida = new Int[bytes.length]
+        for (var i = 0; i < bytes.length; i = i + 1) {
+            saida[i] = bytes[i] + 0
+        }
+        return saida
+    }
+
+    static List<String> blocos(Int[] bytes, Int bytesPorBloco) {
+        var passo = bytesPorBloco - bytesPorBloco % PASSO
+        if (passo <= 0) { passo = PASSO }
+        var blocos = listOf<String>()
+        var i = 0
+        while (i < bytes.length) {
+            var ate = i + passo
+            if (ate > bytes.length) { ate = bytes.length }
+            var pedaco = new Int[ate - i]
+            for (var j = 0; j < ate - i; j = j + 1) {
+                pedaco[j] = bytes[i + j]
+            }
+            blocos.add(Base64.codificar(pedaco))
+            i = ate
+        }
+        if (blocos.size() == 0) { blocos.add("") }
+        return blocos
+    }
+
+    static String trio(Int b0, Int b1, Int b2) {
+        return Base64.simbolo(b0 / 4)
+            + Base64.simbolo((b0 % 4) * 16 + b1 / 16)
+            + Base64.simbolo((b1 % 16) * 4 + b2 / 64)
+            + Base64.simbolo(b2 % 64)
+    }
+
+    static String dupla(Int b0, Int b1) {
+        return Base64.simbolo(b0 / 4)
+            + Base64.simbolo((b0 % 4) * 16 + b1 / 16)
+            + Base64.simbolo((b1 % 16) * 4)
+            + "="
+    }
+
+    static String avulso(Int b0) {
+        return Base64.simbolo(b0 / 4) + Base64.simbolo((b0 % 4) * 16) + "=="
+    }
+
+    static String simbolo(Int indice) {
+        return "" + ALFABETO.charAt(indice)
+    }
+}

@@ -31,7 +31,7 @@ class TelaMensagens {
     }
 
     String contextoDoServidor() {
-        if (this.contexto == "profissional") { return "CORPORATE" }
+        if (this.contexto == "profissional") { return "PROFESSIONAL" }
         return "SOCIAL"
     }
 
@@ -81,7 +81,9 @@ class TelaMensagens {
         }
         var ultima = ""
         if (c.lastMessage != null && c.lastMessage.length > 0) {
-            ultima = " — " + c.lastMessage
+            var sobra = Ansi.LARGURA_CONTEUDO - Ansi.largura(t) - 8
+            if (sobra < 16) { sobra = 16 }
+            ultima = " — " + Ansi.cortar(c.lastMessage, sobra)
         }
         var naoLida = false
         if (c.unread != null && c.unread > 0) { naoLida = true }

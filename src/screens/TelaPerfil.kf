@@ -5,9 +5,11 @@ import api.*
 import core.Ansi
 import core.Cliente
 import core.Entrada
+import core.Midia
 import core.Sessao
 import core.Tema
 import ui.Caixa
+import ui.Imagem
 import ui.Lista
 import ui.Menu
 
@@ -30,9 +32,22 @@ class TelaPerfil {
             Entrada.pausar()
             return
         }
-        println(Caixa.simples(this.cartao(PerfilApi.perfil(r))))
+        var perfil = PerfilApi.perfil(r)
+        println(this.retrato(perfil))
+        println(Caixa.simples(this.cartao(perfil)))
         var escolha = Entrada.menu("perfil", listOf("meus posts"), "voltar")
         if (escolha == 0) { this.meusPosts() }
+    }
+
+    String retrato(Perfil perfil) {
+        var avatar = ""
+        if (perfil.avatar != null) { avatar = perfil.avatar }
+        if (Imagem.mostrar(Midia.url(avatar), Imagem.COLUNAS_AVATAR)) { return "" }
+        var nome = ""
+        if (perfil.name != null) { nome = perfil.name }
+        var usuario = ""
+        if (perfil.username != null) { usuario = perfil.username }
+        return Imagem.selo(nome, usuario, Imagem.LARGURA_SELO)
     }
 
     void meusPosts() {

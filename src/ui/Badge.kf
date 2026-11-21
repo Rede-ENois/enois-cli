@@ -2,8 +2,23 @@ package ui
 
 import core.Ansi
 import core.Tema
+import tipos.Sinal
 
 class Badge {
+
+    static String sinal(Sinal? s) {
+        if (s == null) { return "" }
+        var forma = s.forma
+        if (forma == "new") { return Tema.pinta(Tema.PRIMARIO, "●") }
+        if (forma == "today") { return Badge.hoje("hoje") }
+        if (s.contagem <= 0) { return "" }
+        return Badge.primaria(Badge.curto(s.contagem))
+    }
+
+    static String curto(Int contagem) {
+        if (contagem > 99) { return "99+" }
+        return String.valueOf(contagem)
+    }
 
     static String primaria(String texto) {
         return Tema.comFundo(Tema.FUNDO_PRIMARIO, Tema.TEXTO_SO_PRIMARIO, " " + texto + " ")

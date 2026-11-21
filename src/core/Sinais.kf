@@ -1,0 +1,99 @@
+package core
+
+import tipos.*
+
+record ContagensNavegacao(
+    ResumoSinal? resumo,
+    List<String> modulosDesativados,
+    Int mensagensNaoLidas,
+    Int pedidosPendentes
+)
+
+class Sinais {
+
+    static List<String> EXPLORAR = listOf("COMMUNITY_GAMES", "DAILY_GAMES")
+
+    static Sinal? de(String rota, String? notifica, ContagensNavegacao contagens) {
+        if (rota == "mensagens") {
+            if (contagens.mensagensNaoLidas > 0) {
+                return Sinal("messages", contagens.mensagensNaoLidas)
+            }
+            return null
+        }
+        if (rota == "rede") {
+            if (contagens.pedidosPendentes > 0) {
+                return Sinal("count", contagens.pedidosPendentes)
+            }
+            return null
+        }
+        if (rota == "notificações") {
+            var avisos = Sinais.avisos(contagens)
+            if (avisos > 0) { return Sinal("count", avisos) }
+            return null
+        }
+        if (rota == "eventos" && Sinais.eventosHoje(contagens) > 0) {
+            return Sinal("today", 0)
+        }
+        if (rota == "comunidades" && Sinais.comunidadeComSinal(contagens)) {
+            return Sinal("new", 0)
+        }
+        var modulos = Sinais.modulosDe(rota, notifica)
+        if (Sinais.algumLigado(modulos, contagens)) { return Sinal("new", 0) }
+        return null
+    }
+
+    static List<String> modulosDe(String rota, String? notifica) {
+        if (rota == "explorar") { return Sinais.EXPLORAR }
+        if (notifica == null) { return listOf<String>() }
+        return listOf(notifica)
+    }
+
+    static Bool algumLigado(List<String> modulos, ContagensNavegacao contagens) {
+        for (var modulo in modulos) {
+            if (Sinais.doModulo(contagens, modulo) > 0) { return true }
+        }
+        return false
+    }
+
+    static Int avisos(ContagensNavegacao contagens) {
+        var resumo = contagens.resumo
+        if (resumo == null) { return 0 }
+        var total = 0
+        if (resumo.total != null) { total = resumo.total }
+        var escondidos = 0
+        for (var modulo in contagens.modulosDesativados) {
+            escondidos = escondidos + Sinais.doModulo(contagens, modulo)
+        }
+        var avisos = total - escondidos
+        if (avisos < 0) { return 0 }
+        return avisos
+    }
+
+    static Int eventosHoje(ContagensNavegacao contagens) {
+        var resumo = contagens.resumo
+        if (resumo == null) { return 0 }
+        if (resumo.eventsToday == null) { return 0 }
+        return resumo.eventsToday
+    }
+
+    static Bool comunidadeComSinal(ContagensNavegacao contagens) {
+        var resumo = contagens.resumo
+        if (resumo == null) { return false }
+        var mapa = resumo.byCommunity
+        if (mapa == null) { return false }
+        for (var contagem in mapa.values()) {
+            if (contagem != null && contagem > 0) { return true }
+        }
+        return false
+    }
+
+    static Int doModulo(ContagensNavegacao contagens, String modulo) {
+        var resumo = contagens.resumo
+        if (resumo == null) { return 0 }
+        var mapa = resumo.byModule
+        if (mapa == null) { return 0 }
+        var contagem = mapa.get(modulo)
+        if (contagem == null) { return 0 }
+        return contagem
+    }
+}

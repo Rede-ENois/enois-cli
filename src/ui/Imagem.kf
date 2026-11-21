@@ -1,0 +1,139 @@
+package ui
+
+import core.Ansi
+import core.Base64
+import core.Download
+import core.Midia
+import core.Tema
+
+class Imagem {
+
+    static Int BYTES_POR_BLOCO = 3072
+    static Int COLUNAS_AVATAR = 14
+    static Int LARGURA_SELO = 15
+
+    static String protocolo(String termo, String programa, String janelaKitty) {
+        if (programa == "iTerm.app") { return "iterm2" }
+        if (programa == "kitty" || programa == "WezTerm" || programa == "ghostty") { return "kitty" }
+        if (janelaKitty.length > 0) { return "kitty" }
+        if (termo.indexOf("kitty") >= 0) { return "kitty" }
+        if (termo.indexOf("ghostty") >= 0) { return "kitty" }
+        if (termo.indexOf("wezterm") >= 0) { return "kitty" }
+        return ""
+    }
+
+    static String protocoloDoTerminal() {
+        return Imagem.protocolo(Imagem.virtual("TERM"), Imagem.virtual("TERM_PROGRAM"),
+            Imagem.virtual("KITTY_WINDOW_ID"))
+    }
+
+    static String virtual(String nome) {
+        var valor = config.env(nome)
+        if (valor == null) { return "" }
+        return valor
+    }
+
+    static Bool suportada() {
+        return Imagem.protocoloDoTerminal().length > 0
+    }
+
+    static Bool eImagem(String? mimeType) {
+        if (mimeType == null) { return false }
+        return mimeType.startsWith("image/")
+    }
+
+    static Bool mostrar(String endereco, Int colunas) {
+        var protocolo = Imagem.protocoloDoTerminal()
+        if (protocolo.length == 0 || endereco.length == 0) { return false }
+        var caminho = Midia.arquivo(endereco)
+        if (!Download.para(endereco, caminho)) { return false }
+        try {
+            if (protocolo == "iterm2") {
+                print(Imagem.iterm2(caminho, colunas))
+            } else {
+                var png = Imagem.paraPng(caminho)
+                if (png.length == 0) { return false }
+                print(Imagem.kitty(png, colunas))
+            }
+            println("")
+            return true
+        } catch (String erro) {
+            return false
+        }
+    }
+
+    static String paraPng(String caminho) {
+        if (caminho.endsWith(".png")) { return caminho }
+        var destino = Midia.arquivoMiniatura(caminho)
+        if (Png.converter(caminho, destino, Png.LARGURA_PADRAO)) { return destino }
+        return ""
+    }
+
+    static String kitty(String caminho, Int colunas) {
+        return Imagem.kittyDeBlocos(Base64.blocos(File(caminho).readBytes(), Imagem.BYTES_POR_BLOCO),
+            colunas, Imagem.identificador(caminho))
+    }
+
+    static String kittyDeBlocos(List<String> blocos, Int colunas) {
+        return Imagem.kittyDeBlocos(blocos, colunas, 1)
+    }
+
+    static String kittyDeBlocos(List<String> blocos, Int colunas, Int identificador) {
+        var saida = Ansi.ESC + "_Gf=100,a=T,t=d,i=" + identificador + ",c=" + colunas + ",q=2"
+        if (blocos.size() > 1) { saida = saida + ",m=1" }
+        saida = saida + ";" + blocos.get(0) + Ansi.ESC + "\\"
+        for (var i = 1; i < blocos.size(); i = i + 1) {
+            saida = saida + Ansi.ESC + "_Gm="
+            if (i < blocos.size() - 1) {
+                saida = saida + "1"
+            } else {
+                saida = saida + "0"
+            }
+            saida = saida + ";" + blocos.get(i) + Ansi.ESC + "\\"
+        }
+        return saida
+    }
+
+    static Int identificador(String caminho) {
+        var selo = Midia.selo(caminho)
+        if (selo < 0) { selo = -selo }
+        return selo % 2000000000 + 1
+    }
+    static String iterm2(String caminho, Int colunas) {
+        return Imagem.iterm2DeBase64(Base64.codificar(File(caminho).readBytes()), colunas)
+    }
+
+    static String iterm2DeBase64(String conteudo, Int colunas) {
+        return Ansi.ESC + "]1337;File=inline=1;width=" + colunas + ";preserveAspectRatio=1:"
+            + conteudo + "\u0007"
+    }
+
+    static String selo(String nome, String usuario, Int largura) {
+        var iniciais = Imagem.iniciais(nome, usuario)
+        var miolo = Ansi.centrar(Tema.NEGRITO + Tema.TEXTO_AVATAR + iniciais + Tema.RESET, largura - 2)
+        return Tema.pinta(Tema.BORDA_SUAVE, "╭" + Imagem.traco(largura - 2) + "╮") + "\n"
+            + Tema.pinta(Tema.BORDA_SUAVE, "│") + Tema.FUNDO_AVATAR + miolo + Tema.RESET
+            + Tema.pinta(Tema.BORDA_SUAVE, "│") + "\n"
+            + Tema.pinta(Tema.BORDA_SUAVE, "╰" + Imagem.traco(largura - 2) + "╯")
+    }
+
+    static String traco(Int largura) {
+        var linha = ""
+        for (var i = 0; i < largura; i = i + 1) { linha = linha + "─" }
+        return linha
+    }
+
+    static String iniciais(String nome, String usuario) {
+        var bruto = nome
+        if (bruto.length == 0) { bruto = usuario }
+        var partes = listOf<String>()
+        for (var parte in bruto.split(" ")) {
+            if (parte.length > 0) { partes.add(parte) }
+        }
+        if (partes.size() == 0) { return "?" }
+        var primeira = partes.get(0).substring(0, 1)
+        if (partes.size() == 1) { return primeira.toUpperCase() }
+        var ultima = partes.get(partes.size() - 1).substring(0, 1)
+        return (primeira + ultima).toUpperCase()
+    }
+}

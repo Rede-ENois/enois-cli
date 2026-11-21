@@ -1,0 +1,62 @@
+package core
+
+import java.awt.image.BufferedImage
+import java.io.FileOutputStream
+import javax.imageio.ImageIO
+
+class Png {
+
+    static Int LARGURA_PADRAO = 256
+    static Long TAMANHO_MAXIMO = 12582912
+
+    static Bool converter(String origem, String destino, Int limite) {
+        var fonteArquivo = File(origem)
+        if (!fonteArquivo.exists()) { return false }
+        var tamanho = fonteArquivo.size()
+        if (tamanho < 1 || tamanho > Png.TAMANHO_MAXIMO) { return false }
+        var destinoArquivo = File(destino)
+        if (destinoArquivo.exists() && destinoArquivo.size() > 0) { return true }
+        try {
+            var fonte = ImageIO.read(new java.io.File(origem))
+            if (fonte == null) { return false }
+            var largura = fonte.getWidth()
+            var altura = fonte.getHeight()
+            var alvo = new BufferedImage(Png.alvoLargura(largura, altura, limite),
+                Png.alvoAltura(largura, altura, limite), Png.tipoDe(fonte.getColorModel().hasAlpha()))
+            var pincel = alvo.createGraphics()
+            pincel.drawImage(fonte, 0, 0, alvo.getWidth(), alvo.getHeight(), null)
+            pincel.dispose()
+            var fluxo = new FileOutputStream(new java.io.File(destino))
+            var gravou = ImageIO.write(alvo, "png", fluxo)
+            fluxo.close()
+            if (gravou) { return true }
+            destinoArquivo.delete()
+            return false
+        } catch (String erro) {
+            destinoArquivo.delete()
+            return false
+        }
+    }
+
+    static Int tipoDe(Bool transparente) {
+        if (transparente) { return BufferedImage.TYPE_INT_ARGB }
+        return BufferedImage.TYPE_INT_RGB
+    }
+
+    static Int alvoLargura(Int largura, Int altura, Int limite) {
+        if (largura <= limite && altura <= limite) { return Png.aoMenos1(largura) }
+        if (largura >= altura) { return limite }
+        return Png.aoMenos1(limite * largura / altura)
+    }
+
+    static Int alvoAltura(Int largura, Int altura, Int limite) {
+        if (largura <= limite && altura <= limite) { return Png.aoMenos1(altura) }
+        if (altura >= largura) { return limite }
+        return Png.aoMenos1(limite * altura / largura)
+    }
+
+    static Int aoMenos1(Int valor) {
+        if (valor < 1) { return 1 }
+        return valor
+    }
+}

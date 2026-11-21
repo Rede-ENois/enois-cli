@@ -1,0 +1,13 @@
+package core
+
+class Download {
+
+    static Bool para(String endereco, String caminho) {
+        if (File(caminho).exists()) { return true }
+        Directory(Midia.dirCache()).mkdirs()
+        var resultado = process.run("curl", "-fsSL", "--max-time", "10", "-o", caminho, endereco)
+        if (resultado.exitCode != 0) { return false }
+        if (!File(caminho).exists()) { return false }
+        return File(caminho).size() != 0
+    }
+}
