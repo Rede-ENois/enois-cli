@@ -1,0 +1,81 @@
+package core
+
+class Midia {
+
+    static String CDN = "https://ik.imagekit.io/socialcoisa"
+
+    static String url(String caminho) {
+        if (caminho == null) { return "" }
+        if (caminho.length == 0) { return "" }
+        var limpo = Midia.semEscapaDeBarra(caminho)
+        if (limpo.startsWith("http://") || limpo.startsWith("https://")) { return limpo }
+        if (limpo.startsWith("/")) { return CDN + limpo }
+        return CDN + "/" + limpo
+    }
+
+    static String semEscapaDeBarra(String caminho) {
+        var saida = ""
+        var i = 0
+        while (i < caminho.length) {
+            var tres = ""
+            if (i + 3 <= caminho.length) { tres = caminho.substring(i, i + 3) }
+            if (tres == "%2F" || tres == "%2f") {
+                saida = saida + "/"
+                i = i + 3
+            } else {
+                saida = saida + caminho.charAt(i)
+                i = i + 1
+            }
+        }
+        return saida
+    }
+
+    static String dirCache() {
+        var cache = config.env("XDG_CACHE_HOME")
+        var base = ""
+        if (cache != null) { base = cache }
+        if (base.length == 0) {
+            var casa = config.env("HOME")
+            var lar = ""
+            if (casa != null) { lar = casa }
+            if (lar.length == 0) { return "/tmp/enois-cli/midia" }
+            base = lar + "/.cache"
+        }
+        return base + "/enois-cli/midia"
+    }
+
+    static String arquivo(String endereco) {
+        return Midia.dirCache() + "/" + String.valueOf(Midia.selo(endereco)) + Midia.extensao(endereco)
+    }
+
+    static String arquivoMiniatura(String endereco) {
+        return Midia.dirCache() + "/" + String.valueOf(Midia.selo(endereco)) + "-miniatura.png"
+    }
+
+    static Int selo(String texto) {
+        var valor = 5381
+        for (var i = 0; i < texto.length; i = i + 1) {
+            valor = (valor * 33 + texto.charAt(i)) % 2147483647
+        }
+        return valor
+    }
+
+    static String extensao(String endereco) {
+        var fim = endereco
+        var corte = endereco.indexOf("?")
+        if (corte >= 0) { fim = endereco.substring(0, corte) }
+        var ultimo = -1
+        var i = 0
+        while (i < fim.length) {
+            if (fim.charAt(i) == '.') { ultimo = i }
+            i = i + 1
+        }
+        if (ultimo < 0) { return ".bin" }
+        var bruto = fim.substring(ultimo)
+        if (bruto.length < 2 || bruto.length > 5) { return ".bin" }
+        for (var j = 1; j < bruto.length; j = j + 1) {
+            if (!strings.isAlpha(bruto.substring(j, j + 1))) { return ".bin" }
+        }
+        return bruto.toLowerCase()
+    }
+}

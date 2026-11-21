@@ -26,6 +26,7 @@ class TelaPost {
             print(Ansi.LIMPAR)
             println(Menu.topo("Énóis", ""))
             println(TelaFeed(this.cliente).card(post))
+            TelaFeed(this.cliente).mostrarImagens(post)
             this.comentarios(post.id)
             var escolha = Entrada.menu("post",
                 listOf("comentar", "reagir", "salvar", "compartilhar", "repostar", "reações"), "voltar")

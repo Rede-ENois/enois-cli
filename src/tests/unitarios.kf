@@ -170,3 +170,85 @@ test "todas as telas carregam e formatam" {
     TelaConta(c, s).toString()
     assert(c != null)
 }
+
+test "base64 codifica os bytes certinhos" {
+    assert(Base64.codificar(Base64.deBytes("Man".getBytes())) == "TWFu")
+    assert(Base64.codificar(Base64.deBytes("Ma".getBytes())) == "TWE=")
+    assert(Base64.codificar(Base64.deBytes("M".getBytes())) == "TQ==")
+    assert(Base64.codificar(Base64.deBytes("".getBytes())) == "")
+    assert(Base64.codificar(Base64.deBytes("Mele".getBytes())) == "TWVsZQ==")
+    assert(Base64.codificar(Base64.deBytes("Mel".getBytes())) == "TWVs")
+}
+
+test "base64 quebra o arquivo em blocos de tres bytes" {
+    var bytes = Base64.deBytes("abcdefg".getBytes())
+    var blocos = Base64.blocos(bytes, 4)
+    assert(blocos.size() == 3)
+    assert(blocos.get(0) == "YWJj")
+    assert(blocos.get(1) == "ZGVm")
+    assert(blocos.get(2) == "Zw==")
+    var inteiro = Base64.blocos(bytes, 6)
+    assert(inteiro.size() == 2)
+    assert(inteiro.get(0) == "YWJjZGVm")
+    assert(inteiro.get(1) == "Zw==")
+}
+
+test "url de midia completa o endereco do cdn" {
+    assert(Midia.url("/media/a.png") == "https://ik.imagekit.io/socialcoisa/media/a.png")
+    assert(Midia.url("media/a.png") == "https://ik.imagekit.io/socialcoisa/media/a.png")
+    assert(Midia.url("https://exemplo.test/a.png") == "https://exemplo.test/a.png")
+    assert(Midia.url("") == "")
+}
+
+test "url de midia desescapa a barra codificada" {
+    assert(Midia.url("/media%2Fa.png") == "https://ik.imagekit.io/socialcoisa/media/a.png")
+}
+
+test "extensao da midia sai do endereco" {
+    assert(Midia.extensao("https://x.test/a/b/avatar.PNG") == ".png")
+    assert(Midia.extensao("https://x.test/a/b/avatar.png?w=100") == ".png")
+    assert(Midia.extensao("https://x.test/a/b/avatar") == ".bin")
+    assert(Midia.extensao("https://x.test/a.b/c") == ".bin")
+}
+
+test "protocolo de imagem segue o terminal" {
+    assert(Imagem.protocolo("xterm-kitty", "", "") == "kitty")
+    assert(Imagem.protocolo("xterm-256color", "iTerm.app", "") == "iterm2")
+    assert(Imagem.protocolo("xterm-256color", "", "") == "")
+}
+
+test "sequencia do kitty carrega os blocos" {
+    var blocos = listOf("YWJj", "ZGVmZw==")
+    var saida = Imagem.kittyDeBlocos(blocos, 20)
+    assert(saida.contains("_Gf=100,a=T,t=d,i=1,c=20"))
+    assert(saida.contains("YWJj"))
+    assert(saida.contains("ZGVmZw=="))
+    assert(saida.endsWith("\u001b\\"))
+}
+
+test "iniciais do avatar seguem o padrao do design system" {
+    assert(Imagem.iniciais("Mel Monfre", "") == "MM")
+    assert(Imagem.iniciais("Mel", "") == "M")
+    assert(Imagem.iniciais("", "melmonfre") == "M")
+    assert(Imagem.iniciais("", "") == "?")
+}
+
+test "miniatura mantem proporcao e cabe no limite" {
+    assert(Png.alvoLargura(5120, 2880, 256) == 256)
+    assert(Png.alvoAltura(5120, 2880, 256) == 144)
+    assert(Png.alvoLargura(2880, 5120, 256) == 144)
+    assert(Png.alvoAltura(2880, 5120, 256) == 256)
+    assert(Png.alvoLargura(100, 80, 256) == 100)
+    assert(Png.alvoAltura(100, 80, 256) == 80)
+}
+
+test "miniatura nunca fica com lado zero" {
+    assert(Png.alvoLargura(10, 1000, 256) == 2)
+    assert(Png.alvoAltura(1000, 10, 256) == 2)
+    assert(Png.aoMenos1(0) == 1)
+}
+
+test "png pronto vai direto para o terminal" {
+    assert(Imagem.paraPng("/cache/a.png") == "/cache/a.png")
+}
+

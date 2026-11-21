@@ -36,7 +36,8 @@ record PostResumo(
     Troolean? currentUserReposted,
     String? acceptedCommentId,
     String? topic,
-    String? editedAt
+    String? editedAt,
+    List<MidiaAnexo>? media
 )
 
 record PaginaPost(List<PostResumo>? items, String? nextCursor)

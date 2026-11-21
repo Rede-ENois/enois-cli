@@ -13,6 +13,7 @@ class Tema {
     static String CARTAO_SUAVE = "\u001b[48;2;36;29;48m"
     static String FUNDO_PRIMARIO = "\u001b[48;2;167;139;250m"
     static String FUNDO_PRIMARIO_SUAVE = "\u001b[48;2;38;29;62m"
+    static String FUNDO_AVATAR = "\u001b[48;2;196;181;253m"
 
     static String TEXTO = "\u001b[38;2;243;238;247m"
     static String TEXTO_SUAVE = "\u001b[38;2;185;174;198m"
@@ -22,6 +23,7 @@ class Tema {
     static String PRIMARIO = "\u001b[38;2;167;139;250m"
     static String ANEL = "\u001b[38;2;177;128;252m"
     static String TEXTO_SO_PRIMARIO = "\u001b[38;2;12;12;22m"
+    static String TEXTO_AVATAR = "\u001b[38;2;76;29;149m"
 
     static String BORDA_SUAVE = "\u001b[38;2;52;41;63m"
     static String BORDA_FORTE = "\u001b[38;2;143;127;161m"

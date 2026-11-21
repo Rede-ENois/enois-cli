@@ -1,0 +1,9 @@
+package tipos
+
+record MidiaAnexo(
+    String id,
+    String? cdnUrl,
+    String? mimeType,
+    Int? width,
+    Int? height
+)
