@@ -143,6 +143,7 @@ class Seletor {
         var linhas = listOf<String>()
         var secao = ""
         var numero = 1
+        var foco = 0
         for (var i = 0; i < this.itens.size(); i = i + 1) {
             var item = this.itens.get(i)
             if (item.secao != secao) {
@@ -152,13 +153,38 @@ class Seletor {
             }
             var rotulo = this.rotulo(numero, item, largura)
             if (i == this.cursor) {
+                foco = linhas.size()
                 linhas.add(Tema.selecionado(Ansi.padDireita(rotulo, largura)))
             } else {
                 linhas.add(rotulo)
             }
             numero = numero + 1
         }
-        return linhas
+        return this.janela(linhas, foco)
+    }
+
+    List<String> janela(List<String> linhas, Int foco) {
+        return Seletor.janelaDe(linhas, foco, this.alturaConteudo())
+    }
+
+    static List<String> janelaDe(List<String> linhas, Int foco, Int altura) {
+        if (linhas.size() <= altura) { return linhas }
+        var inicio = foco - altura / 2
+        if (inicio > linhas.size() - altura) { inicio = linhas.size() - altura }
+        if (inicio < 0) { inicio = 0 }
+        var acima = inicio > 0
+        var abaixo = inicio + altura < linhas.size()
+        var espaco = altura
+        if (acima) { espaco = espaco - 1 }
+        if (abaixo) { espaco = espaco - 1 }
+        var saida = listOf<String>()
+        if (acima) { saida.add(Tema.mudo("  ↑ " + String.valueOf(inicio) + " linhas acima")) }
+        for (var i = inicio; i < inicio + espaco; i = i + 1) { saida.add(linhas.get(i)) }
+        if (abaixo) {
+            var restantes = linhas.size() - inicio - espaco
+            saida.add(Tema.mudo("  ↓ " + String.valueOf(restantes) + " linhas abaixo"))
+        }
+        return saida
     }
 
     String rotulo(Int numero, ItemNavegacao item, Int largura) {
@@ -183,11 +209,15 @@ class Seletor {
         return this.itens.get(indice)
     }
 
-    Int limite() {
-        var total = Terminal.altura() - 10
-        if (total < 8) { total = 8 }
+    Int alturaConteudo() {
+        var total = Terminal.altura() - 8
+        if (total < 6) { total = 6 }
         if (total > 24) { total = 24 }
         return total
+    }
+
+    Int limite() {
+        return this.alturaConteudo()
     }
 
     List<String> previaDe(Int largura) {

@@ -6,6 +6,7 @@ import core.*
 import screens.*
 import ui.Badge
 import ui.Painel
+import ui.Seletor
 
 test "consulta ignora par vazio e nulo" {
     assert(Cliente.par("limit", "") == "")
@@ -379,5 +380,28 @@ test "previa guarda e devolve as linhas" {
     assert(previa.contextoDoServidor() == "SOCIAL")
     previa.trocarContexto("profissional")
     assert(previa.contextoDoServidor() == "PROFESSIONAL")
+}
+
+test "menu rola dentro da altura do terminal" {
+    var linhas = listOf<String>()
+    for (var i = 0; i < 20; i = i + 1) { linhas.add("l" + String.valueOf(i)) }
+    var janela = Seletor.janelaDe(linhas, 15, 6)
+    assert(janela.size() == 6)
+    assert(janela.get(0).contains("acima"))
+    assert(janela.get(1).contains("l12"))
+    assert(janela.get(4).contains("l15"))
+    assert(janela.get(5).contains("abaixo"))
+    var fim = Seletor.janelaDe(linhas, 19, 6)
+    assert(fim.size() == 6)
+    assert(fim.get(5).contains("l18"))
+    assert(!fim.get(5).contains("abaixo"))
+}
+
+test "menu curto nao ganha janela" {
+    var linhas = listOf<String>("a", "b", "c")
+    assert(Seletor.janelaDe(linhas, 0, 6).size() == 3)
+    var exato = Seletor.janelaDe(listOf<String>("a", "b", "c", "d"), 2, 4)
+    assert(exato.size() == 4)
+    assert(exato.get(0) == "a")
 }
 
