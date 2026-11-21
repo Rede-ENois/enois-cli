@@ -1,0 +1,6 @@
+package tipos
+
+record Sinal(String forma, Int contagem)
+
+record ResumoSinal(Int? total, Map<String, Int>? byModule, Map<String, Int>? byCommunity,
+                   Int? eventsToday)

@@ -5,7 +5,8 @@ record ItemNavegacao(
     String rotulo,
     String descricao,
     String secao,
-    String? contexto
+    String? contexto,
+    String? notifica
 )
 
 class Navegacao {
@@ -14,28 +15,28 @@ class Navegacao {
 
     static List<ItemNavegacao> itens() {
         return listOf(
-            ItemNavegacao("feed", "feed", "publicações de quem você segue", "você", null),
-            ItemNavegacao("mensagens", "mensagens", "conversas", "você", null),
-            ItemNavegacao("rede", "rede", "quem você segue", "você", "social"),
-            ItemNavegacao("salvos", "salvos", "o que você guardou", "você", "social"),
-            ItemNavegacao("comunidades", "comunidades", "salas por assunto", "comunidade", "social"),
-            ItemNavegacao("grupos", "grupos", "conversas em grupo", "comunidade", "social"),
-            ItemNavegacao("eventos", "eventos", "agenda da comunidade", "comunidade", "social"),
-            ItemNavegacao("blogs", "blogs", "escritas longas", "comunidade", "social"),
-            ItemNavegacao("par de estudo", "par de estudo", "estudar junto", "comunidade", "social"),
-            ItemNavegacao("vagas", "vagas", "oportunidades formais", "trabalho", "profissional"),
-            ItemNavegacao("freelances", "freelances", "trabalhos pontuais", "trabalho", "profissional"),
-            ItemNavegacao("serviços", "serviços", "quem faz o quê", "trabalho", "profissional"),
-            ItemNavegacao("empresas", "empresas", "quem contrata", "trabalho", "profissional"),
-            ItemNavegacao("mentoria", "mentoria", "quem ensina", "trabalho", "profissional"),
-            ItemNavegacao("perfil profissional", "perfil profissional", "como você se apresenta", "trabalho", "profissional"),
-            ItemNavegacao("explorar", "explorar", "todas as salas", "explorar", null),
-            ItemNavegacao("perfil", "perfil", "seus dados", "conta", null),
-            ItemNavegacao("notificações", "notificações", "avisos e sinais", "conta", null),
-            ItemNavegacao("conta", "conta", "senha e sessão", "conta", null),
-            ItemNavegacao("trocar contexto", "trocar contexto", "social ou profissional", "conta", null),
-            ItemNavegacao("trocar alvo", "trocar alvo", "qa ou produção", "conta", null),
-            ItemNavegacao("sair da conta", "sair da conta", "encerrar a sessão", "conta", null))
+            ItemNavegacao("feed", "feed", "publicações de quem você segue", "você", null, null),
+            ItemNavegacao("mensagens", "mensagens", "conversas", "você", null, null),
+            ItemNavegacao("rede", "rede", "quem você segue", "você", "social", null),
+            ItemNavegacao("salvos", "salvos", "o que você guardou", "você", "social", null),
+            ItemNavegacao("comunidades", "comunidades", "salas por assunto", "comunidade", "social", null),
+            ItemNavegacao("grupos", "grupos", "conversas em grupo", "comunidade", "social", "GROUPS"),
+            ItemNavegacao("eventos", "eventos", "agenda da comunidade", "comunidade", "social", "EVENTS"),
+            ItemNavegacao("blogs", "blogs", "escritas longas", "comunidade", "social", "BLOGS"),
+            ItemNavegacao("par de estudo", "par de estudo", "estudar junto", "comunidade", "social", "STUDY_PAIRS"),
+            ItemNavegacao("vagas", "vagas", "oportunidades formais", "trabalho", "profissional", "JOBS"),
+            ItemNavegacao("freelances", "freelances", "trabalhos pontuais", "trabalho", "profissional", null),
+            ItemNavegacao("serviços", "serviços", "quem faz o quê", "trabalho", "profissional", null),
+            ItemNavegacao("empresas", "empresas", "quem contrata", "trabalho", "profissional", "COMPANIES"),
+            ItemNavegacao("mentoria", "mentoria", "quem ensina", "trabalho", "profissional", "MENTORING"),
+            ItemNavegacao("perfil profissional", "perfil profissional", "como você se apresenta", "trabalho", "profissional", null),
+            ItemNavegacao("explorar", "explorar", "todas as salas", "explorar", null, null),
+            ItemNavegacao("perfil", "perfil", "seus dados", "conta", null, null),
+            ItemNavegacao("notificações", "notificações", "avisos e sinais", "conta", null, null),
+            ItemNavegacao("conta", "conta", "senha e sessão", "conta", null, null),
+            ItemNavegacao("trocar contexto", "trocar contexto", "social ou profissional", "conta", null, null),
+            ItemNavegacao("trocar alvo", "trocar alvo", "qa ou produção", "conta", null, null),
+            ItemNavegacao("sair da conta", "sair da conta", "encerrar a sessão", "conta", null, null))
     }
 
     static List<ItemNavegacao> visiveis(String contexto) {

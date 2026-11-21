@@ -1,0 +1,41 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+class Painel {
+
+    static Int LARGURA_ESQUERDA = 34
+    static Int MINIMA = 76
+    static Int SEPARADOR = 3
+
+    static Bool cabe(Int largura) {
+        return largura >= Painel.MINIMA
+    }
+
+    static Int larguraEsquerda(Int largura) {
+        var coluna = largura / 3
+        if (coluna < Painel.LARGURA_ESQUERDA) { coluna = Painel.LARGURA_ESQUERDA }
+        return coluna
+    }
+
+    static Int larguraDireita(Int largura) {
+        return largura - Painel.larguraEsquerda(largura) - Painel.SEPARADOR
+    }
+
+    static List<String> linhas(List<String> esquerda, List<String> direita, Int largura) {
+        var coluna = Painel.larguraEsquerda(largura)
+        var borda = Tema.pinta(Tema.BORDA_SUAVE, " │ ")
+        var total = esquerda.size()
+        if (direita.size() > total) { total = direita.size() }
+        var saida = listOf<String>()
+        for (var i = 0; i < total; i = i + 1) {
+            var e = ""
+            if (i < esquerda.size()) { e = esquerda.get(i) }
+            var d = ""
+            if (i < direita.size()) { d = direita.get(i) }
+            saida.add(Ansi.padDireita(Ansi.cortar(e, coluna), coluna) + borda + d)
+        }
+        return saida
+    }
+}

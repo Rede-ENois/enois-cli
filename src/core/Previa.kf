@@ -1,0 +1,450 @@
+package core
+
+import api.*
+import tipos.*
+
+class Previa {
+
+    Cliente cliente
+    String contexto
+    Map<String, String> cache = mapOf<String, String>()
+
+    public constructor(Cliente cliente, String contexto) {
+        this.cliente = cliente
+        this.contexto = contexto
+    }
+
+    void trocarContexto(String contexto) {
+        this.contexto = contexto
+        this.cache = mapOf<String, String>()
+    }
+
+    void limpar() {
+        this.cache = mapOf<String, String>()
+    }
+
+    String contextoDoServidor() {
+        if (this.contexto == "profissional") { return "PROFESSIONAL" }
+        return "SOCIAL"
+    }
+
+    List<String> linhas(String rota) {
+        var guardado = this.cache.get(rota)
+        if (guardado != null) { return Previa.dividir(guardado) }
+        var carregadas = this.carregar(rota)
+        this.cache.put(rota, Previa.juntar(carregadas))
+        return carregadas
+    }
+
+    List<String> carregar(String rota) {
+        if (rota == "feed") { return this.feed(false) }
+        if (rota == "salvos") { return this.feed(true) }
+        if (rota == "mensagens") { return this.mensagens() }
+        if (rota == "rede") { return this.rede() }
+        if (rota == "comunidades") { return this.comunidades() }
+        if (rota == "grupos") { return this.grupos() }
+        if (rota == "eventos") { return this.eventos() }
+        if (rota == "blogs") { return this.blogs() }
+        if (rota == "par de estudo") { return this.pares() }
+        if (rota == "vagas") { return this.vagas() }
+        if (rota == "freelances") { return this.freelances() }
+        if (rota == "serviços") { return this.servicos() }
+        if (rota == "empresas") { return this.empresas() }
+        if (rota == "mentoria") { return this.mentoria() }
+        if (rota == "notificações") { return this.notificacoes() }
+        if (rota == "explorar") { return this.explorar() }
+        return Previa.recado("enter abre esta área")
+    }
+
+    List<String> feed(Bool salvos) {
+        var api = FeedApi(this.cliente)
+        var r = api.listar(null, 5)
+        if (salvos) { r = api.salvos(null, 5) }
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = FeedApi.paginaFeed(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado(this.vazioDoFeed(salvos)) }
+        var linhas = listOf<String>()
+        for (var post in itens) {
+            linhas.add(Previa.autor(post.authorName, post.authorUsername, post.type))
+            linhas.add(Previa.trecho(Previa.corpoDoPost(post), 96))
+        }
+        return linhas
+    }
+
+    List<String> mensagens() {
+        var r = MensagensApi(this.cliente).listar(null, 5, this.contextoDoServidor())
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = MensagensApi.paginaConversas(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado("nenhuma conversa ainda") }
+        var linhas = listOf<String>()
+        for (var conversa in itens) {
+            var marca = ""
+            if (conversa.unread != null && conversa.unread > 0) {
+                marca = Tema.pinta(Tema.PRIMARIO, "● ")
+            }
+            var ultima = ""
+            if (conversa.lastMessage != null && conversa.lastMessage.length > 0) {
+                ultima = " " + Previa.trecho(conversa.lastMessage, 56)
+            }
+            linhas.add(marca + Tema.destaque(Previa.nomeConversa(conversa)) + ultima)
+        }
+        return linhas
+    }
+
+    List<String> rede() {
+        var r = RedeApi(this.cliente).pedidosPendentes(null, 5)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = RedeApi.pedidosDe(r)
+        if (itens.size() == 0) { return Previa.recado("nenhum pedido pendente") }
+        var linhas = listOf<String>()
+        for (var pedido in itens) {
+            var nome = "alguém"
+            var usuario = ""
+            var pessoa = pedido.peer
+            if (pessoa != null) {
+                if (pessoa.name != null && pessoa.name.length > 0) { nome = pessoa.name }
+                if (pessoa.username != null) { usuario = pessoa.username }
+            }
+            var linha = Tema.destaque(nome)
+            if (usuario.length > 0) { linha = linha + " " + Tema.mudo("@" + usuario) }
+            linhas.add(linha)
+        }
+        return linhas
+    }
+
+    List<String> comunidades() {
+        var r = ComunidadesApi(this.cliente).listar(null, null, null, null, null, 5)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = ComunidadesApi.pagina(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado("nenhuma comunidade ainda") }
+        var linhas = listOf<String>()
+        for (var comunidade in itens) {
+            var nome = "comunidade"
+            if (comunidade.name != null && comunidade.name.length > 0) { nome = comunidade.name }
+            var detalhe = Previa.contagem(comunidade.members, "membros")
+            detalhe = Previa.juntarDetalhe(detalhe, comunidade.topic)
+            linhas.add(Tema.destaque(nome) + Previa.sufixo(detalhe))
+        }
+        return linhas
+    }
+
+    List<String> grupos() {
+        var r = GruposApi(this.cliente).listar(null, null, 5)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = GruposApi.pagina(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado("nenhum grupo ainda") }
+        var linhas = listOf<String>()
+        for (var grupo in itens) {
+            var nome = "grupo"
+            if (grupo.name != null && grupo.name.length > 0) { nome = grupo.name }
+            var detalhe = Previa.contagem(grupo.members, "membros")
+            detalhe = Previa.juntarDetalhe(detalhe, grupo.topic)
+            linhas.add(Tema.destaque(nome) + Previa.sufixo(detalhe))
+        }
+        return linhas
+    }
+
+    List<String> eventos() {
+        var r = EventosApi(this.cliente).listar(null, null, 5, null)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = EventosApi.pagina(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado("nenhum evento marcado") }
+        var linhas = listOf<String>()
+        for (var evento in itens) {
+            var titulo = "evento"
+            if (evento.title != null && evento.title.length > 0) { titulo = evento.title }
+            var quando = Previa.quando(evento.date, evento.time)
+            linhas.add(Tema.destaque(titulo) + Previa.sufixo(quando))
+        }
+        return linhas
+    }
+
+    List<String> blogs() {
+        var r = BlogsApi(this.cliente).listar(5, null)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = BlogsApi.listaDe(r)
+        if (itens.size() == 0) { return Previa.recado("nenhum blog ainda") }
+        var linhas = listOf<String>()
+        for (var blog in itens) {
+            var titulo = "blog"
+            if (blog.title != null && blog.title.length > 0) { titulo = blog.title }
+            var autor = ""
+            if (blog.authorName != null) { autor = blog.authorName }
+            linhas.add(Tema.destaque(titulo) + Previa.sufixo(autor))
+        }
+        return linhas
+    }
+
+    List<String> pares() {
+        var r = ParesEstudoApi(this.cliente).metasPopulares()
+        if (!r.ok()) { return Previa.falha(r) }
+        var metas = ParesEstudoApi.metasDe(r)
+        if (metas.size() == 0) { return Previa.recado("ninguém procurando par agora") }
+        var linhas = listOf<String>()
+        for (var meta in metas) {
+            var objetivo = "meta"
+            if (meta.goal != null && meta.goal.length > 0) { objetivo = meta.goal }
+            linhas.add(Tema.destaque(objetivo) + Previa.sufixo(Previa.contagem(meta.openRequests, "procurando")))
+        }
+        return linhas
+    }
+
+    List<String> vagas() {
+        var r = VagasApi(this.cliente).listar(null, null, 5)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = VagasApi.pagina(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado("nenhuma vaga aberta") }
+        var linhas = listOf<String>()
+        for (var vaga in itens) {
+            var titulo = "vaga"
+            if (vaga.title != null && vaga.title.length > 0) { titulo = vaga.title }
+            var detalhe = ""
+            if (vaga.company != null) { detalhe = vaga.company }
+            detalhe = Previa.juntarDetalhe(detalhe, vaga.salaryLabel)
+            linhas.add(Tema.destaque(titulo) + Previa.sufixo(detalhe))
+        }
+        return linhas
+    }
+
+    List<String> freelances() {
+        var r = FreelancesApi(this.cliente).listar(null, null, 5)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = FreelancesApi.pagina(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado("nenhum freela aberto") }
+        var linhas = listOf<String>()
+        for (var freela in itens) {
+            var titulo = "freela"
+            if (freela.title != null && freela.title.length > 0) { titulo = freela.title }
+            var detalhe = ""
+            if (freela.username != null) { detalhe = "@" + freela.username }
+            linhas.add(Tema.destaque(titulo) + Previa.sufixo(detalhe))
+        }
+        return linhas
+    }
+
+    List<String> servicos() {
+        var r = ServicosApi(this.cliente).listar(null, 5)
+        if (!r.ok()) { return Previa.falha(r) }
+        var vitrine = ServicosApi.vitrineDe(r)
+        var ofertas = listOf<OfertaServico>()
+        if (vitrine.ofertas != null) { ofertas = vitrine.ofertas }
+        var pedidos = listOf<PedidoServico>()
+        if (vitrine.pedidos != null) { pedidos = vitrine.pedidos }
+        if (ofertas.size() == 0 && pedidos.size() == 0) { return Previa.recado("vitrine vazia") }
+        var linhas = listOf<String>()
+        for (var oferta in ofertas) {
+            var titulo = "oferta"
+            if (oferta.title != null && oferta.title.length > 0) { titulo = oferta.title }
+            var detalhe = ""
+            if (oferta.price != null) { detalhe = String.valueOf(oferta.price) + " faíscas" }
+            linhas.add(Tema.destaque(titulo) + Previa.sufixo(detalhe))
+        }
+        for (var pedido in pedidos) {
+            var titulo = "pedido"
+            if (pedido.title != null && pedido.title.length > 0) { titulo = pedido.title }
+            var detalhe = ""
+            if (pedido.budgetMin != null) {
+                detalhe = String.valueOf(pedido.budgetMin)
+                if (pedido.budgetMax != null) { detalhe = detalhe + "–" + String.valueOf(pedido.budgetMax) }
+                detalhe = detalhe + " faíscas"
+            }
+            linhas.add(Tema.destaque(titulo) + Previa.sufixo(detalhe))
+        }
+        return linhas
+    }
+
+    List<String> empresas() {
+        var r = EmpresasApi(this.cliente).diretorio(null, null, 5)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = EmpresasApi.diretorioDe(r)
+        if (itens.size() == 0) { return Previa.recado("nenhuma empresa ainda") }
+        var linhas = listOf<String>()
+        for (var empresa in itens) {
+            var nome = "empresa"
+            if (empresa.name != null && empresa.name.length > 0) { nome = empresa.name }
+            var detalhe = ""
+            if (empresa.sector != null) { detalhe = empresa.sector }
+            detalhe = Previa.juntarDetalhe(detalhe, Previa.contagemLonga(empresa.openJobs, "vagas"))
+            linhas.add(Tema.destaque(nome) + Previa.sufixo(detalhe))
+        }
+        return linhas
+    }
+
+    List<String> mentoria() {
+        var r = MentoriasApi(this.cliente).listar(null, null, null, 5)
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = MentoriasApi.pagina(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado("nenhum mentor disponível") }
+        var linhas = listOf<String>()
+        for (var mentor in itens) {
+            var areas = ""
+            var especialidades = mentor.expertise
+            if (especialidades != null && especialidades.size() > 0) {
+                for (var area in especialidades) {
+                    if (areas.length > 0) { areas = areas + ", " }
+                    areas = areas + area
+                }
+            }
+            if (areas.length == 0) { areas = "mentor" }
+            linhas.add(Tema.destaque(areas) + Previa.sufixo(Previa.contagem(mentor.sessions, "sessões")))
+        }
+        return linhas
+    }
+
+    List<String> notificacoes() {
+        var r = NotificacoesApi(this.cliente).listar(null, 5, this.contextoDoServidor())
+        if (!r.ok()) { return Previa.falha(r) }
+        var itens = NotificacoesApi.pagina(r).items
+        if (itens == null || itens.size() == 0) { return Previa.recado("nenhum aviso") }
+        var linhas = listOf<String>()
+        for (var aviso in itens) {
+            var titulo = "aviso"
+            if (aviso.title != null && aviso.title.length > 0) { titulo = aviso.title }
+            var detalhe = ""
+            if (aviso.preview != null && aviso.preview.length > 0) {
+                detalhe = Previa.trecho(aviso.preview, 60)
+            } else if (aviso.actorName != null) {
+                detalhe = Tema.mudo(aviso.actorName)
+            }
+            var marca = ""
+            if ("" + aviso.read != "true") { marca = Tema.pinta(Tema.PRIMARIO, "● ") }
+            linhas.add(marca + Tema.destaque(titulo) + " " + detalhe)
+        }
+        return linhas
+    }
+
+    List<String> explorar() {
+        var linhas = listOf<String>()
+        linhas.add(Tema.suave("comunidades, grupos, jogos e projetos"))
+        linhas.add(Tema.suave("num só lugar, por assunto"))
+        return linhas
+    }
+
+    static String vazioDoFeed(Bool salvos) {
+        if (salvos) { return "nada guardado ainda" }
+        return "nada no feed ainda"
+    }
+
+    static String nomeConversa(Conversa conversa) {
+        if (conversa.title != null && conversa.title.length > 0) { return conversa.title }
+        var participantes = conversa.participantIds
+        if (participantes != null && participantes.size() > 0) { return participantes.get(0) }
+        return "conversa"
+    }
+
+    static String corpoDoPost(PostResumo post) {
+        if (post.repostOfContent != null && post.repostOfContent.length > 0) { return post.repostOfContent }
+        if (post.content != null && post.content.length > 0) { return post.content }
+        if (post.poll != null) { return "enquete" }
+        var midias = post.media
+        if (midias != null && midias.size() > 0) { return "mídia" }
+        return "(sem texto)"
+    }
+
+    static String autor(String? nome, String? usuario, String? tipo) {
+        var quem = ""
+        if (nome != null && nome.length > 0) {
+            quem = nome
+        } else if (usuario != null && usuario.length > 0) {
+            quem = usuario
+        }
+        var linha = Tema.destaque(quem)
+        if (tipo != null && tipo.length > 0) {
+            linha = linha + " " + Tema.mudo(tipo.toLowerCase())
+        }
+        return linha
+    }
+
+    static String quando(String? data, String? hora) {
+        var partes = ""
+        if (data != null && data.length > 0) { partes = data }
+        if (hora != null && hora.length > 0) {
+            if (partes.length > 0) { partes = partes + " · " }
+            partes = partes + hora
+        }
+        return partes
+    }
+
+    static String contagem(Int? valor, String rotulo) {
+        if (valor == null || valor <= 0) { return "" }
+        return String.valueOf(valor) + " " + rotulo
+    }
+
+    static String contagemLonga(Long? valor, String rotulo) {
+        if (valor == null) { return "" }
+        var texto = String.valueOf(valor)
+        if (texto == "0") { return "" }
+        return texto + " " + rotulo
+    }
+
+    static String juntarDetalhe(String atual, String? novo) {
+        if (novo == null || novo.length == 0) { return atual }
+        if (atual.length == 0) { return novo }
+        return atual + " · " + novo
+    }
+
+    static String sufixo(String detalhe) {
+        if (detalhe.length == 0) { return "" }
+        return " " + Tema.mudo(detalhe)
+    }
+
+    static String trecho(String texto, Int maximo) {
+        var plano = Previa.semQuebras(texto).trim()
+        if (plano.length <= maximo) { return Tema.suave(plano) }
+        var corte = maximo
+        while (corte > 12 && plano.charAt(corte) != 32) { corte = corte - 1 }
+        if (corte <= 12) { corte = maximo }
+        return Tema.suave(plano.substring(0, corte).trim() + "…")
+    }
+
+    static String semQuebras(String texto) {
+        var saida = ""
+        for (var i = 0; i < texto.length; i = i + 1) {
+            var c = texto.charAt(i)
+            if (c == 10 || c == 13 || c == 9) {
+                saida = saida + " "
+            } else {
+                saida = saida + String.valueOf(c as Char)
+            }
+        }
+        return saida
+    }
+
+    static String juntar(List<String> linhas) {
+        var saida = ""
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            if (i > 0) { saida = saida + "\n" }
+            saida = saida + linhas.get(i)
+        }
+        return saida
+    }
+
+    static List<String> dividir(String texto) {
+        var linhas = listOf<String>()
+        var atual = ""
+        for (var i = 0; i < texto.length; i = i + 1) {
+            var c = texto.charAt(i)
+            if (c == 10) {
+                linhas.add(atual)
+                atual = ""
+            } else {
+                atual = atual + String.valueOf(c as Char)
+            }
+        }
+        linhas.add(atual)
+        return linhas
+    }
+
+    static List<String> recado(String mensagem) {
+        var linhas = listOf<String>()
+        linhas.add(Tema.mudo(mensagem))
+        return linhas
+    }
+
+    static List<String> falha(Resposta r) {
+        var linhas = listOf<String>()
+        linhas.add(Tema.erro("não deu para carregar agora"))
+        linhas.add(Previa.trecho(r.mensagem(), 72))
+        return linhas
+    }
+}

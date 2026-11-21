@@ -31,7 +31,7 @@ class TelaMensagens {
     }
 
     String contextoDoServidor() {
-        if (this.contexto == "profissional") { return "CORPORATE" }
+        if (this.contexto == "profissional") { return "PROFESSIONAL" }
         return "SOCIAL"
     }
 

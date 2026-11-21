@@ -1,0 +1,55 @@
+package api
+
+import core.*
+import tipos.*
+import kof.json
+
+class SinaisApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    ContagensNavegacao carregar(String contexto, Bool social) {
+        return ContagensNavegacao(this.resumo(contexto), this.modulosDesativados(),
+            this.mensagensNaoLidas(contexto), this.pedidosPendentes(social))
+    }
+
+    ResumoSinal? resumo(String contexto) {
+        var r = NotificacoesApi(this.cliente).resumo(contexto)
+        if (!r.ok()) { return null }
+        try {
+            return json.decode<ResumoSinal>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+
+    Int mensagensNaoLidas(String contexto) {
+        var r = MensagensApi(this.cliente).naoLidas(contexto)
+        if (!r.ok()) { return 0 }
+        return Json.numero(r.comoMapa(), "count")
+    }
+
+    Int pedidosPendentes(Bool social) {
+        if (!social) { return 0 }
+        var itens = RedeApi.pedidosDe(RedeApi(this.cliente).pedidosPendentes(null, 50))
+        var total = 0
+        for (var pedido in itens) {
+            if (pedido.status == null || pedido.status != "PENDING") { continue }
+            if (pedido.direction == null || pedido.direction != "INCOMING") { continue }
+            if (pedido.peer == null) { continue }
+            total = total + 1
+        }
+        return total
+    }
+
+    List<String> modulosDesativados() {
+        var preferencias = PreferenciasApi.de(PreferenciasApi(this.cliente).minhas())
+        var modulos = preferencias.disabledModules
+        if (modulos == null) { return listOf<String>() }
+        return modulos
+    }
+}

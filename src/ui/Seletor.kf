@@ -1,8 +1,11 @@
 package ui
 
 import core.*
+import api.SinaisApi
 import ui.Abas
+import ui.Badge
 import ui.Menu
+import ui.Painel
 
 class Seletor {
 
@@ -12,12 +15,20 @@ class Seletor {
     String contexto
     Int cursor
     List<ItemNavegacao> itens
+    Cliente cliente
+    SinaisApi sinaisApi
+    ContagensNavegacao contagens
+    Previa previa
 
-    public constructor(String contexto) {
+    public constructor(String contexto, Cliente cliente) {
         this.teclado = Teclado()
         this.contexto = contexto
         this.cursor = 0
         this.itens = Navegacao.visiveis(contexto)
+        this.cliente = cliente
+        this.sinaisApi = SinaisApi(cliente)
+        this.previa = Previa(cliente, contexto)
+        this.contagens = this.sinaisApi.carregar(this.contextoDoServidor(), contexto == "social")
     }
 
     static Int digito(String caractere) {
@@ -30,6 +41,15 @@ class Seletor {
     static Bool encerra(Tecla tecla) {
         if (tecla.nome == "escape" || tecla.nome == "ctrl-c") { return true }
         return tecla.nome == "texto" && (tecla.caractere == "q" || tecla.caractere == "0")
+    }
+
+    String contextoDoServidor() {
+        if (this.contexto == "profissional") { return "PROFESSIONAL" }
+        return "SOCIAL"
+    }
+
+    void recarregar() {
+        this.contagens = this.sinaisApi.carregar(this.contextoDoServidor(), this.contexto == "social")
     }
 
     String escolher(String topo, String dica) {
@@ -50,6 +70,9 @@ class Seletor {
             } else if (tecla.nome == "enter") {
                 seguindo = this.confirmar(this.cursor, rota)
                 if (!seguindo) { rota = this.rotaDo(this.cursor) }
+            } else if (tecla.nome == "texto" && tecla.caractere == "r") {
+                this.previa.limpar()
+                this.recarregar()
             } else if (tecla.nome == "texto") {
                 var atalho = Seletor.digito(tecla.caractere)
                 if (atalho >= 0) {
@@ -94,39 +117,105 @@ class Seletor {
         this.contexto = Navegacao.proximoContexto(this.contexto)
         this.itens = Navegacao.visiveis(this.contexto)
         this.cursor = 0
+        this.recarregar()
+        this.previa.trocarContexto(this.contexto)
     }
 
     void desenhar(String topo, String dica) {
+        var largura = Ansi.LARGURA_CONTEUDO
         print(Ansi.LIMPAR)
         println(topo)
         println("")
         println(Abas.lista(Navegacao.CONTEXTOS, this.contexto))
         println("")
+        if (Painel.cabe(largura)) {
+            var esquerda = this.menu(Painel.larguraEsquerda(largura))
+            var direita = this.previaDe(Painel.larguraDireita(largura))
+            for (var linha in Painel.linhas(esquerda, direita, largura)) { println(linha) }
+        } else {
+            for (var linha in this.menu(largura)) { println(linha) }
+        }
+        println("")
+        println(Menu.rodape(dica))
+    }
+
+    List<String> menu(Int largura) {
+        var linhas = listOf<String>()
         var secao = ""
         var numero = 1
         for (var i = 0; i < this.itens.size(); i = i + 1) {
             var item = this.itens.get(i)
             if (item.secao != secao) {
                 secao = item.secao
-                println(Abas.grupo(secao))
+                if (linhas.size() > 0) { linhas.add("") }
+                linhas.add(Abas.grupo(secao))
             }
-            var rotulo = this.rotulo(numero, item, i == this.cursor)
+            var rotulo = this.rotulo(numero, item, largura)
             if (i == this.cursor) {
-                println(Tema.selecionado(Ansi.padDireita(rotulo, Ansi.LARGURA_CONTEUDO)))
+                linhas.add(Tema.selecionado(Ansi.padDireita(rotulo, largura)))
             } else {
-                println(rotulo)
+                linhas.add(rotulo)
             }
             numero = numero + 1
         }
-        println("")
-        println(Menu.rodape(dica))
+        return linhas
     }
 
-    String rotulo(Int numero, ItemNavegacao item, Bool ativo) {
+    String rotulo(Int numero, ItemNavegacao item, Int largura) {
         var texto = "  " + Ansi.padEsquerda(String.valueOf(numero), 2) + ". " + item.rotulo
-        if (item.descricao.length > 0) {
-            texto = texto + "  " + Tema.mudo(item.descricao)
+        var selo = this.selo(item)
+        if (selo.length > 0) { texto = texto + " " + selo }
+        var sobra = largura - Ansi.largura(texto) - 3
+        if (item.descricao.length > 0 && sobra > 8) {
+            texto = texto + "  " + Tema.mudo(Ansi.cortar(item.descricao, sobra))
         }
         return texto
+    }
+
+    String selo(ItemNavegacao item) {
+        return Badge.sinal(Sinais.de(item.rota, item.notifica, this.contagens))
+    }
+
+    ItemNavegacao itemAtual() {
+        if (this.itens.size() == 0) { return ItemNavegacao("", "", "", "", null, null) }
+        var indice = this.cursor
+        if (indice < 0 || indice >= this.itens.size()) { indice = 0 }
+        return this.itens.get(indice)
+    }
+
+    Int limite() {
+        var total = Terminal.altura() - 10
+        if (total < 8) { total = 8 }
+        if (total > 24) { total = 24 }
+        return total
+    }
+
+    List<String> previaDe(Int largura) {
+        var item = this.itemAtual()
+        var linhas = listOf<String>()
+        linhas.add(Tema.destaque(item.rotulo))
+        if (item.descricao.length > 0) {
+            for (var parte in Ansi.quebrar(item.descricao, largura)) { linhas.add(Tema.mudo(parte)) }
+        }
+        var selo = this.selo(item)
+        if (selo.length > 0) {
+            linhas.add("")
+            linhas.add(Tema.suave("sinal ") + selo)
+        }
+        linhas.add("")
+        linhas.add(Ansi.divisor(largura, Tema.BORDA_SUAVE))
+        this.previaCorpo(linhas, item, largura)
+        return linhas
+    }
+
+    void previaCorpo(List<String> linhas, ItemNavegacao item, Int largura) {
+        var limite = this.limite()
+        for (var bruta in this.previa.linhas(item.rota)) {
+            if (linhas.size() >= limite) { return }
+            for (var parte in Ansi.quebrar(bruta, largura)) {
+                if (linhas.size() >= limite) { return }
+                linhas.add(parte)
+            }
+        }
     }
 }

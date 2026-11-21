@@ -60,8 +60,8 @@ class App {
     }
 
     String painel() {
-        var seletor = Seletor(this.config.contexto)
-        var rota = seletor.escolher(this.topo(), "↑↓ navega · enter escolhe · tab troca de contexto · q encerra")
+        var seletor = Seletor(this.config.contexto, this.cliente)
+        var rota = seletor.escolher(this.topo(), "↑↓ navega · enter abre · tab troca contexto · r atualiza · q encerra")
         this.guardarContexto(seletor.contexto)
         if (rota.length == 0) { return "sair" }
         return rota

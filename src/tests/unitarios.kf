@@ -4,6 +4,8 @@ import tipos.*
 import api.*
 import core.*
 import screens.*
+import ui.Badge
+import ui.Painel
 
 test "consulta ignora par vazio e nulo" {
     assert(Cliente.par("limit", "") == "")
@@ -25,8 +27,8 @@ test "consulta com pagina nao repete a interrogacao" {
 }
 
 test "consulta com cursor e contexto separa por e comercial" {
-    var q = Cliente.query(listOf(Cliente.pagina("abc", 5), Cliente.par("context", "CORPORATE")))
-    assert(q == "?cursor=abc&limit=5&context=CORPORATE")
+    var q = Cliente.query(listOf(Cliente.pagina("abc", 5), Cliente.par("context", "PROFESSIONAL")))
+    assert(q == "?cursor=abc&limit=5&context=PROFESSIONAL")
 }
 
 test "caminho escapa espaco" {
@@ -250,5 +252,132 @@ test "miniatura nunca fica com lado zero" {
 
 test "png pronto vai direto para o terminal" {
     assert(Imagem.paraPng("/cache/a.png") == "/cache/a.png")
+}
+
+test "sinal de mensagens segue a contagem de nao lidas" {
+    var contagens = ContagensNavegacao(null, listOf<String>(), 3, 0)
+    var sinal = Sinais.de("mensagens", null, contagens)
+    assert(sinal != null)
+    if (sinal != null) {
+        assert(sinal.forma == "messages")
+        assert(sinal.contagem == 3)
+    }
+}
+
+test "rota sem contagem nenhuma nao ganha sinal" {
+    var contagens = ContagensNavegacao(null, listOf<String>(), 0, 0)
+    assert(Sinais.de("mensagens", null, contagens) == null)
+    assert(Sinais.de("rede", null, contagens) == null)
+    assert(Sinais.de("feed", null, contagens) == null)
+    assert(Sinais.de("notificações", null, contagens) == null)
+}
+
+test "pedidos pendentes viram contagem na rede" {
+    var contagens = ContagensNavegacao(null, listOf<String>(), 0, 4)
+    var sinal = Sinais.de("rede", null, contagens)
+    assert(sinal != null)
+    if (sinal != null) {
+        assert(sinal.forma == "count")
+        assert(sinal.contagem == 4)
+    }
+}
+
+test "avisos descontam os modulos desativados" {
+    var resumo = ResumoSinal(5, mapOf("MESSAGES", 2, "JOBS", 1), null, 0)
+    var contagens = ContagensNavegacao(resumo, listOf<String>("JOBS"), 0, 0)
+    assert(Sinais.avisos(contagens) == 4)
+    var sinal = Sinais.de("notificações", null, contagens)
+    assert(sinal != null)
+    if (sinal != null) {
+        assert(sinal.forma == "count")
+        assert(sinal.contagem == 4)
+    }
+}
+
+test "avisos nunca ficam negativos" {
+    var resumo = ResumoSinal(1, mapOf("JOBS", 9), null, 0)
+    var contagens = ContagensNavegacao(resumo, listOf<String>("JOBS"), 0, 0)
+    assert(Sinais.avisos(contagens) == 0)
+    assert(Sinais.de("notificações", null, contagens) == null)
+}
+
+test "evento de hoje usa a forma de hoje" {
+    var resumo = ResumoSinal(0, mapOf("EVENTS", 3), null, 2)
+    var contagens = ContagensNavegacao(resumo, listOf<String>(), 0, 0)
+    var sinal = Sinais.de("eventos", null, contagens)
+    assert(sinal != null)
+    if (sinal != null) { assert(sinal.forma == "today") }
+    assert(Sinais.eventosHoje(contagens) == 2)
+}
+
+test "comunidade com aviso acende o ponto" {
+    var resumo = ResumoSinal(0, mapOf("GROUPS", 1), mapOf("kof", 1), 0)
+    var contagens = ContagensNavegacao(resumo, listOf<String>(), 0, 0)
+    var comunidades = Sinais.de("comunidades", null, contagens)
+    assert(comunidades != null)
+    if (comunidades != null) { assert(comunidades.forma == "new") }
+    var grupos = Sinais.de("grupos", "GROUPS", contagens)
+    assert(grupos != null)
+    if (grupos != null) { assert(grupos.forma == "new") }
+}
+
+test "explorar olha os modulos de jogo" {
+    var resumo = ResumoSinal(0, mapOf("DAILY_GAMES", 1), null, 0)
+    var comJogo = ContagensNavegacao(resumo, listOf<String>(), 0, 0)
+    assert(Sinais.de("explorar", null, comJogo) != null)
+    var semJogo = ContagensNavegacao(ResumoSinal(0, mapOf("GROUPS", 1), null, 0),
+        listOf<String>(), 0, 0)
+    assert(Sinais.de("explorar", null, semJogo) == null)
+}
+
+test "navegacao leva o modulo de aviso de cada rota" {
+    var itens = Navegacao.itens()
+    assert(itens.get(5).notifica == "GROUPS")
+    assert(itens.get(6).notifica == "EVENTS")
+    assert(itens.get(7).notifica == "BLOGS")
+    assert(itens.get(8).notifica == "STUDY_PAIRS")
+    assert(itens.get(9).notifica == "JOBS")
+    assert(itens.get(12).notifica == "COMPANIES")
+    assert(itens.get(13).notifica == "MENTORING")
+    assert(itens.get(0).notifica == null)
+}
+
+test "selo desenha cada forma do design system" {
+    assert(Badge.sinal(null) == "")
+    assert(Badge.curto(7) == "7")
+    assert(Badge.curto(100) == "99+")
+    var ponto = Badge.sinal(Sinal("new", 0))
+    assert(ponto.contains("●"))
+    var hoje = Badge.sinal(Sinal("today", 0))
+    assert(hoje.contains("hoje"))
+    var balao = Badge.sinal(Sinal("messages", 150))
+    assert(balao.contains("99+"))
+    assert(Badge.sinal(Sinal("count", 0)) == "")
+}
+
+test "painel so abre em terminal largo" {
+    assert(Painel.cabe(80))
+    assert(!Painel.cabe(60))
+    assert(Painel.larguraEsquerda(80) == 34)
+    assert(Painel.larguraDireita(80) == 43)
+    assert(Painel.larguraEsquerda(120) == 40)
+}
+
+test "trecho da previa corta no espaco" {
+    var texto = Previa.trecho("mensagem bem comprida para cortar", 12)
+    assert(texto.contains("mensagem"))
+    assert(!texto.contains("comprida"))
+    assert(Previa.trecho("curta", 12).contains("curta"))
+}
+
+test "previa guarda e devolve as linhas" {
+    var previa = Previa(Cliente(Config.carregar(), Sessao()), "social")
+    var linhas = Previa.dividir(Previa.juntar(listOf<String>("a", "b")))
+    assert(linhas.size() == 2)
+    assert(linhas.get(0) == "a")
+    assert(linhas.get(1) == "b")
+    assert(previa.contextoDoServidor() == "SOCIAL")
+    previa.trocarContexto("profissional")
+    assert(previa.contextoDoServidor() == "PROFESSIONAL")
 }
 
