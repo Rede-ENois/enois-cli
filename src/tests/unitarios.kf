@@ -49,6 +49,24 @@ test "sessao vazia nao esta logada" {
     assert(!Sessao().logado())
 }
 
+test "resposta 401 de sessao devolve mensagem propria" {
+    var r = Resposta(401, "{\"code\":\"UNAUTHENTICATED\",\"message\":\"Sessao invalida ou expirada.\",\"detail\":\"SESSION_REVOKED\"}", "")
+    assert(r.sessaoInvalida())
+    assert(r.mensagem() == "sessão expirada — entre de novo")
+}
+
+test "resposta 401 de credencial mostra a mensagem do servidor" {
+    var r = Resposta(401, "{\"code\":\"INVALID_CREDENTIALS\",\"message\":\"Email ou senha invalidos.\"}", "")
+    assert(!r.sessaoInvalida())
+    assert(r.mensagem() == "Email ou senha invalidos.")
+}
+
+test "erro do servidor devolve o codigo" {
+    var r = Resposta(403, "{\"code\":\"ORIGIN_NOT_ALLOWED\",\"message\":\"Cadastre a origem do seu app.\"}", "")
+    assert(r.codigoDeErro() == "ORIGIN_NOT_ALLOWED")
+    assert(r.mensagem() == "Cadastre a origem do seu app.")
+}
+
 test "largura ignora codigos ansi" {
     assert(Ansi.largura(Tema.destaque("abc")) == 3)
 }

@@ -23,19 +23,15 @@ class App {
             var escolha = this.tela()
             if (escolha == "sair") { rodando = false }
             this.abrir(escolha)
+            this.avisarSessaoPerdida()
         }
-        this.encerrarSessao()
         println(Tema.mudo("até já"))
     }
 
-    void encerrarSessao() {
-        if (!this.sessao.logado()) { return }
-        var encerrada = this.cliente.sair()
-        if (encerrada) {
-            println(Tema.mudo("sessão encerrada no servidor"))
-        } else {
-            println(Tema.erro("não foi possível encerrar a sessão no servidor. sua sessão continua ativa neste aparelho"))
-        }
+    void avisarSessaoPerdida() {
+        if (!this.cliente.sessaoPerdida) { return }
+        this.cliente.sessaoPerdida = false
+        println(Tema.alerta("a sessão neste aparelho terminou — entre de novo"))
     }
 
     void conferirSessao() {
@@ -47,6 +43,7 @@ class App {
         }
         if (!this.cliente.sessaoValida()) {
             this.sessao.limpar()
+            this.cliente.sessaoPerdida = false
             println(Tema.alerta("sessão expirada — entre de novo"))
             return
         }

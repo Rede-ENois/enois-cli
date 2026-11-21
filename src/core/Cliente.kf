@@ -7,10 +7,12 @@ class Cliente {
 
     Config config
     Sessao sessao
+    Bool sessaoPerdida
 
     public constructor(Config config, Sessao sessao) {
         this.config = config
         this.sessao = sessao
+        this.sessaoPerdida = false
     }
 
     String cabecalhosBase() {
@@ -66,13 +68,20 @@ class Cliente {
         var chave = ""
         if (escrita) { chave = uuid.v4() }
         var r = this.disparar(metodo, caminho, corpo, chave)
-        if (r.codigo == 401 && this.sessao.renova.length > 0) {
-            var renovou = this.renovar()
+        if (r.codigo == 401 && this.sessao.logado()) {
+            var renovou = false
+            if (this.sessao.renova.length > 0) { renovou = this.renovar() }
             if (renovou) {
                 r = this.disparar(metodo, caminho, corpo, chave)
             }
+            if (r.codigo == 401) { this.perderSessao() }
         }
         return r
+    }
+
+    void perderSessao() {
+        this.sessao.limpar()
+        this.sessaoPerdida = true
     }
 
     Resposta disparar(String metodo, String caminho, String corpo, String chaveIdempotencia) {
@@ -94,9 +103,16 @@ class Cliente {
             var res = http.send("POST", this.url("/auth/refresh"), corpo,
                 "Accept: application/json\nContent-Type: application/json\n"
                 + "X-Client-Origin: " + this.config.origem)
+            if (res.status() == 401 || res.status() == 403) {
+                this.perderSessao()
+                return false
+            }
             if (res.status() != 200) { return false }
             var nova = Sessao.deResposta(res.headers())
-            if (nova.token.length == 0) { return false }
+            if (nova.token.length == 0) {
+                this.perderSessao()
+                return false
+            }
             this.sessao.token = nova.token
             if (nova.renova.length > 0) { this.sessao.renova = nova.renova }
             this.sessao.salvar()
@@ -187,11 +203,6 @@ class Cliente {
     Bool sessaoValida() {
         if (!this.sessao.logado()) { return false }
         var r = this.get("/auth/me")
-        if (r.codigo == 401 && this.sessao.renova.length > 0) {
-            if (this.renovar()) {
-                r = this.get("/auth/me")
-            }
-        }
         if (!r.ok()) { return false }
         this.carregarEu()
         this.sessao.salvar()
@@ -199,10 +210,16 @@ class Cliente {
     }
 
     Bool sair() {
-        var r = this.enviar("POST", "/auth/logout", "{}", true)
-        if (!r.ok()) { return false }
-        this.sessao.limpar()
-        return true
+        var r = this.disparar("POST", "/auth/logout", "{}", uuid.v4())
+        if (r.ok()) {
+            this.sessao.limpar()
+            return true
+        }
+        if (r.codigo == 401) {
+            this.sessao.limpar()
+            return true
+        }
+        return false
     }
 
     static String par(String chave, String? valor) {

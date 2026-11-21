@@ -71,6 +71,10 @@ class Config {
         var bruto = Json.texto(m, "alvo")
         if (bruto.length == 0) { bruto = "producao" }
         c.usaAlvo(bruto)
+        var url = Json.texto(m, "urlApi")
+        if (url.length > 0) { c.urlApi = url }
+        var origem = Json.texto(m, "origem")
+        if (origem.length > 0) { c.origem = origem }
         c.usaContexto(Json.texto(m, "contexto"))
         return c
     }
