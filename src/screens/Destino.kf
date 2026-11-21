@@ -1,0 +1,299 @@
+package screens
+
+import tipos.*
+import api.*
+import core.Ansi
+import core.Cliente
+import core.Entrada
+import core.Sessao
+import core.Tema
+import kof.json
+import ui.Caixa
+import ui.Lista
+import ui.Menu
+
+class Destino {
+
+    Cliente cliente
+    Sessao sessao
+    String contexto
+
+    public constructor(Cliente cliente, Sessao sessao, String contexto) {
+        this.cliente = cliente
+        this.sessao = sessao
+        this.contexto = contexto
+    }
+
+    void abrir(String href) {
+        if (href == null || href.length == 0) { return }
+        var partes = Destino.segmentos(href)
+        if (partes.size == 0) { return }
+        var raiz = partes.get(0)
+        if (raiz == "feed") {
+            this.feed(partes)
+        } else if (raiz == "blog" || raiz == "blogs") {
+            this.blog(partes)
+        } else if (raiz == "empresa" || raiz == "empresas") {
+            this.empresa(partes)
+        } else if (raiz == "users" || raiz == "perfil" || raiz == "user") {
+            this.perfil(partes)
+        } else if (raiz == "network" || raiz == "rede") {
+            TelaRede(this.cliente, this.sessao).executar()
+        } else if (raiz == "conversations" || raiz == "mensagens" || raiz == "conversation") {
+            this.conversa(partes)
+        } else if (raiz == "communities" || raiz == "comunidades" || raiz == "community") {
+            this.comunidade(partes)
+        } else if (raiz == "grupos" || raiz == "grupo" || raiz == "groups") {
+            this.grupo(partes)
+        } else if (raiz == "events" || raiz == "eventos" || raiz == "event") {
+            this.evento(href, partes)
+        } else if (raiz == "jobs" || raiz == "vagas" || raiz == "vaga") {
+            this.vaga(partes)
+        } else if (raiz == "roleplay" || raiz == "campaigns" || raiz == "campanha") {
+            this.campanha(partes)
+        } else if (raiz == "mentors" || raiz == "mentoria") {
+            TelaMentoria(this.cliente).executar()
+        } else if (raiz == "agenda" || raiz == "disponibilidade") {
+            this.agenda(partes)
+        } else if (raiz == "moderador" || raiz == "moderation") {
+            TelaModeracao(this.cliente).executar()
+        } else if (raiz == "marketplace" || raiz == "loja") {
+            TelaMarketplace(this.cliente).executar()
+        } else if (raiz == "seguranca" || raiz == "configuracoes" || raiz == "security") {
+            TelaSeguranca(this.cliente).executar()
+        } else if (raiz == "carteira" || raiz == "wallet") {
+            TelaCarteira(this.cliente).executar()
+        } else if (raiz == "games" || raiz == "jogos") {
+            this.jogo(partes)
+        } else if (raiz == "penalidades") {
+            TelaPenalidades(this.cliente).executar()
+        } else if (raiz == "call") {
+            this.chamada(partes)
+        } else if (raiz == "suporte" || raiz == "diretrizes") {
+            this.aviso("essa página ainda não existe na cli")
+        } else {
+            this.aviso("destino desconhecido: " + href)
+        }
+    }
+
+    void feed(List<String> partes) {
+        if (partes.size >= 3 && partes.get(1) == "posts") {
+            this.post(partes.get(2))
+            return
+        }
+        TelaFeed(this.cliente, this.contexto).executar()
+    }
+
+    void post(String id) {
+        var r = FeedApi(this.cliente).obter(id)
+        if (!r.ok()) {
+            this.aviso("post não encontrado")
+            return
+        }
+        try {
+            TelaPost(this.cliente).executar(json.decode<PostResumo>(r.corpo))
+        } catch (String e) {
+            this.aviso("post não encontrado")
+        }
+    }
+
+    void blog(List<String> partes) {
+        if (partes.size < 2) {
+            this.aviso("blog sem identificação")
+            return
+        }
+        TelaBlogs(this.cliente).abrir(partes.get(1))
+    }
+
+    void empresa(List<String> partes) {
+        if (partes.size < 2) {
+            this.aviso("empresa sem identificação")
+            return
+        }
+        var slug = partes.get(1)
+        var lista = EmpresasApi.diretorioDe(EmpresasApi(this.cliente).diretorio(null, null, 50))
+        for (var item in lista) {
+            if (item.slug == slug) {
+                TelaEmpresas(this.cliente).abrir(item)
+                return
+            }
+        }
+        this.aviso("empresa não encontrada: " + slug)
+    }
+
+    void perfil(List<String> partes) {
+        if (partes.size < 2) {
+            this.aviso("perfil sem identificação")
+            return
+        }
+        TelaPerfil(this.cliente, this.sessao).abrir(partes.get(1))
+    }
+
+    void conversa(List<String> partes) {
+        if (partes.size < 2) {
+            TelaMensagens(this.cliente, this.sessao, this.contexto).executar()
+            return
+        }
+        TelaMensagens(this.cliente, this.sessao, this.contexto).conversa(partes.get(1))
+    }
+
+    void comunidade(List<String> partes) {
+        if (partes.size < 2) {
+            this.aviso("comunidade sem identificação")
+            return
+        }
+        var r = ComunidadesApi(this.cliente).obter(partes.get(1))
+        var c = ComunidadesApi.unica(r)
+        if (c.id.length == 0) {
+            this.aviso("comunidade não encontrada")
+            return
+        }
+        TelaComunidades(this.cliente).abrir(c)
+    }
+
+    void grupo(List<String> partes) {
+        if (partes.size < 2) {
+            this.aviso("grupo sem identificação")
+            return
+        }
+        var r = GruposApi(this.cliente).obter(partes.get(1))
+        var g = GruposApi.unico(r)
+        if (g.id.length == 0) {
+            this.aviso("grupo não encontrado")
+            return
+        }
+        TelaGrupos(this.cliente).abrir(g)
+    }
+
+    void evento(String href, List<String> partes) {
+        var id = ""
+        if (partes.size >= 2) {
+            id = partes.get(1)
+        }
+        if (id.length == 0) {
+            id = Destino.parametro(href, "evento")
+        }
+        if (id.length == 0) {
+            this.aviso("evento sem identificação")
+            return
+        }
+        var r = EventosApi(this.cliente).obter(id)
+        var e = EventosApi.unico(r)
+        if (e.id.length == 0) {
+            this.aviso("evento não encontrado")
+            return
+        }
+        TelaEventos(this.cliente).abrir(e)
+    }
+
+    void vaga(List<String> partes) {
+        if (partes.size < 2) {
+            TelaVagas(this.cliente).executar()
+            return
+        }
+        var r = VagasApi(this.cliente).obter(partes.get(1))
+        if (!r.ok()) {
+            this.aviso("vaga não encontrada")
+            return
+        }
+        try {
+            TelaVagas(this.cliente).abrir(json.decode<Vaga>(r.corpo))
+        } catch (String e) {
+            this.aviso("vaga não encontrada")
+        }
+    }
+
+    void campanha(List<String> partes) {
+        if (partes.size < 2) {
+            this.aviso("campanha sem identificação")
+            return
+        }
+        var r = RoleplayApi(this.cliente).obter(partes.get(1))
+        var c = RoleplayApi.unica(r)
+        if (c.id.length == 0) {
+            this.aviso("campanha não encontrada")
+            return
+        }
+        TelaRoleplay(this.cliente).abrir(c)
+    }
+
+    void agenda(List<String> partes) {
+        if (partes.size < 2) {
+            TelaAgenda(this.cliente).executar()
+            return
+        }
+        var r = AgendaApi(this.cliente).obter(partes.get(1))
+        var detalhe = AgendaApi.detalheDe(r)
+        if (detalhe.entry == null) {
+            this.aviso("compromisso não encontrado")
+            return
+        }
+        TelaAgenda(this.cliente).abrir(ItemAgenda(detalhe.entry, detalhe.owner, detalhe.participation))
+    }
+
+    void jogo(List<String> partes) {
+        if (partes.size < 3) {
+            this.aviso("jogo sem identificação")
+            return
+        }
+        var r = JogosApi(this.cliente).obter(partes.get(1), partes.get(2))
+        if (!r.ok()) {
+            this.aviso("jogo não encontrado")
+            return
+        }
+        try {
+            TelaJogos(this.cliente).abrir(json.decode<Jogo>(r.corpo))
+        } catch (String e) {
+            this.aviso("jogo não encontrado")
+        }
+    }
+
+    void chamada(List<String> partes) {
+        if (partes.size < 2) {
+            this.aviso("chamada sem identificação")
+            return
+        }
+        var r = ChamadasApi(this.cliente).obter(partes.get(1))
+        var c = ChamadasApi.unica(r)
+        if (c.id.length == 0) {
+            this.aviso("chamada não encontrada")
+            return
+        }
+        this.aviso("chamada " + c.id + " — a cli ainda não abre chamadas")
+    }
+
+    void aviso(String texto) {
+        print(Ansi.LIMPAR)
+        println(Menu.topo("Énóis", ""))
+        println(Caixa.simples(Lista.vazia(texto)))
+        Entrada.pausar()
+    }
+
+    static List<String> segmentos(String href) {
+        var bruto = href
+        if (bruto.startsWith("/api/")) { bruto = bruto.substring(4) }
+        var caminho = bruto
+        var marca = bruto.indexOf("?")
+        if (marca >= 0) { caminho = bruto.substring(0, marca) }
+        while (caminho.startsWith("/")) { caminho = caminho.substring(1) }
+        while (caminho.endsWith("/")) { caminho = caminho.substring(0, caminho.length - 1) }
+        var saida = listOf<String>()
+        if (caminho.length == 0) { return saida }
+        for (var parte in caminho.split("/")) {
+            if (parte.length > 0) { saida.add(parte) }
+        }
+        return saida
+    }
+
+    static String parametro(String href, String nome) {
+        var marca = href.indexOf("?")
+        if (marca < 0) { return "" }
+        var consulta = href.substring(marca + 1)
+        for (var par in consulta.split("&")) {
+            var igual = par.indexOf("=")
+            if (igual < 0) { continue }
+            if (par.substring(0, igual) == nome) { return par.substring(igual + 1) }
+        }
+        return ""
+    }
+}

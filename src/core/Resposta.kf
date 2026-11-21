@@ -50,8 +50,18 @@ class Resposta {
         return Json.texto(this.comoMapa(), "code")
     }
 
+    Bool sessaoInvalida() {
+        var m = this.comoMapa()
+        if (Json.texto(m, "code") == "UNAUTHENTICATED") { return true }
+        return Json.texto(m, "detail").length > 0
+    }
+
     String mensagem() {
-        var msg = Json.texto(this.comoMapa(), "message")
+        var m = this.comoMapa()
+        if (this.codigo == 401 && this.sessaoInvalida()) {
+            return "sessão expirada — entre de novo"
+        }
+        var msg = Json.texto(m, "message")
         if (msg.length > 0) { return msg }
         if (this.codigo == 401) { return "sessão expirada — entre de novo" }
         if (this.codigo == 403) { return "sem permissão para isso" }

@@ -9,9 +9,36 @@ class Ansi {
     static String NORMAL = ESC + "[?1049l"
     static String OCULTAR_CURSOR = ESC + "[?25l"
     static String MOSTRAR_CURSOR = ESC + "[?25h"
+    static String MOUSE_LIGAR = ESC + "[?1000h" + ESC + "[?1006h"
+    static String MOUSE_DESLIGAR = ESC + "[?1006l" + ESC + "[?1000l"
+    static String CONSULTAR_CURSOR = ESC + "[6n"
 
     static Int LARGURA_CONTEUDO = Terminal.largura()
     static Int LARGURA_MINIMA = Terminal.LARGURA_MINIMA
+
+    static void escrever(String texto) {
+        if (texto == null) { return }
+        write(1, texto, strlen(texto))
+    }
+
+    static Int alturaLinha(String texto, Int colunas) {
+        if (colunas <= 0) { return 1 }
+        var visivel = Ansi.largura(texto)
+        if (visivel <= colunas) { return 1 }
+        var linhas = visivel / colunas
+        if (visivel % colunas != 0) { linhas = linhas + 1 }
+        return linhas
+    }
+
+    static Int alturas(String texto, Int colunas) {
+        if (texto == null) { return 1 }
+        var total = 0
+        for (var parte in texto.split("\n")) {
+            total = total + Ansi.alturaLinha(parte, colunas)
+        }
+        if (total < 1) { total = 1 }
+        return total
+    }
 
     static Int largura(String s) {
         if (s == null) { return 0 }
@@ -116,7 +143,7 @@ class Ansi {
             total = total + peso
             i = i + 1
         }
-        return saida + "…"
+        return saida + "…" + Tema.RESET
     }
 
     static List<String> quebrar(String texto, Int larguraMaxima) {

@@ -19,6 +19,7 @@ class Seletor {
     SinaisApi sinaisApi
     ContagensNavegacao contagens
     Previa previa
+    Regioes regioes
 
     public constructor(String contexto, Cliente cliente) {
         this.teclado = Teclado()
@@ -29,6 +30,7 @@ class Seletor {
         this.sinaisApi = SinaisApi(cliente)
         this.previa = Previa(cliente, contexto)
         this.contagens = this.sinaisApi.carregar(this.contextoDoServidor(), contexto == "social")
+        this.regioes = Regioes()
     }
 
     static Int digito(String caractere) {
@@ -41,6 +43,13 @@ class Seletor {
     static Bool encerra(Tecla tecla) {
         if (tecla.nome == "escape" || tecla.nome == "ctrl-c") { return true }
         return tecla.nome == "texto" && (tecla.caractere == "q" || tecla.caractere == "0")
+    }
+
+    static Int indiceDoContexto(String nome) {
+        for (var i = 0; i < Navegacao.CONTEXTOS.size(); i = i + 1) {
+            if (Navegacao.CONTEXTOS.get(i) == nome) { return i }
+        }
+        return -1
     }
 
     String contextoDoServidor() {
@@ -61,38 +70,56 @@ class Seletor {
         while (seguindo) {
             this.desenhar(topo, dica)
             var tecla = this.teclado.ler()
-            if (tecla.nome == "cima" || (tecla.nome == "texto" && tecla.caractere == "k")) {
+            var escolha = -1
+            if (tecla.nome == "clique") {
+                var alvo = this.regioes.em(tecla.linha, tecla.coluna)
+                if (alvo.tipo == "aba") {
+                    this.irParaContexto(alvo.indice)
+                } else if (alvo.tipo == "item") {
+                    escolha = alvo.indice
+                }
+            } else if (tecla.nome == "roda-cima" || tecla.nome == "cima") {
                 this.mover(-1)
-            } else if (tecla.nome == "baixo" || (tecla.nome == "texto" && tecla.caractere == "j")) {
+            } else if (tecla.nome == "roda-baixo" || tecla.nome == "baixo") {
                 this.mover(1)
             } else if (tecla.nome == "tab" || tecla.nome == "voltar-aba") {
                 this.alternarContexto()
             } else if (tecla.nome == "enter") {
-                seguindo = this.confirmar(this.cursor, rota)
-                if (!seguindo) { rota = this.rotaDo(this.cursor) }
-            } else if (tecla.nome == "texto" && tecla.caractere == "r") {
-                this.previa.limpar()
-                this.recarregar()
+                escolha = this.cursor
             } else if (tecla.nome == "texto") {
-                var atalho = Seletor.digito(tecla.caractere)
-                if (atalho >= 0) {
-                    this.cursor = atalho
-                    seguindo = this.confirmar(this.cursor, rota)
-                    if (!seguindo) { rota = this.rotaDo(this.cursor) }
-                } else if (Seletor.encerra(tecla)) {
-                    seguindo = false
+                if (tecla.caractere == "k") {
+                    this.mover(-1)
+                } else if (tecla.caractere == "j") {
+                    this.mover(1)
+                } else if (tecla.caractere == "r") {
+                    this.previa.limpar()
+                    this.recarregar()
+                } else {
+                    var atalho = Seletor.digito(tecla.caractere)
+                    if (atalho >= 0) {
+                        escolha = atalho
+                    } else if (Seletor.encerra(tecla)) {
+                        seguindo = false
+                    }
                 }
             } else if (Seletor.encerra(tecla)) {
                 seguindo = false
             }
+            if (escolha >= 0) {
+                this.cursor = escolha
+                if (this.confirmar(escolha)) { continue }
+                rota = this.rotaDo(escolha)
+                seguindo = false
+            }
         }
+        this.teclado.desligarMouse()
         print(Ansi.NORMAL)
         print(Ansi.MOSTRAR_CURSOR)
         this.teclado.sair()
         return rota
     }
 
-    Bool confirmar(Int indice, String rota) {
+    Bool confirmar(Int indice) {
         if (indice < 0 || indice >= this.itens.size()) { return true }
         if (this.itens.get(indice).rota == "trocar contexto") {
             this.alternarContexto()
@@ -114,7 +141,14 @@ class Seletor {
     }
 
     void alternarContexto() {
-        this.contexto = Navegacao.proximoContexto(this.contexto)
+        this.irParaContexto(Seletor.indiceDoContexto(Navegacao.proximoContexto(this.contexto)))
+    }
+
+    void irParaContexto(Int indice) {
+        if (indice < 0 || indice >= Navegacao.CONTEXTOS.size()) { return }
+        var novo = Navegacao.CONTEXTOS.get(indice)
+        if (novo == this.contexto) { return }
+        this.contexto = novo
         this.itens = Navegacao.visiveis(this.contexto)
         this.cursor = 0
         this.recarregar()
@@ -124,23 +158,62 @@ class Seletor {
     void desenhar(String topo, String dica) {
         var largura = Ansi.LARGURA_CONTEUDO
         print(Ansi.LIMPAR)
-        println(topo)
+        this.regioes.limpar()
+        var linha = 1
+        for (var parte in topo.split("\n")) {
+            println(parte)
+            linha = linha + 1
+        }
         println("")
+        linha = linha + 1
         println(Abas.lista(Navegacao.CONTEXTOS, this.contexto))
+        Abas.registrar(this.regioes, linha, Navegacao.CONTEXTOS, this.contexto)
+        this.teclado.ligarMouse()
+        linha = linha + 1
         println("")
+        linha = linha + 1
         if (Painel.cabe(largura)) {
-            var esquerda = this.menu(Painel.larguraEsquerda(largura))
-            var direita = this.previaDe(Painel.larguraDireita(largura))
-            for (var linha in Painel.linhas(esquerda, direita, largura)) { println(linha) }
+            linha = this.desenharPainel(linha, largura)
         } else {
-            for (var linha in this.menu(largura)) { println(linha) }
+            linha = this.desenharMenu(linha, largura)
         }
         println("")
         println(Menu.rodape(dica))
     }
 
-    List<String> menu(Int largura) {
-        var linhas = listOf<String>()
+    Int desenharPainel(Int linha, Int largura) {
+        var coluna = Painel.larguraEsquerda(largura)
+        var esquerda = this.menu(coluna)
+        var direita = this.previaDe(Painel.larguraDireita(largura))
+        var linhas = Painel.linhas(Seletor.textos(esquerda), direita, largura)
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            println(linhas.get(i))
+            if (i < esquerda.size() && esquerda.get(i).indice >= 0) {
+                this.regioes.adicionar(linha + i, 1, coluna, esquerda.get(i).indice, "item")
+            }
+        }
+        return linha + linhas.size()
+    }
+
+    Int desenharMenu(Int linha, Int largura) {
+        var linhas = this.menu(largura)
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            println(linhas.get(i).texto)
+            if (linhas.get(i).indice >= 0) {
+                this.regioes.adicionar(linha + i, 1, largura, linhas.get(i).indice, "item")
+            }
+        }
+        return linha + linhas.size()
+    }
+
+    static List<String> textos(List<LinhaMenu> linhas) {
+        var saida = listOf<String>()
+        for (var linha in linhas) { saida.add(linha.texto) }
+        return saida
+    }
+
+    List<LinhaMenu> menu(Int largura) {
+        var linhas = listOf<LinhaMenu>()
         var secao = ""
         var numero = 1
         var foco = 0
@@ -148,26 +221,26 @@ class Seletor {
             var item = this.itens.get(i)
             if (item.secao != secao) {
                 secao = item.secao
-                if (linhas.size() > 0) { linhas.add("") }
-                linhas.add(Abas.grupo(secao))
+                if (linhas.size() > 0) { linhas.add(LinhaMenu.livre("")) }
+                linhas.add(LinhaMenu.livre(Abas.grupo(secao)))
             }
             var rotulo = this.rotulo(numero, item, largura)
             if (i == this.cursor) {
                 foco = linhas.size()
-                linhas.add(Tema.selecionado(Ansi.padDireita(rotulo, largura)))
+                linhas.add(LinhaMenu(Tema.selecionado(Ansi.padDireita(rotulo, largura)), i))
             } else {
-                linhas.add(rotulo)
+                linhas.add(LinhaMenu(rotulo, i))
             }
             numero = numero + 1
         }
         return this.janela(linhas, foco)
     }
 
-    List<String> janela(List<String> linhas, Int foco) {
+    List<LinhaMenu> janela(List<LinhaMenu> linhas, Int foco) {
         return Seletor.janelaDe(linhas, foco, this.alturaConteudo())
     }
 
-    static List<String> janelaDe(List<String> linhas, Int foco, Int altura) {
+    static List<LinhaMenu> janelaDe(List<LinhaMenu> linhas, Int foco, Int altura) {
         if (linhas.size() <= altura) { return linhas }
         var inicio = foco - altura / 2
         if (inicio > linhas.size() - altura) { inicio = linhas.size() - altura }
@@ -177,12 +250,14 @@ class Seletor {
         var espaco = altura
         if (acima) { espaco = espaco - 1 }
         if (abaixo) { espaco = espaco - 1 }
-        var saida = listOf<String>()
-        if (acima) { saida.add(Tema.mudo("  ↑ " + String.valueOf(inicio) + " linhas acima")) }
+        var saida = listOf<LinhaMenu>()
+        if (acima) {
+            saida.add(LinhaMenu.livre(Tema.mudo("  ↑ " + String.valueOf(inicio) + " linhas acima")))
+        }
         for (var i = inicio; i < inicio + espaco; i = i + 1) { saida.add(linhas.get(i)) }
         if (abaixo) {
             var restantes = linhas.size() - inicio - espaco
-            saida.add(Tema.mudo("  ↓ " + String.valueOf(restantes) + " linhas abaixo"))
+            saida.add(LinhaMenu.livre(Tema.mudo("  ↓ " + String.valueOf(restantes) + " linhas abaixo")))
         }
         return saida
     }
@@ -210,7 +285,7 @@ class Seletor {
     }
 
     Int alturaConteudo() {
-        var total = Terminal.altura() - 8
+        var total = Terminal.altura() - 9
         if (total < 6) { total = 6 }
         if (total > 24) { total = 24 }
         return total
@@ -235,7 +310,14 @@ class Seletor {
         linhas.add("")
         linhas.add(Ansi.divisor(largura, Tema.BORDA_SUAVE))
         this.previaCorpo(linhas, item, largura)
-        return linhas
+        return Seletor.recortar(linhas, this.limite())
+    }
+
+    static List<String> recortar(List<String> linhas, Int limite) {
+        if (linhas.size() <= limite) { return linhas }
+        var saida = listOf<String>()
+        for (var i = 0; i < limite; i = i + 1) { saida.add(linhas.get(i)) }
+        return saida
     }
 
     void previaCorpo(List<String> linhas, ItemNavegacao item, Int largura) {

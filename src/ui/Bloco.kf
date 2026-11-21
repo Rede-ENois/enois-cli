@@ -1,0 +1,3 @@
+package ui
+
+record Bloco(Int indice, List<String> linhas)

@@ -1,0 +1,8 @@
+package core
+
+record LinhaMenu(String texto, Int indice) {
+
+    static LinhaMenu livre(String texto) {
+        return LinhaMenu(texto, -1)
+    }
+}

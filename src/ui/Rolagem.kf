@@ -1,0 +1,141 @@
+package ui
+
+import core.Tema
+
+class Rolagem {
+
+    List<Bloco> blocos = listOf<Bloco>()
+    Int deslocamento = 0
+    Int foco = 0
+    Int altura = 0
+    Int margem = 3
+
+    public constructor(Int altura) {
+        this.altura = altura
+    }
+
+    void adicionar(Bloco bloco) {
+        this.blocos.add(bloco)
+    }
+
+    Int tamanho() {
+        return this.blocos.size()
+    }
+
+    Int totalLinhas() {
+        var total = 0
+        for (var bloco in this.blocos) {
+            total = total + bloco.linhas.size()
+        }
+        return total
+    }
+
+    Int inicioDoBloco(Int indice) {
+        var inicio = 0
+        var limite = indice
+        if (limite > this.blocos.size()) { limite = this.blocos.size() }
+        for (var i = 0; i < limite; i = i + 1) {
+            inicio = inicio + this.blocos.get(i).linhas.size()
+        }
+        return inicio
+    }
+
+    Int tamanhoBloco(Int indice) {
+        if (indice < 0 || indice >= this.blocos.size()) { return 0 }
+        return this.blocos.get(indice).linhas.size()
+    }
+
+    Int blocoDaLinha(Int linha) {
+        var inicio = 0
+        for (var i = 0; i < this.blocos.size(); i = i + 1) {
+            var tamanho = this.blocos.get(i).linhas.size()
+            if (linha >= inicio && linha < inicio + tamanho) { return i }
+            inicio = inicio + tamanho
+        }
+        return -1
+    }
+
+    Int dadoDoBloco(Int indice) {
+        if (indice < 0 || indice >= this.blocos.size()) { return -1 }
+        return this.blocos.get(indice).indice
+    }
+
+    List<String> visiveis() {
+        var saida = listOf<String>()
+        if (this.blocos.size() == 0) {
+            while (saida.size() < this.altura) { saida.add("") }
+            return saida
+        }
+        var indice = this.blocoDaLinha(this.deslocamento)
+        if (indice < 0) { indice = 0 }
+        var dentro = this.deslocamento - this.inicioDoBloco(indice)
+        while (saida.size() < this.altura && indice < this.blocos.size()) {
+            var linhas = this.blocos.get(indice).linhas
+            var i = dentro
+            while (i < linhas.size() && saida.size() < this.altura) {
+                var texto = linhas.get(i)
+                if (indice == this.foco) {
+                    texto = Tema.comFundoSobre(Tema.FUNDO_PRIMARIO_SUAVE, texto)
+                }
+                saida.add(texto)
+                i = i + 1
+            }
+            dentro = 0
+            indice = indice + 1
+        }
+        while (saida.size() < this.altura) { saida.add("") }
+        return saida
+    }
+
+    void moverFoco(Int passo) {
+        if (this.blocos.size() == 0) { return }
+        var novo = this.foco + passo
+        if (novo < 0) { novo = 0 }
+        if (novo >= this.blocos.size()) { novo = this.blocos.size() - 1 }
+        this.foco = novo
+        this.alinhar()
+    }
+
+    void alinhar() {
+        if (this.blocos.size() == 0) { return }
+        var inicio = this.inicioDoBloco(this.foco)
+        var tamanho = this.tamanhoBloco(this.foco)
+        if (inicio < this.deslocamento) { this.deslocamento = inicio }
+        if (tamanho <= this.altura) {
+            if (inicio + tamanho > this.deslocamento + this.altura) {
+                this.deslocamento = inicio + tamanho - this.altura
+            }
+        }
+        if (inicio >= this.deslocamento + this.altura) {
+            this.deslocamento = inicio - this.altura + 1
+        }
+        this.limitar()
+    }
+
+    void rolar(Int passos) {
+        if (this.blocos.size() == 0) { return }
+        var atual = this.blocoDaLinha(this.deslocamento)
+        if (atual < 0) { atual = 0 }
+        var alvo = atual + passos
+        if (alvo < 0) { alvo = 0 }
+        if (alvo >= this.blocos.size()) { alvo = this.blocos.size() - 1 }
+        this.deslocamento = this.inicioDoBloco(alvo)
+        this.limitar()
+        this.foco = alvo
+        if (this.foco >= this.blocos.size()) { this.foco = this.blocos.size() - 1 }
+        if (this.foco < 0) { this.foco = 0 }
+    }
+
+    void limitar() {
+        var maximo = this.totalLinhas() - this.altura
+        if (maximo < 0) { maximo = 0 }
+        if (this.deslocamento < 0) { this.deslocamento = 0 }
+        if (this.deslocamento > maximo) { this.deslocamento = maximo }
+        if (this.foco >= this.blocos.size()) { this.foco = this.blocos.size() - 1 }
+        if (this.foco < 0) { this.foco = 0 }
+    }
+
+    Bool noFim() {
+        return this.deslocamento + this.altura >= this.totalLinhas() - this.margem
+    }
+}

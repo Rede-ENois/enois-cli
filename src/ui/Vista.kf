@@ -1,0 +1,68 @@
+package ui
+
+import core.Ansi
+import core.Regioes
+import core.Terminal
+
+class Vista {
+
+    Regioes regioes = Regioes()
+    Rolagem rolagem
+    Int altura = 0
+
+    public constructor(Int altura) {
+        this.altura = altura
+        this.rolagem = Rolagem(altura)
+    }
+
+    static Int alturaPadrao() {
+        var total = Terminal.altura() - 9
+        if (total < 6) { total = 6 }
+        return total
+    }
+
+    void adicionar(Int indice, List<String> linhas) {
+        this.rolagem.adicionar(Bloco(indice, linhas))
+    }
+
+    Int total() {
+        return this.rolagem.tamanho()
+    }
+
+    void desenhar(String topo, String cabecalho, String rodape) {
+        var partesTopo = topo.split("\n")
+        var partesCabecalho = cabecalho.split("\n")
+        var partesRodape = rodape.split("\n")
+        var conteudo = Terminal.altura() - 1 - partesTopo.length - partesCabecalho.length - partesRodape.length - 2
+        if (conteudo < 4) { conteudo = 4 }
+        this.altura = conteudo
+        this.rolagem.altura = conteudo
+        this.rolagem.limitar()
+        print(Ansi.LIMPAR)
+        this.regioes.limpar()
+        var linha = 1
+        for (var parte in partesTopo) {
+            println(parte)
+            linha = linha + 1
+        }
+        for (var parte in partesCabecalho) {
+            println(parte)
+            linha = linha + 1
+        }
+        println("")
+        linha = linha + 1
+        var visiveis = this.rolagem.visiveis()
+        for (var i = 0; i < visiveis.size(); i = i + 1) {
+            println(visiveis.get(i))
+            var bloco = this.rolagem.blocoDaLinha(this.rolagem.deslocamento + i)
+            if (bloco >= 0) {
+                this.regioes.adicionar(linha, 1, Ansi.LARGURA_CONTEUDO, this.rolagem.dadoDoBloco(bloco), "item")
+            }
+            linha = linha + 1
+        }
+        println("")
+        for (var parte in partesRodape) {
+            println(parte)
+        }
+    }
+}
