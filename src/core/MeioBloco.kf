@@ -8,10 +8,28 @@ record Amostra(BufferedImage imagem, Int colunas, Int linhas)
 
 class MeioBloco {
 
-    static Int COLUNAS_MAXIMAS = 72
-    static Int ALTURA_MAXIMA = 24
+    static Int COLUNAS_MAXIMAS = 120
+    static Int ALTURA_MAXIMA = 32
     static String RAMPA = " .:-=+*#%@"
     static Map<String, List<String>> cache = mapOf<String, List<String>>()
+    static Map<String, Amostra> amostras = mapOf<String, Amostra>()
+
+    static Int colunasFinais(String caminho, Int colunas, Int linhasMaximas) {
+        var amostra = MeioBloco.amostra(caminho, colunas, linhasMaximas)
+        if (amostra == null) { return 0 }
+        return amostra.colunas
+    }
+
+    static Amostra amostra(String caminho, Int colunas, Int linhasMaximas) {
+        var limites = MeioBloco.limites(colunas, linhasMaximas)
+        var chave = caminho + "|" + String.valueOf(limites.get(0)) + "x"
+            + String.valueOf(limites.get(1))
+        var guardada = MeioBloco.amostras.get(chave)
+        if (guardada != null) { return guardada }
+        var nova = MeioBloco.reduzir(caminho, limites.get(0), limites.get(1))
+        if (nova != null) { MeioBloco.amostras.put(chave, nova) }
+        return nova
+    }
 
     static List<String> deArquivo(String caminho, Int colunas, Int linhasMaximas) {
         var limites = MeioBloco.limites(colunas, linhasMaximas)
@@ -66,21 +84,37 @@ class MeioBloco {
                 colunasAlvo = linhasAlvo * 2 * larguraPx / alturaPx
                 if (colunasAlvo < 1) { colunasAlvo = 1 }
             }
-            var imagem = new BufferedImage(colunasAlvo, linhasAlvo * 2, BufferedImage.TYPE_INT_ARGB)
-            var pincel = imagem.createGraphics()
-            pincel.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                RenderingHints.VALUE_INTERPOLATION_BILINEAR)
-            pincel.drawImage(fonte, 0, 0, colunasAlvo, linhasAlvo * 2, null)
-            pincel.dispose()
+            var imagem = MeioBloco.escalar(fonte, colunasAlvo, linhasAlvo * 2)
             return Amostra(imagem, colunasAlvo, linhasAlvo)
         } catch (String erro) {
             return null
         }
     }
 
+    static BufferedImage escalar(BufferedImage fonte, Int largura, Int altura) {
+        var atual = fonte
+        while (atual.getWidth() / 2 > largura && atual.getHeight() / 2 > altura) {
+            var metade = new BufferedImage(atual.getWidth() / 2, atual.getHeight() / 2,
+                BufferedImage.TYPE_INT_ARGB)
+            var pincelMetade = metade.createGraphics()
+            pincelMetade.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+            pincelMetade.drawImage(atual, 0, 0, metade.getWidth(), metade.getHeight(), null)
+            pincelMetade.dispose()
+            atual = metade
+        }
+        var destino = new BufferedImage(largura, altura, BufferedImage.TYPE_INT_ARGB)
+        var pincel = destino.createGraphics()
+        pincel.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+            RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+        pincel.drawImage(atual, 0, 0, largura, altura, null)
+        pincel.dispose()
+        return destino
+    }
+
     static List<String> converter(String caminho, Int colunas, Int linhasMaximas) {
         var linhas = listOf<String>()
-        var amostra = MeioBloco.reduzir(caminho, colunas, linhasMaximas)
+        var amostra = MeioBloco.amostra(caminho, colunas, linhasMaximas)
         if (amostra == null) { return linhas }
         for (var linha = 0; linha < amostra.linhas; linha = linha + 1) {
             var saida = ""
@@ -97,7 +131,7 @@ class MeioBloco {
 
     static List<String> converterAscii(String caminho, Int colunas, Int linhasMaximas) {
         var linhas = listOf<String>()
-        var amostra = MeioBloco.reduzir(caminho, colunas, linhasMaximas)
+        var amostra = MeioBloco.amostra(caminho, colunas, linhasMaximas)
         if (amostra == null) { return linhas }
         for (var linha = 0; linha < amostra.linhas; linha = linha + 1) {
             var saida = ""
@@ -137,5 +171,6 @@ class MeioBloco {
 
     static void limpar() {
         MeioBloco.cache = mapOf<String, List<String>>()
+        MeioBloco.amostras = mapOf<String, Amostra>()
     }
 }

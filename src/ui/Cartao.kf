@@ -10,10 +10,12 @@ import tipos.*
 class Cartao {
 
     static Int LINHAS_CORPO = 4
-    static Int COLUNAS_MINIATURA = 24
-    static Int LINHAS_MINIATURA = 6
+    static Int COLUNAS_MINIATURA = 28
+    static Int LINHAS_MINIATURA = 7
     static Int COLUNAS_DETALHE = 44
     static Int LINHAS_DETALHE = 12
+    static Int COLUNAS_DETALHE_UNICA = 76
+    static Int LINHAS_DETALHE_UNICA = 20
 
     static List<String> linhas(PostResumo p, Int largura, String usuarioAtual) {
         var linhas = listOf<String>()
@@ -42,8 +44,13 @@ class Cartao {
             linhas.add("   " + Cartao.colorir(linha))
         }
         for (var linha in Cartao.linhasDaEnquete(p, largura)) { linhas.add(linha) }
-        for (var linha in Cartao.miniaturas(p, largura, Cartao.COLUNAS_DETALHE,
-            Cartao.LINHAS_DETALHE, 2)) { linhas.add(linha) }
+        var colunas = Cartao.COLUNAS_DETALHE
+        var altura = Cartao.LINHAS_DETALHE
+        if (Cartao.totalImagens(p) == 1) {
+            colunas = Cartao.COLUNAS_DETALHE_UNICA
+            altura = Cartao.LINHAS_DETALHE_UNICA
+        }
+        for (var linha in Cartao.miniaturas(p, largura, colunas, altura, 2)) { linhas.add(linha) }
         var extras = Cartao.extras(p)
         if (extras.length > 0) { linhas.add("   " + extras) }
         return linhas

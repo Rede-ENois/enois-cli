@@ -1250,10 +1250,10 @@ test "galeria lista apenas imagens com endereco" {
     assert(Galeria.endereco(imagens.get(0)) == Midia.CDN + "/a.jpg")
 }
 
-test "galeria limita colunas da imagem ao conteudo" {
+test "galeria usa a largura do conteudo" {
     var antes = Ansi.LARGURA_CONTEUDO
     Ansi.LARGURA_CONTEUDO = 120
-    assert(Galeria.colunas() == 72)
+    assert(Galeria.colunas() == 114)
     Ansi.LARGURA_CONTEUDO = 40
     assert(Galeria.colunas() == 34)
     Ansi.LARGURA_CONTEUDO = 22
@@ -1377,5 +1377,15 @@ test "meio bloco cai em ascii sem cor quando o terminal nao tem truecolor" {
     assert(linhas.size() == 1)
     assert(!linhas.get(0).contains(Ansi.ESC))
     assert(linhas.get(0) == "@ ")
+    arquivo.delete()
+}
+
+test "meio bloco encolhe a largura da imagem alta para caber na altura" {
+    var caminho = "/tmp/enois-teste-meiobloco-alto.png"
+    var arquivo = new java.io.File(caminho)
+    var imagem = new BufferedImage(100, 400, BufferedImage.TYPE_INT_ARGB)
+    ImageIO.write(imagem, "png", arquivo)
+    assert(MeioBloco.colunasFinais(caminho, 60, 10) == 5)
+    MeioBloco.limpar()
     arquivo.delete()
 }

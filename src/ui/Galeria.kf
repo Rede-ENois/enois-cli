@@ -58,9 +58,15 @@ class Galeria {
 
     static Int colunas() {
         var colunas = Ansi.LARGURA_CONTEUDO - 6
-        if (colunas > 72) { colunas = 72 }
         if (colunas < 20) { colunas = 20 }
         return colunas
+    }
+
+    static Int colunasDesenho(MidiaAnexo anexo) {
+        var largura = MeioBloco.colunasFinais(Galeria.caminho(anexo), Galeria.colunas(),
+            Terminal.altura() - 6)
+        if (largura <= 0) { return Galeria.colunas() }
+        return largura
     }
 
     static Bool mostrar(MidiaAnexo anexo, Int linha, Int coluna) {
