@@ -33,7 +33,7 @@ class TelaDesabafos {
                 opcoes.add(this.resumo(posts.get(i)))
             }
             if (posts.size() == 0) {
-                println(Caixa.simples(Lista.vazia("silêncio por aqui")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("silêncio por aqui")))
             }
             opcoes.add("desabafar")
             var escolha = Entrada.menu("desabafos", opcoes, "voltar")
@@ -60,7 +60,7 @@ class TelaDesabafos {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.texto(p.content)))
+            Caixa.desenhar(Caixa.simples(this.texto(p.content)))
             println(Tema.mudo(this.resumo(p)))
             var escolha = Entrada.menu("desabafo", listOf("reagir", "comentar", "apagar"), "voltar")
             if (escolha < 0) {

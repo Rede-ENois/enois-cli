@@ -1,0 +1,67 @@
+package core
+
+class Tempo {
+
+    static List<String> MESES = listOf("jan", "fev", "mar", "abr", "mai", "jun",
+        "jul", "ago", "set", "out", "nov", "dez")
+
+    static String relativo(String? iso) {
+        var momento = Tempo.epoch(iso)
+        if (momento <= 0L) { return "" }
+        var diferenca = time.now() - momento
+        if (diferenca < 0L) { diferenca = 0L }
+        if (diferenca < 60000L) { return "agora" }
+        if (diferenca < 3600000L) {
+            return String.valueOf((diferenca / 60000L) as Int) + " min"
+        }
+        if (diferenca < 86400000L) {
+            return String.valueOf((diferenca / 3600000L) as Int) + " h"
+        }
+        if (diferenca < 604800000L) {
+            return String.valueOf((diferenca / 86400000L) as Int) + " d"
+        }
+        return Tempo.data(iso)
+    }
+
+    static String data(String? iso) {
+        if (iso == null || iso.length < 10) { return "" }
+        var dia = iso.substring(8, 10)
+        var mes = Tempo.mes(iso.substring(5, 7))
+        var ano = iso.substring(0, 4)
+        var hoje = time.todayIso()
+        if (hoje.length >= 4 && ano == hoje.substring(0, 4)) {
+            return dia + " " + mes
+        }
+        return dia + " " + mes + " " + ano
+    }
+
+    static String mes(String numero) {
+        var indice = 0
+        try {
+            indice = Integer.parseInt(numero)
+        } catch (String e) {
+            indice = 0
+        }
+        if (indice < 1 || indice > 12) { return numero }
+        return Tempo.MESES.get(indice - 1)
+    }
+
+    static Long epoch(String? iso) {
+        if (iso == null || iso.length < 10) { return 0L }
+        var dias = time.parseDateIso(iso.substring(0, 10))
+        if (dias <= 0) { return 0L }
+        var total = dias * 86400000L
+        if (iso.length >= 13) { total = total + Tempo.campo(iso, 11, 13) * 3600000L }
+        if (iso.length >= 16) { total = total + Tempo.campo(iso, 14, 16) * 60000L }
+        if (iso.length >= 19) { total = total + Tempo.campo(iso, 17, 19) * 1000L }
+        return total
+    }
+
+    static Int campo(String iso, Int de, Int ate) {
+        try {
+            return Integer.parseInt(iso.substring(de, ate))
+        } catch (String e) {
+            return 0
+        }
+    }
+}

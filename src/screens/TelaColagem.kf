@@ -33,7 +33,7 @@ class TelaColagem {
                 opcoes.add(this.autor(fotos.get(i)))
             }
             if (fotos.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma foto pregada ainda")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma foto pregada ainda")))
             }
             opcoes.add("publicar foto")
             var escolha = Entrada.menu("colagem", opcoes, "voltar")
@@ -59,7 +59,7 @@ class TelaColagem {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartao(foto)))
+            Caixa.desenhar(Caixa.simples(this.cartao(foto)))
             var pagina = ColagemApi.comentariosDe(api.comentarios(foto.id, null, 24))
             var comentarios = listOf<ComentarioColagem>()
             if (pagina.items != null) { comentarios = pagina.items }

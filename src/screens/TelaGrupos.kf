@@ -31,7 +31,7 @@ class TelaGrupos {
             var total = grupos.size()
             var opcoes = listOf<String>()
             if (total == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum grupo encontrado")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum grupo encontrado")))
             }
             for (var i = 0; i < grupos.size(); i = i + 1) {
                 println(Lista.item(this.nome(grupos.get(i)), this.resumo(grupos.get(i))))
@@ -55,7 +55,7 @@ class TelaGrupos {
     void lista() {
         var itens = GruposApi.pagina(GruposApi(this.cliente).meus(24)).items
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("você ainda não participa de nenhum grupo")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("você ainda não participa de nenhum grupo")))
             Entrada.pausar()
             return
         }
@@ -76,7 +76,7 @@ class TelaGrupos {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartao(atual)))
+            Caixa.desenhar(Caixa.simples(this.cartao(atual)))
             var opcoes = listOf("posts", "membros", "tópicos")
             if ("" + atual.joined == "true") {
                 opcoes.add("publicar")
@@ -117,7 +117,7 @@ class TelaGrupos {
         print(Ansi.LIMPAR)
         println(Tema.destaque("posts · " + this.nome(g)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum post ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum post ainda")))
             Entrada.pausar()
             return
         }
@@ -139,7 +139,7 @@ class TelaGrupos {
     void post(Grupo g, PostGrupo p) {
         var api = GruposApi(this.cliente)
         print(Ansi.LIMPAR)
-        println(Caixa.simples(this.cartaoPost(p)))
+        Caixa.desenhar(Caixa.simples(this.cartaoPost(p)))
         var escolha = Entrada.menu("post", listOf("reagir", "apagar"), "voltar")
         if (escolha == 0) {
             this.avisar(api.reagir(g.id, p.id, "LIKE"), "reação enviada")
@@ -154,7 +154,7 @@ class TelaGrupos {
         var api = GruposApi(this.cliente)
         var topicos = GruposApi.topicosDe(api.topicos(g.id))
         if (topicos.size() == 0) {
-            println(Caixa.simples(Lista.vazia("o grupo ainda não tem tópicos")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("o grupo ainda não tem tópicos")))
             Entrada.pausar()
             return
         }
@@ -176,7 +176,7 @@ class TelaGrupos {
         print(Ansi.LIMPAR)
         println(Tema.destaque("membros · " + this.nome(g)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem membros visíveis")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem membros visíveis")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var m = itens.get(i)
@@ -196,7 +196,7 @@ class TelaGrupos {
         print(Ansi.LIMPAR)
         println(Tema.destaque("pedidos · " + this.nome(g)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
             Entrada.pausar()
             return
         }
@@ -224,7 +224,7 @@ class TelaGrupos {
         print(Ansi.LIMPAR)
         println(Tema.destaque("tópicos · " + this.nome(g)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum tópico criado")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum tópico criado")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var t = itens.get(i)

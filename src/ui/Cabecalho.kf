@@ -1,0 +1,82 @@
+package ui
+
+import core.Ansi
+import core.Cliente
+import core.Faisca
+import core.Tema
+
+class Cabecalho {
+
+    static String linha(Cliente cliente, String secao, String contexto) {
+        var esquerda = Cabecalho.esquerda(secao, contexto)
+        var direita = Cabecalho.direita(cliente)
+        var folga = Ansi.LARGURA_CONTEUDO - Ansi.largura(esquerda) - Ansi.largura(direita)
+        if (folga < 1) {
+            direita = Cabecalho.direitaCurta(cliente)
+            folga = Ansi.LARGURA_CONTEUDO - Ansi.largura(esquerda) - Ansi.largura(direita)
+        }
+        if (folga < 1) {
+            direita = Cabecalho.conexao(cliente)
+            folga = Ansi.LARGURA_CONTEUDO - Ansi.largura(esquerda) - Ansi.largura(direita)
+        }
+        if (folga < 1) {
+            esquerda = Ansi.cortar(esquerda, Ansi.LARGURA_CONTEUDO - Ansi.largura(direita))
+            folga = 1
+        }
+        return esquerda + Ansi.padEsquerda("", folga) + direita
+    }
+
+    static String esquerda(String secao, String contexto) {
+        var texto = Tema.marca("Énóis") + Tema.mudo(" ▸ ") + Tema.titulo(secao)
+        if (contexto != null && contexto.length > 0) {
+            texto = texto + Tema.mudo("  ·  " + contexto)
+        }
+        return texto
+    }
+
+    static Int colunaContexto(String secao) {
+        var base = Tema.marca("Énóis") + Tema.mudo(" ▸ ") + Tema.titulo(secao)
+        return Ansi.largura(base) + 6
+    }
+
+    static String direita(Cliente cliente) {
+        var partes = listOf<String>()
+        var usuario = ""
+        var saldo = 0
+        if (cliente != null && cliente.sessao != null && cliente.sessao.usuario != null) {
+            usuario = cliente.sessao.usuario.usuario
+            saldo = cliente.sessao.usuario.faisca
+        }
+        if (usuario.length > 0) { partes.add(Tema.suave("@" + usuario)) }
+        if (saldo > 0) { partes.add(Tema.suave(Faisca.texto(saldo))) }
+        if (cliente != null) { partes.add(Cabecalho.conexao(cliente)) }
+        return Cabecalho.juntar(partes)
+    }
+
+    static String direitaCurta(Cliente cliente) {
+        var partes = listOf<String>()
+        var usuario = ""
+        if (cliente != null && cliente.sessao != null && cliente.sessao.usuario != null) {
+            usuario = cliente.sessao.usuario.usuario
+        }
+        if (usuario.length > 0) { partes.add(Tema.suave("@" + usuario)) }
+        if (cliente != null) { partes.add(Cabecalho.conexao(cliente)) }
+        return Cabecalho.juntar(partes)
+    }
+
+    static String juntar(List<String> partes) {
+        var linha = ""
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            if (i > 0) { linha = linha + Tema.mudo(" · ") }
+            linha = linha + partes.get(i)
+        }
+        return linha
+    }
+
+    static String conexao(Cliente cliente) {
+        var estado = cliente.estadoRede
+        if (estado == "offline") { return Tema.alerta("● sem rede") }
+        if (estado == "sessao") { return Tema.alerta("● sessão expirada") }
+        return Tema.ok("● conectado")
+    }
+}

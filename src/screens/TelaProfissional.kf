@@ -47,7 +47,7 @@ class TelaProfissional {
                 Entrada.pausar()
                 rodando = false
             } else {
-                println(Caixa.simples(this.cartao(perfil)))
+                Caixa.desenhar(Caixa.simples(this.cartao(perfil)))
                 var escolha = Entrada.menu("perfil profissional",
                     listOf("criar", "editar", "renomear", "trocar @", "ativar", "desativar",
                         "importar do social"), "voltar")
@@ -109,7 +109,7 @@ class TelaProfissional {
         if (perfil == null) {
             println(Tema.erro("perfil profissional não encontrado"))
         } else {
-            println(Caixa.simples(this.cartao(perfil)))
+            Caixa.desenhar(Caixa.simples(this.cartao(perfil)))
         }
         Entrada.pausar()
     }

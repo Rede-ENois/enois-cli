@@ -30,7 +30,7 @@ class TelaBusca {
         }
         var itens = BuscaApi.pagina(r).items
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nada encontrado para " + termo)))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nada encontrado para " + termo)))
             Entrada.pausar()
             return
         }

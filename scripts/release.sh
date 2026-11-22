@@ -46,6 +46,7 @@ echo "==> empacotando app linux"
   --main-class Default.Main \
   --runtime-image build/runtime \
   --java-options "-Dfile.encoding=UTF-8" \
+  --java-options "--enable-native-access=ALL-UNNAMED" \
   --dest build/app
 
 mv build/app/enois-cli "$imagem"
@@ -62,7 +63,7 @@ chmod 644 "$raizdeb/opt/enois-cli/lib/app/kof-app.jar"
 
 cat > "$raizdeb/usr/bin/enois-cli" <<'EOF'
 #!/bin/sh
-exec /opt/enois-cli/lib/runtime/bin/java -Dfile.encoding=UTF-8 -jar /opt/enois-cli/lib/app/kof-app.jar "$@"
+exec /opt/enois-cli/lib/runtime/bin/java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar /opt/enois-cli/lib/app/kof-app.jar "$@"
 EOF
 chmod 755 "$raizdeb/usr/bin/enois-cli"
 

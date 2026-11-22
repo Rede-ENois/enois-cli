@@ -265,7 +265,7 @@ class Destino {
     void aviso(String texto) {
         print(Ansi.LIMPAR)
         println(Menu.topo("Énóis", ""))
-        println(Caixa.simples(Lista.vazia(texto)))
+        Caixa.desenhar(Caixa.simples(Lista.vazia(texto)))
         Entrada.pausar()
     }
 

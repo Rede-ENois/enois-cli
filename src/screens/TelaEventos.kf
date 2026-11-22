@@ -31,7 +31,7 @@ class TelaEventos {
             var total = eventos.size()
             var opcoes = listOf<String>()
             if (total == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum evento na agenda")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum evento na agenda")))
             }
             for (var i = 0; i < eventos.size(); i = i + 1) {
                 println(Lista.item(this.quando(eventos.get(i)), this.quem(eventos.get(i))))
@@ -53,7 +53,7 @@ class TelaEventos {
         var api = EventosApi(this.cliente)
         var atual = EventosApi.unico(api.obter(e.id))
         print(Ansi.LIMPAR)
-        println(Caixa.simples(this.cartao(atual)))
+        Caixa.desenhar(Caixa.simples(this.cartao(atual)))
         var opcoes = listOf<String>()
         var expirado = "" + atual.expired == "true"
         var confirmado = "" + atual.attending == "true"

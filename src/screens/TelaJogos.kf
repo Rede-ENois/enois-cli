@@ -34,7 +34,7 @@ class TelaJogos {
                 opcoes.add(this.titulo(jogos.get(i)))
             }
             if (jogos.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum jogo publicado")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum jogo publicado")))
             }
             opcoes.add("minha biblioteca")
             var escolha = Entrada.menu("arcade", opcoes, "voltar")
@@ -51,7 +51,7 @@ class TelaJogos {
     void biblioteca() {
         var itens = JogosApi.listaDe(JogosApi(this.cliente).biblioteca())
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sua biblioteca está vazia")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sua biblioteca está vazia")))
             Entrada.pausar()
             return
         }
@@ -66,7 +66,7 @@ class TelaJogos {
     void abrir(Jogo j) {
         var api = JogosApi(this.cliente)
         print(Ansi.LIMPAR)
-        println(Caixa.simples(this.cartao(j)))
+        Caixa.desenhar(Caixa.simples(this.cartao(j)))
         var escolha = Entrada.menu(this.titulo(j),
             listOf("avaliações", "comentários", "avaliar", "enviar comentário"), "voltar")
         if (escolha == 0) {
@@ -88,7 +88,7 @@ class TelaJogos {
         print(Ansi.LIMPAR)
         println(Tema.destaque("avaliações · " + this.titulo(j)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("ninguém avaliou ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("ninguém avaliou ainda")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var a = itens.get(i)
@@ -106,7 +106,7 @@ class TelaJogos {
         print(Ansi.LIMPAR)
         println(Tema.destaque("comentários · " + this.titulo(j)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum comentário")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum comentário")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var c = itens.get(i)

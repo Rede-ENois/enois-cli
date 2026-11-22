@@ -32,7 +32,7 @@ class TelaLoja {
                 opcoes.add(this.nome(itens.get(i)))
             }
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nada à venda agora")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nada à venda agora")))
             }
             opcoes.add("coleções")
             opcoes.add("meu status")
@@ -55,7 +55,7 @@ class TelaLoja {
         var texto = this.nome(item)
         if (item.description != null) { texto = texto + "\n" + item.description }
         texto = texto + "\n" + this.resumo(item)
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         var opcoes = listOf<String>()
         if ("" + item.owned == "true") {
             if ("" + item.equipped == "true") {
@@ -83,7 +83,7 @@ class TelaLoja {
         var api = LojaApi(this.cliente)
         var colecoes = LojaApi.colecoesDe(api.colecoes())
         if (colecoes.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhuma coleção aberta")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma coleção aberta")))
             Entrada.pausar()
             return
         }
@@ -103,7 +103,7 @@ class TelaLoja {
     void looks(LojaColecao colecao) {
         var api = LojaApi(this.cliente)
         if (colecao.looks == null || colecao.looks.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem looks nesta coleção")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem looks nesta coleção")))
             Entrada.pausar()
             return
         }

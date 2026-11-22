@@ -27,7 +27,7 @@ class TelaPapoReto {
             println(Tema.destaque("papo reto"))
             println(Tema.mudo("do que a rede está falando agora"))
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("sem assunto quente nas últimas horas")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("sem assunto quente nas últimas horas")))
                 Entrada.pausar()
                 return
             }
@@ -54,7 +54,7 @@ class TelaPapoReto {
         print(Ansi.LIMPAR)
         println(Tema.destaque("linha do tempo · " + assunto))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem falas neste assunto")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem falas neste assunto")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var p = itens.get(i)

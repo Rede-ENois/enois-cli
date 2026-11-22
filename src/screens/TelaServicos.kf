@@ -42,7 +42,7 @@ class TelaServicos {
                 opcoes.add(this.tituloPedido(p))
             }
             if (opcoes.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum serviço na vitrine")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum serviço na vitrine")))
             }
             opcoes.add("meus serviços")
             opcoes.add("criar oferta")
@@ -72,7 +72,7 @@ class TelaServicos {
         if (o.description != null) { texto = texto + "\n" + o.description }
         if (o.deliverables != null) { texto = texto + "\n" + o.deliverables }
         texto = texto + "\n" + this.resumoOferta(o)
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         var escolha = Entrada.menu(this.tituloOferta(o),
             listOf("contratar", "abrir chat"), "voltar")
         if (escolha == 0) {
@@ -88,7 +88,7 @@ class TelaServicos {
         var texto = this.tituloPedido(p)
         if (p.description != null) { texto = texto + "\n" + p.description }
         texto = texto + "\n" + this.resumoPedido(p)
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         var escolha = Entrada.menu(this.tituloPedido(p),
             listOf("ver propostas", "enviar proposta"), "voltar")
         if (escolha == 0) {
@@ -104,7 +104,7 @@ class TelaServicos {
         print(Ansi.LIMPAR)
         println(Tema.destaque("propostas · " + this.tituloPedido(p)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhuma proposta ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma proposta ainda")))
             Entrada.pausar()
             return
         }
@@ -145,7 +145,7 @@ class TelaServicos {
             opcoes.add("venda " + String.valueOf(i + 1))
         }
         if (opcoes.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nada por aqui ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nada por aqui ainda")))
             Entrada.pausar()
             return
         }
@@ -169,7 +169,7 @@ class TelaServicos {
         var texto = "contrato " + this.estadoContrato(c)
         texto = texto + "\n" + this.resumoContrato(c)
         if (c.deliverableNote != null) { texto = texto + "\n" + c.deliverableNote }
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         var opcoes = listOf<String>()
         if (comprador) { opcoes.add("aceitar entrega") }
         if (!comprador) { opcoes.add("entregar") }

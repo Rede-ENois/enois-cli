@@ -16,6 +16,10 @@ class Ansi {
     static Int LARGURA_CONTEUDO = Terminal.largura()
     static Int LARGURA_MINIMA = Terminal.LARGURA_MINIMA
 
+    static void medir() {
+        Ansi.LARGURA_CONTEUDO = Terminal.largura()
+    }
+
     static void escrever(String texto) {
         if (texto == null) { return }
         write(1, texto, strlen(texto))
@@ -61,6 +65,9 @@ class Ansi {
     }
 
     static Int peso(Int c) {
+        if (c == 0x200D || (c >= 0xFE00 && c <= 0xFE0F)) { return 0 }
+        if (c >= 0x200B && c <= 0x200F) { return 0 }
+        if (c == 0xFEFF) { return 0 }
         if (c >= 0x1F300 && c <= 0x1FAFF) { return 2 }
         if (c >= 0x2600 && c <= 0x27BF) { return 2 }
         return 1

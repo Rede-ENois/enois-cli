@@ -53,7 +53,7 @@ class TelaPenalidades {
         println(Tema.destaque("minhas penalidades"))
         if (sancoes.size() == 0) { println(Lista.vazia("nenhuma penalidade na sua conta")) }
         for (var i = 0; i < sancoes.size(); i = i + 1) {
-            println(Caixa.simples(this.cartao(sancoes.get(i))))
+            Caixa.desenhar(Caixa.simples(this.cartao(sancoes.get(i))))
         }
         for (var i = 0; i < recursos.size(); i = i + 1) {
             var r = recursos.get(i)

@@ -48,7 +48,7 @@ class TelaJogosDiarios {
         while (rodando && Entrada.ativa) {
             var estado = JogosDiariosApi.palavraDe(api.palavraHoje(null))
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartaoPalavra(estado)))
+            Caixa.desenhar(Caixa.simples(this.cartaoPalavra(estado)))
             var tentativas = estado.guesses
             if (tentativas != null) {
                 for (var i = 0; i < tentativas.size(); i = i + 1) {
@@ -75,7 +75,7 @@ class TelaJogosDiarios {
         while (rodando && Entrada.ativa) {
             var estado = JogosDiariosApi.labirintoDe(api.labirintoHoje(null))
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartaoLabirinto(estado)))
+            Caixa.desenhar(Caixa.simples(this.cartaoLabirinto(estado)))
             var escolha = Entrada.menu("labirinto",
                 listOf("cima", "direita", "baixo", "esquerda", "ranking"), "voltar")
             if (escolha < 0) {
@@ -95,7 +95,7 @@ class TelaJogosDiarios {
         while (rodando && Entrada.ativa) {
             var estado = JogosDiariosApi.blocosDe(api.blocosHoje(null))
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartaoBlocos(estado)))
+            Caixa.desenhar(Caixa.simples(this.cartaoBlocos(estado)))
             println(this.tabuleiro(estado))
             var acoes = listOf("LEFT", "RIGHT", "ROTATE", "SOFT_DROP", "HARD_DROP", "WAIT")
             var opcoes = listOf("esquerda", "direita", "rotacionar", "descer",

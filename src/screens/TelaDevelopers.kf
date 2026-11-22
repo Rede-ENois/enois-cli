@@ -33,7 +33,7 @@ class TelaDevelopers {
                 opcoes.add(this.texto(origens.get(i).origin))
             }
             if (origens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma origem cadastrada")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma origem cadastrada")))
             }
             opcoes.add("adicionar origem")
             var escolha = Entrada.menu("origens", opcoes, "voltar")

@@ -204,7 +204,7 @@ class TelaConta {
     }
 
     void excluir() {
-        println(Caixa.simples("a conta some junto com tudo que é seu. não tem volta."))
+        Caixa.desenhar(Caixa.simples("a conta some junto com tudo que é seu. não tem volta."))
         if (!Entrada.confirmar("tem certeza?")) { return }
         var senha = Entrada.secreta("senha")
         var r = ContaApi(this.cliente).excluir(senha)

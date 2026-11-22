@@ -67,7 +67,7 @@ class TelaSeguranca {
         }
         print(Ansi.LIMPAR)
         println(Tema.destaque("adicione no aplicativo autenticador"))
-        println(Caixa.simples(this.texto(config.secret) + "\n" + this.texto(config.otpauthUri)))
+        Caixa.desenhar(Caixa.simples(this.texto(config.secret) + "\n" + this.texto(config.otpauthUri)))
         var codigo = Entrada.textoObrigatorio("código de 6 dígitos")
         var ativacao = SegurancaApi.ativacaoDe(api.ativarTotp(codigo, senha))
         if (ativacao == null) {

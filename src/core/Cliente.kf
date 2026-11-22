@@ -8,11 +8,17 @@ class Cliente {
     Config config
     Sessao sessao
     Bool sessaoPerdida
+    String estadoRede
+    Int timeoutRequisicao
+    Int tentativas
 
     public constructor(Config config, Sessao sessao) {
         this.config = config
         this.sessao = sessao
         this.sessaoPerdida = false
+        this.estadoRede = "online"
+        this.timeoutRequisicao = 15
+        this.tentativas = 1
     }
 
     String cabecalhosBase() {
@@ -85,14 +91,21 @@ class Cliente {
     }
 
     Resposta disparar(String metodo, String caminho, String corpo, String chaveIdempotencia) {
-        http.timeout(15)
-        http.retry(1)
+        http.timeout(this.timeoutRequisicao)
+        http.retry(this.tentativas)
         try {
             var res = http.send(metodo, this.url(caminho), corpo,
                 this.cabecalhos(metodo, chaveIdempotencia))
-            return Resposta(res.status(), res.body(), res.headers())
+            var r = Resposta(res.status(), res.body(), res.headers())
+            if (r.codigo == 401 && this.sessao.logado()) {
+                this.estadoRede = "sessao"
+            } else {
+                this.estadoRede = "online"
+            }
+            return r
         } catch (String e) {
-            return Resposta(0, "{\"code\":\"REDE\",\"message\":\"falha de rede: " + e + "\"}", "")
+            this.estadoRede = "offline"
+            return Resposta(0, "{\"code\":\"REDE\",\"message\":\"sem conexão com o servidor\"}", "")
         }
     }
 

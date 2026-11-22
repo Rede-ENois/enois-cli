@@ -27,7 +27,7 @@ class TelaColecoes {
             println(Menu.topo("Énóis", ""))
             println(Tema.destaque("coleções"))
             if (itens == null || itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma coleção — crie uma para organizar seus salvos")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma coleção — crie uma para organizar seus salvos")))
                 Entrada.pausar()
                 return
             }
@@ -83,7 +83,7 @@ class TelaColecoes {
         println(Tema.destaque(titulo))
         println(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("coleção vazia")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("coleção vazia")))
             Entrada.pausar()
             return
         }

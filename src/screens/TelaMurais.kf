@@ -34,7 +34,7 @@ class TelaMurais {
                 opcoes.add(this.titulo(murais.get(i)))
             }
             if (murais.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum mural criado")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum mural criado")))
             }
             opcoes.add("criar mural")
             var escolha = Entrada.menu("murais", opcoes, "voltar")
@@ -52,10 +52,10 @@ class TelaMurais {
         var api = MuraisApi(this.cliente)
         var atual = MuraisApi.unico(api.obter(m.id))
         print(Ansi.LIMPAR)
-        println(Caixa.simples(this.cartao(atual)))
+        Caixa.desenhar(Caixa.simples(this.cartao(atual)))
         var contribuicoes = MuraisApi.contribuicoesDe(api.contribuicoes(atual.id, null, 20))
         if (contribuicoes.size() == 0) {
-            println(Caixa.simples(Lista.vazia("mural ainda vazio")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("mural ainda vazio")))
         }
         var posts = listOf<PostResumo>()
         var opcoes = listOf<String>()

@@ -51,7 +51,7 @@ class TelaMensagens {
             println(Tema.destaque("mensagens"))
             println("")
             if (itens == null || itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma conversa — comece uma pelo perfil de alguém")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma conversa — comece uma pelo perfil de alguém")))
                 rodando = false
             } else {
                 var opcoes = listOf<String>()
@@ -129,7 +129,7 @@ class TelaMensagens {
     String bolha(Mensagem m, String meuId) {
         var texto = ""
         if ("" + m.e2e == "true") {
-            texto = "🔒 mensagem criptografada"
+            texto = "▪ mensagem criptografada"
         } else if (m.text != null) {
             texto = m.text
         }

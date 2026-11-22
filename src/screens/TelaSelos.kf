@@ -29,7 +29,7 @@ class TelaSelos {
         println(Menu.topo("Énóis", ""))
         println(Tema.destaque("selos"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum selo conquistado ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum selo conquistado ainda")))
             Entrada.pausar()
             return
         }

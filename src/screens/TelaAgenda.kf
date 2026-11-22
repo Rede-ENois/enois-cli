@@ -33,7 +33,7 @@ class TelaAgenda {
                 opcoes.add(this.titulo(item))
             }
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nada na sua agenda")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nada na sua agenda")))
             }
             opcoes.add("novo compromisso")
             var escolha = Entrada.menu("agenda", opcoes, "voltar")
@@ -52,7 +52,7 @@ class TelaAgenda {
         if (entrada == null) { return }
         var api = AgendaApi(this.cliente)
         print(Ansi.LIMPAR)
-        println(Caixa.simples(this.cartao(entrada)))
+        Caixa.desenhar(Caixa.simples(this.cartao(entrada)))
         var detalhe = AgendaApi.detalheDe(api.obter(entrada.id))
         var participantes = listOf<ParticipanteAgenda>()
         if (detalhe.participants != null) { participantes = detalhe.participants }
