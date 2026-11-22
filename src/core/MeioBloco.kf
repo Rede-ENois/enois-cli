@@ -79,12 +79,16 @@ class MeioBloco {
             var colunasAlvo = colunas
             var linhasAlvo = colunasAlvo * alturaPx / larguraPx / 2
             if (linhasAlvo < 1) { linhasAlvo = 1 }
+            var recorte = fonte
             if (linhasAlvo > linhasMaximas) {
                 linhasAlvo = linhasMaximas
-                colunasAlvo = linhasAlvo * 2 * larguraPx / alturaPx
-                if (colunasAlvo < 1) { colunasAlvo = 1 }
+                var alturaRecorte = larguraPx * linhasAlvo * 2 / colunasAlvo
+                if (alturaRecorte < 1) { alturaRecorte = 1 }
+                if (alturaRecorte > alturaPx) { alturaRecorte = alturaPx }
+                var topo = (alturaPx - alturaRecorte) / 2
+                recorte = fonte.getSubimage(0, topo, larguraPx, alturaRecorte)
             }
-            var imagem = MeioBloco.escalar(fonte, colunasAlvo, linhasAlvo * 2)
+            var imagem = MeioBloco.escalar(recorte, colunasAlvo, linhasAlvo * 2)
             return Amostra(imagem, colunasAlvo, linhasAlvo)
         } catch (String erro) {
             return null

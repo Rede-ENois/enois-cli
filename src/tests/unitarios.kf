@@ -1380,12 +1380,13 @@ test "meio bloco cai em ascii sem cor quando o terminal nao tem truecolor" {
     arquivo.delete()
 }
 
-test "meio bloco encolhe a largura da imagem alta para caber na altura" {
+test "meio bloco mantem a largura e recorta a imagem alta" {
     var caminho = "/tmp/enois-teste-meiobloco-alto.png"
     var arquivo = new java.io.File(caminho)
     var imagem = new BufferedImage(100, 400, BufferedImage.TYPE_INT_ARGB)
     ImageIO.write(imagem, "png", arquivo)
-    assert(MeioBloco.colunasFinais(caminho, 60, 10) == 5)
+    assert(MeioBloco.colunasFinais(caminho, 60, 10) == 60)
+    assert(MeioBloco.deArquivo(caminho, 60, 10).size() == 10)
     MeioBloco.limpar()
     arquivo.delete()
 }
