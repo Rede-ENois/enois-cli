@@ -25,10 +25,10 @@ class TelaTermometro {
         println(Tema.destaque("termômetro"))
         println(Tema.mudo("o humor da rede por janela"))
         if (janelas.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem amostra suficiente agora")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem amostra suficiente agora")))
         }
         for (var i = 0; i < janelas.size(); i = i + 1) {
-            println(Caixa.simples(this.janela(janelas.get(i))))
+            Caixa.desenhar(Caixa.simples(this.janela(janelas.get(i))))
         }
         Entrada.pausar()
     }

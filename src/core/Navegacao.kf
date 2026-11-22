@@ -13,6 +13,48 @@ class Navegacao {
 
     static List<String> CONTEXTOS = listOf("social", "profissional")
 
+    static List<String> secoesDe(String contexto) {
+        if (contexto == "profissional") {
+            return listOf("feed", "explorar", "vagas", "notificações", "mensagens", "perfil")
+        }
+        return listOf("feed", "explorar", "comunidades", "notificações", "mensagens", "perfil")
+    }
+
+    static String rotuloDe(String rota) {
+        if (rota == "feed") { return "Feed" }
+        if (rota == "explorar") { return "Explorar" }
+        if (rota == "comunidades") { return "Comunidades" }
+        if (rota == "vagas") { return "Vagas" }
+        if (rota == "notificações") { return "Notificações" }
+        if (rota == "mensagens") { return "Mensagens" }
+        if (rota == "perfil") { return "Perfil" }
+        return rota
+    }
+
+    static String rotuloCurtoDe(String rota) {
+        if (rota == "comunidades") { return "Comun." }
+        if (rota == "notificações") { return "Notif." }
+        if (rota == "mensagens") { return "Mens." }
+        return Navegacao.rotuloDe(rota)
+    }
+
+    static Int indiceDaSecao(String contexto, String rota) {
+        var lista = Navegacao.secoesDe(contexto)
+        for (var i = 0; i < lista.size(); i = i + 1) {
+            if (lista.get(i) == rota) { return i }
+        }
+        return -1
+    }
+
+    static List<ItemNavegacao> secundarios(String contexto) {
+        var principais = Navegacao.secoesDe(contexto)
+        var saida = listOf<ItemNavegacao>()
+        for (var item in Navegacao.visiveis(contexto)) {
+            if (!principais.contains(item.rota)) { saida.add(item) }
+        }
+        return saida
+    }
+
     static List<ItemNavegacao> itens() {
         return listOf(
             ItemNavegacao("feed", "feed", "publicações de quem você segue", "você", null, null),

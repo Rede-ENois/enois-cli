@@ -34,7 +34,7 @@ class TelaRoleplay {
                 opcoes.add(this.titulo(campanhas.get(i)))
             }
             if (campanhas.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma campanha aberta")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma campanha aberta")))
             }
             opcoes.add("sistemas")
             opcoes.add("nova campanha")
@@ -57,7 +57,7 @@ class TelaRoleplay {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartao(atual)))
+            Caixa.desenhar(Caixa.simples(this.cartao(atual)))
             var opcoes = listOf("mesas", "membros", "pedidos")
             if ("" + atual.joined == "true") { opcoes.add("sair") } else { opcoes.add("entrar") }
             var escolha = Entrada.menu(this.titulo(atual), opcoes, "voltar")
@@ -84,7 +84,7 @@ class TelaRoleplay {
         print(Ansi.LIMPAR)
         println(Tema.destaque("sistemas"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum sistema disponível")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum sistema disponível")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var s = itens.get(i)
@@ -102,7 +102,7 @@ class TelaRoleplay {
         print(Ansi.LIMPAR)
         println(Tema.destaque("mesas · " + this.titulo(c)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhuma mesa aberta")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma mesa aberta")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var m = itens.get(i)
@@ -120,7 +120,7 @@ class TelaRoleplay {
         print(Ansi.LIMPAR)
         println(Tema.destaque("membros · " + this.titulo(c)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem membros visíveis")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem membros visíveis")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var m = itens.get(i)
@@ -139,7 +139,7 @@ class TelaRoleplay {
         print(Ansi.LIMPAR)
         println(Tema.destaque("pedidos · " + this.titulo(c)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
             Entrada.pausar()
             return
         }

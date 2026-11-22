@@ -20,17 +20,19 @@ class Seletor {
     ContagensNavegacao contagens
     Previa previa
     Regioes regioes
+    String status
 
     public constructor(String contexto, Cliente cliente) {
         this.teclado = Teclado()
         this.contexto = contexto
         this.cursor = 0
-        this.itens = Navegacao.visiveis(contexto)
+        this.itens = Navegacao.secundarios(contexto)
         this.cliente = cliente
         this.sinaisApi = SinaisApi(cliente)
         this.previa = Previa(cliente, contexto)
         this.contagens = this.sinaisApi.carregar(this.contextoDoServidor(), contexto == "social")
         this.regioes = Regioes()
+        this.status = ""
     }
 
     static Int digito(String caractere) {
@@ -61,22 +63,32 @@ class Seletor {
         this.contagens = this.sinaisApi.carregar(this.contextoDoServidor(), this.contexto == "social")
     }
 
-    String escolher(String topo, String dica) {
+    String escolher(String dica) {
         if (!this.teclado.entrar()) { return "" }
         print(Ansi.OCULTAR_CURSOR)
         print(Ansi.ALTERNATIVO)
         var rota = ""
         var seguindo = true
+        var pintar = true
         while (seguindo) {
-            this.desenhar(topo, dica)
+            if (pintar) {
+                this.desenhar(dica)
+                this.teclado.ligarMouse()
+            }
+            pintar = true
             var tecla = this.teclado.ler()
             var escolha = -1
             if (tecla.nome == "clique") {
                 var alvo = this.regioes.em(tecla.linha, tecla.coluna)
-                if (alvo.tipo == "aba") {
-                    this.irParaContexto(alvo.indice)
+                if (alvo.tipo == "contexto") {
+                    this.alternarContexto()
+                } else if (alvo.tipo == "secao") {
+                    rota = this.rotaDaSecao(alvo.indice)
+                    seguindo = false
                 } else if (alvo.tipo == "item") {
                     escolha = alvo.indice
+                } else {
+                    pintar = false
                 }
             } else if (tecla.nome == "roda-cima" || tecla.nome == "cima") {
                 this.mover(-1)
@@ -94,16 +106,20 @@ class Seletor {
                 } else if (tecla.caractere == "r") {
                     this.previa.limpar()
                     this.recarregar()
+                    this.status = Tema.mudo("atualizado")
                 } else {
-                    var atalho = Seletor.digito(tecla.caractere)
-                    if (atalho >= 0) {
-                        escolha = atalho
+                    var indice = Seletor.digito(tecla.caractere)
+                    if (indice >= 0) {
+                        rota = this.rotaDaSecao(indice)
+                        seguindo = false
                     } else if (Seletor.encerra(tecla)) {
                         seguindo = false
                     }
                 }
             } else if (Seletor.encerra(tecla)) {
                 seguindo = false
+            } else if (Teclado.inerte(tecla)) {
+                pintar = false
             }
             if (escolha >= 0) {
                 this.cursor = escolha
@@ -133,7 +149,14 @@ class Seletor {
         return this.itens.get(indice).rota
     }
 
+    String rotaDaSecao(Int indice) {
+        var rotas = Navegacao.secoesDe(this.contexto)
+        if (indice < 0 || indice >= rotas.size()) { return "" }
+        return rotas.get(indice)
+    }
+
     void mover(Int passo) {
+        if (this.itens.size() == 0) { return }
         var novo = this.cursor + passo
         if (novo < 0) { novo = this.itens.size() - 1 }
         if (novo >= this.itens.size()) { novo = 0 }
@@ -149,27 +172,29 @@ class Seletor {
         var novo = Navegacao.CONTEXTOS.get(indice)
         if (novo == this.contexto) { return }
         this.contexto = novo
-        this.itens = Navegacao.visiveis(this.contexto)
+        this.itens = Navegacao.secundarios(this.contexto)
         this.cursor = 0
         this.recarregar()
         this.previa.trocarContexto(this.contexto)
+        this.status = Tema.mudo("contexto: " + this.contexto)
     }
 
-    void desenhar(String topo, String dica) {
+    void desenhar(String dica) {
+        Ansi.medir()
         var largura = Ansi.LARGURA_CONTEUDO
         print(Ansi.LIMPAR)
         this.regioes.limpar()
-        var linha = 1
-        for (var parte in topo.split("\n")) {
+        println(Cabecalho.linha(this.cliente, "início", this.contexto))
+        var colunaContexto = Cabecalho.colunaContexto("início")
+        this.regioes.adicionar(1, colunaContexto, colunaContexto + this.contexto.length - 1, 0, "contexto")
+        var linha = 2
+        var linhaSecoes = linha
+        for (var parte in BarraSecoes.linhas(this.contexto, "", this.contagens)) {
             println(parte)
             linha = linha + 1
         }
-        println("")
-        linha = linha + 1
-        println(Abas.lista(Navegacao.CONTEXTOS, this.contexto))
-        Abas.registrar(this.regioes, linha, Navegacao.CONTEXTOS, this.contexto)
+        BarraSecoes.registrar(this.regioes, linhaSecoes, this.contexto, "", this.contagens)
         this.teclado.ligarMouse()
-        linha = linha + 1
         println("")
         linha = linha + 1
         if (Painel.cabe(largura)) {
@@ -178,7 +203,20 @@ class Seletor {
             linha = this.desenharMenu(linha, largura)
         }
         println("")
-        println(Menu.rodape(dica))
+        for (var parte in BarraContexto.linhas(this.atalhos(dica), this.status, "")) {
+            println(parte)
+        }
+    }
+
+    List<String> atalhos(String dica) {
+        var lista = listOf<String>()
+        lista.add("↑↓ navega")
+        lista.add("enter abre")
+        lista.add("1–6 seções")
+        lista.add("tab contexto")
+        lista.add("r atualiza")
+        lista.add("q encerra")
+        return lista
     }
 
     Int desenharPainel(Int linha, Int largura) {
@@ -215,7 +253,6 @@ class Seletor {
     List<LinhaMenu> menu(Int largura) {
         var linhas = listOf<LinhaMenu>()
         var secao = ""
-        var numero = 1
         var foco = 0
         for (var i = 0; i < this.itens.size(); i = i + 1) {
             var item = this.itens.get(i)
@@ -224,14 +261,16 @@ class Seletor {
                 if (linhas.size() > 0) { linhas.add(LinhaMenu.livre("")) }
                 linhas.add(LinhaMenu.livre(Abas.grupo(secao)))
             }
-            var rotulo = this.rotulo(numero, item, largura)
+            var rotulo = this.rotulo(item, largura)
             if (i == this.cursor) {
                 foco = linhas.size()
                 linhas.add(LinhaMenu(Tema.selecionado(Ansi.padDireita(rotulo, largura)), i))
             } else {
                 linhas.add(LinhaMenu(rotulo, i))
             }
-            numero = numero + 1
+        }
+        if (linhas.size() == 0) {
+            linhas.add(LinhaMenu.livre(Tema.mudo("  nada mais por aqui")))
         }
         return this.janela(linhas, foco)
     }
@@ -262,8 +301,8 @@ class Seletor {
         return saida
     }
 
-    String rotulo(Int numero, ItemNavegacao item, Int largura) {
-        var texto = "  " + Ansi.padEsquerda(String.valueOf(numero), 2) + ". " + item.rotulo
+    String rotulo(ItemNavegacao item, Int largura) {
+        var texto = "  " + item.rotulo
         var selo = this.selo(item)
         if (selo.length > 0) { texto = texto + " " + selo }
         var sobra = largura - Ansi.largura(texto) - 3
@@ -285,7 +324,7 @@ class Seletor {
     }
 
     Int alturaConteudo() {
-        var total = Terminal.altura() - 9
+        var total = Terminal.altura() - 10
         if (total < 6) { total = 6 }
         if (total > 24) { total = 24 }
         return total

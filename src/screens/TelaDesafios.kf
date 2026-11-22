@@ -34,7 +34,7 @@ class TelaDesafios {
                 opcoes.add(this.titulo(desafios.get(i)))
             }
             if (desafios.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum desafio rolando")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum desafio rolando")))
             }
             opcoes.add("criar desafio")
             var escolha = Entrada.menu("desafios", opcoes, "voltar")
@@ -54,10 +54,10 @@ class TelaDesafios {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartao(atual)))
+            Caixa.desenhar(Caixa.simples(this.cartao(atual)))
             var itens = DesafiosApi.participacoesDe(api.participacoes(atual.id, null, 20))
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("ninguém participou ainda")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("ninguém participou ainda")))
             }
             for (var i = 0; i < itens.size(); i = i + 1) {
                 var p = itens.get(i)

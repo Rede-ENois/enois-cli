@@ -33,7 +33,7 @@ class TelaConfessionario {
                 opcoes.add(this.resumo(posts.get(i)))
             }
             if (posts.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma história contada ainda")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma história contada ainda")))
             }
             opcoes.add("contar história")
             var escolha = Entrada.menu("confessionário", opcoes, "voltar")
@@ -60,7 +60,7 @@ class TelaConfessionario {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.texto(p.content)))
+            Caixa.desenhar(Caixa.simples(this.texto(p.content)))
             println(Tema.mudo(this.resumo(p)))
             var escolha = Entrada.menu("história",
                 listOf("reagir", "comentar", "apagar"), "voltar")

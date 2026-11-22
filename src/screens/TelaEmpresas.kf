@@ -33,7 +33,7 @@ class TelaEmpresas {
                 opcoes.add(this.titulo(itens.get(i)))
             }
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma empresa no diretório")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma empresa no diretório")))
             }
             opcoes.add("microprojetos")
             var escolha = Entrada.menu("diretório", opcoes, "voltar")
@@ -62,7 +62,7 @@ class TelaEmpresas {
         if (e.followers != null) {
             texto = texto + "\n" + Tema.mudo(String.valueOf(e.followers) + " seguidores")
         }
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         var escolha = Entrada.menu(this.titulo(e),
             listOf("microprojetos", "seguir"), "voltar")
         if (escolha == 0) {
@@ -77,7 +77,7 @@ class TelaEmpresas {
         print(Ansi.LIMPAR)
         println(Tema.destaque("microprojetos · " + this.titulo(e)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum microprojeto aberto")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum microprojeto aberto")))
             Entrada.pausar()
             return
         }
@@ -89,7 +89,7 @@ class TelaEmpresas {
         print(Ansi.LIMPAR)
         println(Tema.destaque("microprojetos"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum microprojeto aberto")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum microprojeto aberto")))
             Entrada.pausar()
             return
         }
@@ -115,7 +115,7 @@ class TelaEmpresas {
         if (p.scope != null) { texto = texto + "\n" + Tema.suave(p.scope) }
         if (p.deliverables != null) { texto = texto + "\n" + p.deliverables }
         texto = texto + "\n" + this.resumoProjeto(p)
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         var escolha = Entrada.menu(this.tituloProjeto(p),
             listOf("ver propostas", "propor"), "voltar")
         if (escolha == 0) {
@@ -123,7 +123,7 @@ class TelaEmpresas {
             print(Ansi.LIMPAR)
             println(Tema.destaque("propostas"))
             if (propostas.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma proposta")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma proposta")))
             }
             for (var i = 0; i < propostas.size(); i = i + 1) {
                 var proposta = propostas.get(i)

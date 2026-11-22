@@ -34,7 +34,7 @@ class TelaFreelances {
                 opcoes.add(this.titulo(freelas.get(i)))
             }
             if (freelas.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum freela aberto")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum freela aberto")))
             }
             opcoes.add("meus freelas")
             opcoes.add("publicar freela")
@@ -60,7 +60,7 @@ class TelaFreelances {
         }
         var itens = FreelancesApi.listaDe(r)
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("você ainda não publicou freelas")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("você ainda não publicou freelas")))
             Entrada.pausar()
             return
         }
@@ -78,7 +78,7 @@ class TelaFreelances {
     void abrir(Freela f) {
         var api = FreelancesApi(this.cliente)
         print(Ansi.LIMPAR)
-        println(Caixa.simples(this.cartao(f)))
+        Caixa.desenhar(Caixa.simples(this.cartao(f)))
         var opcoes = listOf<String>()
         if ("" + f.owned == "true") {
             opcoes.add("encerrar")

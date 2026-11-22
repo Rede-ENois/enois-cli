@@ -27,7 +27,7 @@ class TelaComunidades {
             println(Menu.topo("Énóis", ""))
             println(Tema.destaque("comunidades"))
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma comunidade encontrada")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma comunidade encontrada")))
             }
             var opcoes = listOf<String>()
             for (var i = 0; i < itens.size(); i = i + 1) {
@@ -60,7 +60,7 @@ class TelaComunidades {
 
     void lista(List<Comunidade>? itens, String titulo) {
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nada por aqui ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nada por aqui ainda")))
             Entrada.pausar()
             return
         }
@@ -81,7 +81,7 @@ class TelaComunidades {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartao(atual)))
+            Caixa.desenhar(Caixa.simples(this.cartao(atual)))
             var opcoes = listOf("mural", "membros", "canais")
             if ("" + atual.joined == "true") {
                 opcoes.add("sair")
@@ -113,7 +113,7 @@ class TelaComunidades {
     void mural(Comunidade c) {
         var itens = FeedApi.paginaPost(ComunidadesApi(this.cliente).mural(c.id, null, 24)).items
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("mural vazio")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("mural vazio")))
             Entrada.pausar()
             return
         }
@@ -136,7 +136,7 @@ class TelaComunidades {
         print(Ansi.LIMPAR)
         println(Tema.destaque("membros · " + this.nome(c)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem membros visíveis")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem membros visíveis")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var m = itens.get(i)
@@ -157,7 +157,7 @@ class TelaComunidades {
         print(Ansi.LIMPAR)
         println(Tema.destaque("canais · " + this.nome(c)))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum canal criado")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum canal criado")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var canal = itens.get(i)

@@ -1,0 +1,147 @@
+package ui
+
+import core.Ansi
+import core.Cliente
+import core.Tema
+import core.Tempo
+import tipos.*
+
+class Cartao {
+
+    static Int LINHAS_CORPO = 4
+
+    static List<String> linhas(PostResumo p, Int largura, String usuarioAtual) {
+        var linhas = listOf<String>()
+        linhas.add(Cartao.autor(p, largura, usuarioAtual))
+        var corpo = Cartao.corpo(p)
+        if (corpo.length > 0) {
+            var quebradas = listOf<String>()
+            for (var parte in Caixa.partes(corpo)) {
+                for (var linha in Ansi.quebrar(parte, largura - 3)) {
+                    quebradas.add(linha)
+                }
+            }
+            for (var i = 0; i < quebradas.size(); i = i + 1) {
+                if (i >= Cartao.LINHAS_CORPO) { break }
+                var linha = quebradas.get(i)
+                if (i == Cartao.LINHAS_CORPO - 1 && quebradas.size() > Cartao.LINHAS_CORPO) {
+                    linha = Ansi.cortar(linha, largura - 3)
+                }
+                linhas.add("   " + Tema.texto(linha))
+            }
+        }
+        var extras = Cartao.extras(p)
+        if (extras.length > 0) { linhas.add("   " + extras) }
+        return linhas
+    }
+
+    static String autor(PostResumo p, Int largura, String usuarioAtual) {
+        var nome = ""
+        if (p.authorName != null) { nome = p.authorName }
+        var usuario = ""
+        if (p.authorUsername != null) { usuario = p.authorUsername }
+        var texto = Tema.titulo(nome)
+        if (usuario.length > 0) { texto = texto + Tema.mudo(" @" + usuario) }
+        if (p.authorBadge != null && p.authorBadge.length > 0) {
+            texto = texto + Tema.destaque(" " + p.authorBadge)
+        }
+        var tipo = Cartao.tipo(p)
+        if (tipo.length > 0) { texto = texto + Tema.mudo(" · " + tipo) }
+        var momento = Tempo.relativo(p.createdAt)
+        if (momento.length > 0) { texto = texto + Tema.mudo(" · " + momento) }
+        if (usuarioAtual.length > 0 && usuario == usuarioAtual) {
+            texto = texto + Tema.suave(" · você")
+        }
+        return Ansi.cortar(" " + texto, largura)
+    }
+
+    static String corpo(PostResumo p) {
+        var corpo = ""
+        if (p.content != null) { corpo = p.content }
+        if ("" + p.repostWithOpinion == "true" && p.repostOfContent != null) {
+            corpo = corpo + "\n↳ " + p.repostOfContent
+        }
+        return corpo
+    }
+
+    static String extras(PostResumo p) {
+        var partes = listOf<String>()
+        var reacoes = 0
+        var comentarios = 0
+        var compartilhamentos = 0
+        if (p.counters != null) {
+            var c = p.counters
+            if (c.reactions != null) { reacoes = c.reactions }
+            if (c.comments != null) { comentarios = c.comments }
+            if (c.shares != null) { compartilhamentos = c.shares }
+        }
+        var reacoesTexto = "♥ " + String.valueOf(reacoes)
+        if (p.currentUserReaction != null && p.currentUserReaction.length > 0) {
+            partes.add(Tema.amor(reacoesTexto))
+        } else {
+            partes.add(Tema.mudo(reacoesTexto))
+        }
+        partes.add(Tema.mudo("↩ " + String.valueOf(comentarios)))
+        if (compartilhamentos > 0) {
+            partes.add(Tema.mudo("↗ " + String.valueOf(compartilhamentos)))
+        }
+        var midias = Cartao.totalImagens(p)
+        if (midias > 0) { partes.add(Tema.mudo("▣ " + String.valueOf(midias))) }
+        if (p.poll != null) { partes.add(Tema.mudo("▤ enquete")) }
+        var linha = ""
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            if (i > 0) { linha = linha + Tema.mudo("  ") }
+            linha = linha + partes.get(i)
+        }
+        return linha
+    }
+
+    static String tipo(PostResumo p) {
+        if (p.type == null || p.type.length == 0) { return "" }
+        var nome = Cartao.tipoEmTexto(p.type)
+        if (p.type == "OPPORTUNITY") { return Tema.oportunidade(nome) }
+        if (p.type == "ARTICLE" || p.type == "TUTORIAL" || p.type == "NEWS") {
+            return Tema.crescimento(nome)
+        }
+        if (p.type == "DIVERTIDO" || p.type == "MOMENT") { return Tema.amor(nome) }
+        if (p.type == "QUESTION") { return Tema.suave(nome) }
+        return Tema.mudo(nome)
+    }
+
+    static String tipoEmTexto(String tipo) {
+        if (tipo == "INSIGHT") { return "insight" }
+        if (tipo == "ARTICLE") { return "artigo" }
+        if (tipo == "QUESTION") { return "pergunta" }
+        if (tipo == "PROJECT") { return "projeto" }
+        if (tipo == "OPPORTUNITY") { return "oportunidade" }
+        if (tipo == "PAGE") { return "página" }
+        if (tipo == "NEWS") { return "notícia" }
+        if (tipo == "TUTORIAL") { return "tutorial" }
+        if (tipo == "REVIEW") { return "resenha" }
+        if (tipo == "BUSINESS") { return "profissional" }
+        if (tipo == "DIVERTIDO") { return "divertido" }
+        if (tipo == "MOMENT") { return "momento" }
+        if (tipo == "INSTANTE") { return "instante" }
+        if (tipo == "BLOG") { return "blog" }
+        if (tipo == "POLL") { return "enquete" }
+        if (tipo == "COMPLAINT") { return "reclamação" }
+        return tipo
+    }
+
+    static Int totalImagens(PostResumo p) {
+        var anexos = p.media
+        if (anexos == null) { return 0 }
+        var total = 0
+        for (var anexo in anexos) {
+            if (Imagem.eImagem(anexo.mimeType)) { total = total + 1 }
+        }
+        return total
+    }
+
+    static String usuarioAtual(Cliente cliente) {
+        if (cliente == null || cliente.sessao == null || cliente.sessao.usuario == null) {
+            return ""
+        }
+        return cliente.sessao.usuario.usuario
+    }
+}

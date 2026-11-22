@@ -68,7 +68,7 @@ class TelaRede {
         }
         var pessoas = RedeApi.listaDe(r)
         if (pessoas.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem sugestões agora")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem sugestões agora")))
             Entrada.pausar()
             return
         }
@@ -94,7 +94,7 @@ class TelaRede {
         }
         var pessoas = PerfilApi.redeDe(r)
         if (pessoas.size() == 0) {
-            println(Caixa.simples(Lista.vazia("ninguém aqui")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("ninguém aqui")))
             Entrada.pausar()
             return
         }
@@ -121,7 +121,7 @@ class TelaRede {
             }
         }
         if (pessoas.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum pedido pendente")))
             Entrada.pausar()
             return
         }

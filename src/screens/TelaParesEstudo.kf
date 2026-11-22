@@ -74,7 +74,7 @@ class TelaParesEstudo {
         var termo = Entrada.texto("objetivo (enter para todos)")
         var achados = ParesEstudoApi.buscaDe(api.buscar(termo, 20))
         if (achados.size() == 0) {
-            println(Caixa.simples(Lista.vazia("ninguém procurando isso agora")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("ninguém procurando isso agora")))
             Entrada.pausar()
             return
         }
@@ -92,7 +92,7 @@ class TelaParesEstudo {
     void metas(ParesEstudoApi api) {
         var metas = ParesEstudoApi.metasDe(api.metasPopulares())
         if (metas.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem metas populares agora")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem metas populares agora")))
             Entrada.pausar()
             return
         }

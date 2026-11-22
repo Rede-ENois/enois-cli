@@ -1,0 +1,49 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+class BarraContexto {
+
+    static List<String> linhas(List<String> atalhos, String status, String posicao) {
+        var linhas = listOf<String>()
+        linhas.add(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        var esquerda = ""
+        if (status != null && status.length > 0) { esquerda = status + "  " }
+        var direita = ""
+        if (posicao != null && posicao.length > 0) { direita = Tema.mudo(posicao) }
+        var largura = Ansi.LARGURA_CONTEUDO
+        var folga = largura - Ansi.largura(esquerda) - Ansi.largura(direita) - 1
+        if (folga < 8) { folga = 8 }
+        var texto = BarraContexto.juntarAte(atalhos, folga)
+        var resto = largura - Ansi.largura(esquerda) - Ansi.largura(texto) - Ansi.largura(direita)
+        if (resto < 0) { resto = 0 }
+        linhas.add(esquerda + texto + Ansi.padEsquerda("", resto) + direita)
+        return linhas
+    }
+
+    static String juntarAte(List<String> atalhos, Int limite) {
+        var texto = ""
+        for (var i = 0; i < atalhos.size(); i = i + 1) {
+            var parte = Tema.mudo(atalhos.get(i))
+            if (i > 0) { parte = Tema.mudo(" · ") + parte }
+            if (Ansi.largura(texto + parte) > limite) {
+                if (texto.length > 0 && Ansi.largura(texto) + 4 <= limite) {
+                    return texto + Tema.mudo(" · …")
+                }
+                return texto
+            }
+            texto = texto + parte
+        }
+        return texto
+    }
+
+    static String juntar(List<String> atalhos) {
+        var texto = ""
+        for (var i = 0; i < atalhos.size(); i = i + 1) {
+            if (i > 0) { texto = texto + Tema.mudo(" · ") }
+            texto = texto + Tema.mudo(atalhos.get(i))
+        }
+        return texto
+    }
+}

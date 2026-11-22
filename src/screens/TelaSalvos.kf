@@ -30,7 +30,7 @@ class TelaSalvos {
         }
         var itens = FeedApi.paginaFeed(r).items
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nada salvo ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nada salvo ainda")))
             Entrada.pausar()
             return
         }

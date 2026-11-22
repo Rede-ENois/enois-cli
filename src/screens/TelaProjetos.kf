@@ -27,7 +27,7 @@ class TelaProjetos {
         println(Menu.topo("Énóis", ""))
         println(Tema.destaque("projetos"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum projeto no seu diário")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum projeto no seu diário")))
             Entrada.pausar()
             return
         }

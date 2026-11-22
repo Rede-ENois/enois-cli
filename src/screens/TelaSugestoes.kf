@@ -32,7 +32,7 @@ class TelaSugestoes {
                 opcoes.add(this.texto(itens.get(i).title))
             }
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma sugestão enviada")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma sugestão enviada")))
             }
             opcoes.add("enviar sugestão")
             var escolha = Entrada.menu("sugestões", opcoes, "voltar")

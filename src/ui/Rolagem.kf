@@ -71,10 +71,12 @@ class Rolagem {
         var dentro = this.deslocamento - this.inicioDoBloco(indice)
         while (saida.size() < this.altura && indice < this.blocos.size()) {
             var linhas = this.blocos.get(indice).linhas
+            var focado = indice == this.foco && this.dadoDoBloco(indice) >= 0
             var i = dentro
             while (i < linhas.size() && saida.size() < this.altura) {
                 var texto = linhas.get(i)
-                if (indice == this.foco) {
+                if (focado) {
+                    texto = Rolagem.marcar(texto)
                     texto = Tema.comFundoSobre(Tema.FUNDO_PRIMARIO_SUAVE, texto)
                 }
                 saida.add(texto)
@@ -85,6 +87,12 @@ class Rolagem {
         }
         while (saida.size() < this.altura) { saida.add("") }
         return saida
+    }
+
+    static String marcar(String texto) {
+        if (texto == null) { return texto }
+        if (!texto.startsWith(" ")) { return texto }
+        return Tema.pinta(Tema.PRIMARIO, "▌") + texto.substring(1)
     }
 
     void moverFoco(Int passo) {

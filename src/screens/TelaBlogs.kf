@@ -32,7 +32,7 @@ class TelaBlogs {
                 opcoes.add(this.titulo(itens.get(i)))
             }
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum blog publicado")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum blog publicado")))
             }
             opcoes.add("meu blog")
             var escolha = Entrada.menu("blogs", opcoes, "voltar")
@@ -49,7 +49,7 @@ class TelaBlogs {
     void meu() {
         var r = BlogsApi(this.cliente).meu()
         if (!r.ok()) {
-            println(Caixa.simples(Lista.vazia("você ainda não tem blog — crie um")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("você ainda não tem blog — crie um")))
             var titulo = Entrada.texto("título do blog (enter para cancelar)")
             if (titulo.length == 0) { return }
             var descricao = Entrada.texto("descrição (opcional)")
@@ -68,7 +68,7 @@ class TelaBlogs {
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Caixa.simples(this.cartao(blog)))
+            Caixa.desenhar(Caixa.simples(this.cartao(blog)))
             var posts = listOf<PostBlog>()
             if (blog.items != null) { posts = blog.items }
             var opcoes = listOf<String>()
@@ -90,7 +90,7 @@ class TelaBlogs {
                 rodando = false
             } else if (escolha < posts.size()) {
                 print(Ansi.LIMPAR)
-                println(Caixa.card(this.tituloPost(posts.get(escolha)), this.corpo(posts.get(escolha))))
+                Caixa.desenhar(Caixa.card(this.tituloPost(posts.get(escolha)), this.corpo(posts.get(escolha))))
                 Entrada.pausar()
             } else {
                 var acao = opcoes.get(escolha)

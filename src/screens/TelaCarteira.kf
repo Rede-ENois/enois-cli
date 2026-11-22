@@ -27,7 +27,7 @@ class TelaCarteira {
             var carteira = CarteiraApi.carteiraDe(api.saldo())
             print(Ansi.LIMPAR)
             println(Menu.topo("Énóis", ""))
-            println(Caixa.simples(this.cartao(carteira)))
+            Caixa.desenhar(Caixa.simples(this.cartao(carteira)))
             var escolha = Entrada.menu("carteira",
                 listOf("extrato", "cotação", "transferir"), "voltar")
             if (escolha < 0) {
@@ -47,7 +47,7 @@ class TelaCarteira {
         print(Ansi.LIMPAR)
         println(Tema.destaque("extrato"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum lançamento")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum lançamento")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var l = itens.get(i)
@@ -66,13 +66,13 @@ class TelaCarteira {
         print(Ansi.LIMPAR)
         println(Tema.destaque("cotação da faísca"))
         if (c.brlCents == null) {
-            println(Caixa.simples(Lista.vazia("cotação indisponível")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("cotação indisponível")))
             Entrada.pausar()
             return
         }
         var texto = "1 faísca = " + this.brl(c.brlCents) + " BRL"
         if (c.atualizadaEm != null) { texto = texto + "\n" + Tema.mudo("atualizada em " + c.atualizadaEm) }
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         if (c.historico != null && c.historico.size() > 0) {
             println(Tema.suave("histórico"))
             for (var i = 0; i < c.historico.size(); i = i + 1) {

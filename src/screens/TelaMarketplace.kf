@@ -32,7 +32,7 @@ class TelaMarketplace {
                 opcoes.add(this.titulo(itens.get(i)))
             }
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nada anunciado por aqui")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nada anunciado por aqui")))
             }
             opcoes.add("compras")
             opcoes.add("vendas")
@@ -59,7 +59,7 @@ class TelaMarketplace {
         if (a.sellerName != null) { texto = texto + "\n" + Tema.suave("por " + a.sellerName) }
         if (a.description != null) { texto = texto + "\n" + a.description }
         texto = texto + "\n" + this.resumo(a)
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         if (a.status != null && a.status != "ACTIVE") {
             println(Tema.mudo("anúncio " + a.status))
             Entrada.pausar()
@@ -78,7 +78,7 @@ class TelaMarketplace {
         print(Ansi.LIMPAR)
         println(Tema.destaque("minhas compras"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhuma compra")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma compra")))
             Entrada.pausar()
             return
         }
@@ -104,13 +104,13 @@ class TelaMarketplace {
         if (c.title != null) { texto = c.title }
         if (c.state != null) { texto = texto + "\n" + Tema.suave(c.state) }
         if (c.price != null) { texto = texto + "\n" + Tema.mudo(String.valueOf(c.price) + " faíscas") }
-        println(Caixa.simples(texto))
+        Caixa.desenhar(Caixa.simples(texto))
         var escolha = Entrada.menu("compra", listOf("ver conteúdo", "liberar", "pedir reembolso"), "voltar")
         if (escolha == 0) {
             var r = api.obterConteudo(c.id)
             print(Ansi.LIMPAR)
             if (r.ok()) {
-                println(Caixa.simples(r.corpo))
+                Caixa.desenhar(Caixa.simples(r.corpo))
             } else {
                 println(Tema.erro(r.mensagem()))
             }
@@ -127,7 +127,7 @@ class TelaMarketplace {
         print(Ansi.LIMPAR)
         println(Tema.destaque("minhas vendas"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhuma venda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma venda")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var c = itens.get(i)

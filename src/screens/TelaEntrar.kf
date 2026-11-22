@@ -26,7 +26,7 @@ class TelaEntrar {
     Bool executar() {
         print(Ansi.LIMPAR)
         println(Menu.topo("Énóis", ""))
-        println(Caixa.simples(Tema.destaque("entrar") + "\n" + Tema.suave("alvo: " + this.config.alvo + " · " + this.config.urlApi)))
+        Caixa.desenhar(Caixa.simples(Tema.destaque("entrar") + "\n" + Tema.suave("alvo: " + this.config.alvo + " · " + this.config.urlApi)))
         var email = Entrada.textoObrigatorio("e-mail")
         var senha = Entrada.secreta("senha")
         println(Tema.mudo("conectando…"))

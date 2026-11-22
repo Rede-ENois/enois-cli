@@ -28,13 +28,13 @@ class TelaPerfil {
         println(Menu.topo("Énóis", ""))
         var r = PerfilApi(this.cliente).eu()
         if (!r.ok()) {
-            println(Caixa.simples(Lista.vazia("sem perfil — entre na sua conta")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem perfil — entre na sua conta")))
             Entrada.pausar()
             return
         }
         var perfil = PerfilApi.perfil(r)
         println(this.retrato(perfil))
-        println(Caixa.simples(this.cartao(perfil)))
+        Caixa.desenhar(Caixa.simples(this.cartao(perfil)))
         var escolha = Entrada.menu("perfil", listOf("meus posts"), "voltar")
         if (escolha == 0) { this.meusPosts() }
     }
@@ -44,13 +44,13 @@ class TelaPerfil {
         println(Menu.topo("Énóis", ""))
         var r = PerfilApi(this.cliente).porUsuario(usuario)
         if (!r.ok()) {
-            println(Caixa.simples(Lista.vazia("perfil não encontrado")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("perfil não encontrado")))
             Entrada.pausar()
             return
         }
         var perfil = PerfilApi.perfil(r)
         println(this.retrato(perfil))
-        println(Caixa.simples(this.cartao(perfil)))
+        Caixa.desenhar(Caixa.simples(this.cartao(perfil)))
         this.postsDoPerfil(usuario)
     }
 
@@ -59,7 +59,7 @@ class TelaPerfil {
         if (!r.ok()) { return }
         var itens = FeedApi.paginaFeed(r).items
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum post por aqui")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum post por aqui")))
             Entrada.pausar()
             return
         }
@@ -94,7 +94,7 @@ class TelaPerfil {
         }
         var itens = FeedApi.paginaFeed(r).items
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhum post ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum post ainda")))
             Entrada.pausar()
             return
         }

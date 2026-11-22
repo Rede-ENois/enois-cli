@@ -27,7 +27,7 @@ class TelaModeracao {
             println(Tema.destaque("moderação"))
             var estado = ModeracaoApi(this.cliente).meuEstado()
             if (estado.ok()) {
-                println(Caixa.simples(estado.corpo))
+                Caixa.desenhar(Caixa.simples(estado.corpo))
             }
             var opcoes = listOf("painel de votação", "minhas denúncias", "denunciar alvo")
             var escolha = Entrada.menu("moderação", opcoes, "voltar")
@@ -53,7 +53,7 @@ class TelaModeracao {
         print(Ansi.LIMPAR)
         println(Tema.destaque("painel de votação"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nada na fila de moderação")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nada na fila de moderação")))
             Entrada.pausar()
             return
         }
@@ -72,7 +72,7 @@ class TelaModeracao {
         print(Ansi.LIMPAR)
         println(Tema.destaque("denúncia · " + this.texto(p.reason)))
         println(Tema.mudo("alvo " + this.texto(p.targetType) + " · autor " + this.texto(p.author)))
-        if (p.content != null) { println(Caixa.simples(p.content)) }
+        if (p.content != null) { Caixa.desenhar(Caixa.simples(p.content)) }
         if (p.description != null) { println(Tema.suave(p.description)) }
         println(Tema.mudo(this.votos(p) + " · seu voto: " + this.texto(p.myVote)))
         var voto = Entrada.menu("seu voto", listOf("punir", "arquivar"), "voltar")
@@ -93,7 +93,7 @@ class TelaModeracao {
         print(Ansi.LIMPAR)
         println(Tema.destaque("minhas denúncias"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("você não denunciou nada")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("você não denunciou nada")))
             Entrada.pausar()
             return
         }

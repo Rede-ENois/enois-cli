@@ -1,0 +1,78 @@
+package ui
+
+import core.*
+
+class BarraSecoes {
+
+    static List<String> linhas(String contexto, String ativa, ContagensNavegacao contagens) {
+        var linhas = listOf<String>()
+        linhas.add(BarraSecoes.barra(contexto, ativa, contagens))
+        linhas.add(Ansi.divisor(Ansi.LARGURA_CONTEUDO, Tema.BORDA_SUAVE))
+        return linhas
+    }
+
+    static String barra(String contexto, String ativa, ContagensNavegacao contagens) {
+        var rotas = Navegacao.secoesDe(contexto)
+        var rotulos = BarraSecoes.ajustados(rotas, contagens)
+        var linha = " "
+        for (var i = 0; i < rotas.size(); i = i + 1) {
+            var texto = BarraSecoes.secao(rotas.get(i), rotulos.get(i), contagens)
+            if (rotas.get(i) == ativa) {
+                linha = linha + Tema.selecionado(texto) + " "
+            } else {
+                linha = linha + Tema.suave(texto) + " "
+            }
+        }
+        return linha
+    }
+
+    static String secao(String rota, String rotulo, ContagensNavegacao contagens) {
+        var selo = BarraSecoes.selo(rota, contagens)
+        if (selo.length == 0) { return rotulo }
+        return rotulo + " " + selo
+    }
+
+    static void registrar(Regioes regioes, Int linha, String contexto, String ativa, ContagensNavegacao contagens) {
+        var rotas = Navegacao.secoesDe(contexto)
+        var rotulos = BarraSecoes.ajustados(rotas, contagens)
+        var coluna = 2
+        for (var i = 0; i < rotas.size(); i = i + 1) {
+            var largura = Ansi.largura(BarraSecoes.secao(rotas.get(i), rotulos.get(i), contagens))
+            regioes.adicionar(linha, coluna, coluna + largura - 1, i, "secao")
+            coluna = coluna + largura + 1
+        }
+    }
+
+    static List<String> ajustados(List<String> rotas, ContagensNavegacao contagens) {
+        var completos = BarraSecoes.rotulos(rotas, false)
+        if (BarraSecoes.larguraDe(rotas, completos, contagens) <= Ansi.LARGURA_CONTEUDO) {
+            return completos
+        }
+        return BarraSecoes.rotulos(rotas, true)
+    }
+
+    static List<String> rotulos(List<String> rotas, Bool curtos) {
+        var rotulos = listOf<String>()
+        for (var rota in rotas) {
+            if (curtos) {
+                rotulos.add(Navegacao.rotuloCurtoDe(rota))
+            } else {
+                rotulos.add(Navegacao.rotuloDe(rota))
+            }
+        }
+        return rotulos
+    }
+
+    static String selo(String rota, ContagensNavegacao contagens) {
+        if (contagens == null) { return "" }
+        return Badge.sinal(Sinais.de(rota, null, contagens))
+    }
+
+    static Int larguraDe(List<String> rotas, List<String> rotulos, ContagensNavegacao contagens) {
+        var total = 1
+        for (var i = 0; i < rotulos.size(); i = i + 1) {
+            total = total + Ansi.largura(BarraSecoes.secao(rotas.get(i), rotulos.get(i), contagens)) + 1
+        }
+        return total
+    }
+}

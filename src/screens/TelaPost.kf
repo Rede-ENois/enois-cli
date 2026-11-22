@@ -2,54 +2,418 @@ package screens
 
 import tipos.*
 import api.*
-import core.Ansi
-import core.Cliente
-import core.Entrada
-import core.Resposta
-import core.Tema
+import core.*
+import ui.*
 import kof.json
-import ui.Caixa
-import ui.Lista
-import ui.Menu
 
 class TelaPost {
 
     Cliente cliente
+    PostResumo post
+    List<Comentario> comentarios = listOf<Comentario>()
+    Vista vista
+    Teclado teclado
+    String status = ""
+    String destino = ""
+    Int largura = 0
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
     }
 
     void executar(PostResumo post) {
+        this.executarSimples(post)
+    }
+
+    String executarInterativo(PostResumo post, Teclado teclado) {
+        this.post = post
+        this.teclado = teclado
+        this.vista = Vista(Vista.alturaPadrao())
+        this.carregarComentarios()
+        var rodando = true
+        var pintar = true
+        while (rodando && Entrada.ativa) {
+            if (pintar) {
+                this.desenhar()
+                teclado.ligarMouse()
+            }
+            pintar = true
+            var tecla = teclado.ler()
+            if (tecla.nome == "clique") {
+                if (!this.clicar(tecla)) { pintar = false }
+            } else if (tecla.nome == "cima") {
+                this.vista.rolagem.moverFoco(-1)
+            } else if (tecla.nome == "baixo") {
+                this.vista.rolagem.moverFoco(1)
+            } else if (tecla.nome == "roda-cima") {
+                this.vista.rolagem.rolar(-3)
+            } else if (tecla.nome == "roda-baixo") {
+                this.vista.rolagem.rolar(3)
+            } else if (tecla.nome == "enter") {
+                this.responderFoco()
+            } else if (tecla.nome == "texto") {
+                this.destino = this.atalho(tecla.caractere)
+                if (this.destino.length > 0) { rodando = false }
+            } else if (tecla.nome == "escape" || tecla.nome == "ctrl-c") {
+                rodando = false
+            } else if (Teclado.inerte(tecla)) {
+                pintar = false
+            }
+            if (this.destino.length > 0) { rodando = false }
+        }
+        return this.destino
+    }
+
+    String atalho(String caractere) {
+        if (caractere == "l" || caractere == "L") { this.curtir() }
+        if (caractere == "c" || caractere == "C") { this.comentar() }
+        if (caractere == "r" || caractere == "R") { this.reagir() }
+        if (caractere == "s" || caractere == "S") { this.salvar() }
+        if (caractere == "x" || caractere == "X") { this.compartilhar() }
+        if (caractere == "p" || caractere == "P") { this.repostar() }
+        if (caractere == "m" || caractere == "M") { this.mostrarImagens() }
+        var indice = Seletor.digito(caractere)
+        if (indice >= 0) {
+            var rotas = Navegacao.secoesDe(this.contexto())
+            if (indice < rotas.size()) { return rotas.get(indice) }
+        }
+        return ""
+    }
+
+    String contexto() {
+        if (this.cliente == null || this.cliente.config == null) { return "social" }
+        return this.cliente.config.contexto
+    }
+
+    void desenhar() {
+        Ansi.medir()
+        if (this.largura != Ansi.LARGURA_CONTEUDO) { this.reconstruir() }
+        var topo = Cabecalho.linha(this.cliente, "post", this.contexto())
+        var cabecalho = Caixa.juntar(BarraSecoes.linhas(this.contexto(), "feed", this.contagens()))
+        this.vista.marcarSecoes(this.contexto(), "feed", null)
+        var rodape = Caixa.juntar(BarraContexto.linhas(this.atalhos(), this.status, this.vista.posicao()))
+        this.vista.desenhar(topo, cabecalho, rodape)
+    }
+
+    ContagensNavegacao contagens() {
+        return ContagensNavegacao(null, listOf<String>(), 0, 0)
+    }
+
+    List<String> atalhos() {
+        var lista = listOf<String>()
+        lista.add("enter responde")
+        lista.add("L curtir")
+        lista.add("C comenta")
+        lista.add("R reagir")
+        lista.add("q volta")
+        lista.add("S salvar")
+        lista.add("X compartilhar")
+        lista.add("M mídias")
+        lista.add("1–6 seções")
+        return lista
+    }
+
+    Bool clicar(Tecla tecla) {
+        var alvo = this.vista.regioes.em(tecla.linha, tecla.coluna)
+        if (alvo.tipo == "secao") {
+            var rotas = Navegacao.secoesDe(this.contexto())
+            if (alvo.indice >= 0 && alvo.indice < rotas.size()) {
+                this.destino = rotas.get(alvo.indice)
+            }
+            return true
+        }
+        if (alvo.tipo != "item") { return false }
+        this.vista.rolagem.foco = alvo.indice
+        return true
+    }
+
+    void reconstruir() {
+        var deslocamento = this.vista.rolagem.deslocamento
+        var foco = this.vista.rolagem.foco
+        this.vista = Vista(Vista.alturaPadrao())
+        this.vista.adicionar(0, this.linhasDoPost(this.post))
+        for (var i = 0; i < this.comentarios.size(); i = i + 1) {
+            this.vista.adicionar(i + 1, this.linhasDoComentario(this.comentarios.get(i)))
+        }
+        this.vista.rolagem.deslocamento = deslocamento
+        this.vista.rolagem.foco = foco
+        this.largura = Ansi.LARGURA_CONTEUDO
+    }
+
+    List<String> linhasDoPost(PostResumo p) {
+        var largura = Ansi.LARGURA_CONTEUDO
+        var linhas = listOf<String>()
+        linhas.add(Cartao.autor(p, largura, Cartao.usuarioAtual(this.cliente)))
+        var corpo = Cartao.corpo(p)
+        if (corpo.length > 0) {
+            for (var parte in Caixa.partes(corpo)) {
+                for (var linha in Ansi.quebrar(parte, largura - 3)) {
+                    linhas.add("   " + Tema.texto(linha))
+                }
+            }
+        }
+        var enquete = this.linhasDaEnquete(p)
+        for (var linha in enquete) { linhas.add(linha) }
+        linhas.add("   " + Cartao.extras(p))
+        return linhas
+    }
+
+    List<String> linhasDaEnquete(PostResumo p) {
+        var linhas = listOf<String>()
+        if (p.poll == null) { return linhas }
+        var e = p.poll
+        var opcoes = e.options
+        if (opcoes == null || opcoes.size() == 0) { return linhas }
+        var total = 0
+        if (e.totalVotes != null) { total = e.totalVotes }
+        for (var i = 0; i < opcoes.size(); i = i + 1) {
+            var votos = 0
+            if (e.counts != null && i < e.counts.size()) { votos = e.counts.get(i) }
+            var fatia = 0
+            if (total > 0) { fatia = (votos * 20) / total }
+            var barra = ""
+            for (var b = 0; b < 20; b = b + 1) {
+                if (b < fatia) { barra = barra + "█" } else { barra = barra + "░" }
+            }
+            linhas.add("   " + Tema.suave(barra + " " + String.valueOf(votos)) + " " + opcoes.get(i))
+        }
+        linhas.add("   " + Tema.mudo(String.valueOf(total) + " votos"))
+        return linhas
+    }
+
+    List<String> linhasDoComentario(Comentario c) {
+        var linhas = listOf<String>()
+        var quem = "alguém"
+        if (c.authorUsername != null) { quem = "@" + c.authorUsername }
+        var marca = ""
+        if ("" + c.pinned == "true") { marca = "⚑ " }
+        if ("" + c.accepted == "true") { marca = "✔ " }
+        var cabeca = " " + marca + Tema.destaque(quem)
+        var quando = Tempo.relativo(c.createdAt)
+        if (quando.length > 0) { cabeca = cabeca + Tema.mudo(" · " + quando) }
+        if (c.reactionCount != null && c.reactionCount > 0) {
+            cabeca = cabeca + Tema.mudo(" · ♥ " + String.valueOf(c.reactionCount))
+        }
+        linhas.add(Ansi.cortar(cabeca, Ansi.LARGURA_CONTEUDO))
+        var texto = ""
+        if (c.content != null) { texto = c.content }
+        for (var parte in Ansi.quebrar(texto, Ansi.LARGURA_CONTEUDO - 3)) {
+            linhas.add("   " + Tema.texto(parte))
+        }
+        return linhas
+    }
+
+    void carregarComentarios() {
+        this.comentarios = listOf<Comentario>()
+        var r = ComentariosApi(this.cliente).listar(this.post.id, null, 30)
+        if (!r.ok()) {
+            this.status = Tema.mudo("comentários indisponíveis")
+            return
+        }
+        var pagina = ComentariosApi.pagina(r)
+        var itens = pagina.items
+        if (itens != null) {
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                this.comentarios.add(itens.get(i))
+            }
+        }
+        this.reconstruir()
+    }
+
+    void responderFoco() {
+        var indice = this.vista.rolagem.dadoDoBloco(this.vista.rolagem.foco)
+        if (indice <= 0) { return }
+        var comentario = this.comentarios.get(indice - 1)
+        var texto = this.perguntar("resposta")
+        if (texto.length == 0) {
+            this.status = Tema.mudo("resposta cancelada")
+            return
+        }
+        var r = ComentariosApi(this.cliente).comentar(this.post.id, texto, comentario.id)
+        if (!r.ok()) {
+            this.status = Tema.erro(r.mensagem())
+            return
+        }
+        this.status = Tema.ok("resposta enviada")
+        this.carregarComentarios()
+    }
+
+    void curtir() {
+        var reagindo = this.post.currentUserReaction != null && this.post.currentUserReaction.length > 0
+        var api = ComentariosApi(this.cliente)
+        var r = Resposta(0, "", "")
+        if (reagindo) {
+            r = api.desreagir(this.post.id)
+        } else {
+            r = api.reagir(this.post.id, "LIKE")
+        }
+        if (!r.ok()) {
+            this.status = Tema.erro(r.mensagem())
+            return
+        }
+        var reacoes = 0
+        var comentarios = 0
+        if (this.post.counters != null) {
+            if (this.post.counters.reactions != null) { reacoes = this.post.counters.reactions }
+            if (this.post.counters.comments != null) { comentarios = this.post.counters.comments }
+        }
+        if (reagindo) {
+            if (reacoes > 0) { reacoes = reacoes - 1 }
+            this.status = Tema.mudo("reação removida")
+            this.post = TelaFeed.comContadores(this.post, reacoes, comentarios, null)
+        } else {
+            reacoes = reacoes + 1
+            this.status = Tema.ok("curtido")
+            this.post = TelaFeed.comContadores(this.post, reacoes, comentarios, "LIKE")
+        }
+        this.reconstruir()
+    }
+
+    void comentar() {
+        var texto = this.perguntar("comentário")
+        if (texto.length == 0) {
+            this.status = Tema.mudo("comentário cancelado")
+            return
+        }
+        var r = ComentariosApi(this.cliente).comentar(this.post.id, texto, null)
+        if (!r.ok()) {
+            this.status = Tema.erro(r.mensagem())
+            return
+        }
+        var comentarios = 0
+        if (this.post.counters != null && this.post.counters.comments != null) {
+            comentarios = this.post.counters.comments
+        }
+        this.post = TelaFeed.comContadores(this.post, this.reacoes(), comentarios + 1, this.post.currentUserReaction)
+        this.status = Tema.ok("comentário enviado")
+        this.carregarComentarios()
+    }
+
+    Int reacoes() {
+        if (this.post.counters == null || this.post.counters.reactions == null) { return 0 }
+        return this.post.counters.reactions
+    }
+
+    void reagir() {
+        var tipos = listOf("LIKE", "LOVE", "LAUGH", "ROFL", "WOW", "SAD",
+            "ANGRY", "DISGUST", "SKEPTICAL", "CELEBRATE", "SUPPORT", "INSIGHTFUL")
+        var rotulos = listOf("curtir", "amar", "rir", "gargalhar", "uau", "triste",
+            "raiva", "nojo", "cético", "celebrar", "apoio", "insight")
+        var escolha = this.perguntarMenu("reagir", rotulos)
+        if (escolha < 0) { return }
+        var r = ComentariosApi(this.cliente).reagir(this.post.id, tipos.get(escolha))
+        if (!r.ok()) {
+            this.status = Tema.erro(r.mensagem())
+            return
+        }
+        this.status = Tema.ok("reação registrada")
+        this.post = TelaFeed.comContadores(this.post, this.reacoes() + 1, this.comentarios(), this.post.currentUserReaction)
+        this.reconstruir()
+    }
+
+    Int comentarios() {
+        if (this.post.counters == null || this.post.counters.comments == null) { return 0 }
+        return this.post.counters.comments
+    }
+
+    void salvar() {
+        var r = ComentariosApi(this.cliente).salvar(this.post.id)
+        if (!r.ok()) {
+            this.status = Tema.erro(r.mensagem())
+            return
+        }
+        this.status = Tema.ok("post salvo")
+    }
+
+    void compartilhar() {
+        var r = ComentariosApi(this.cliente).compartilhar(this.post.id)
+        if (!r.ok()) {
+            this.status = Tema.erro(r.mensagem())
+            return
+        }
+        this.status = Tema.ok("compartilhado")
+    }
+
+    void repostar() {
+        var opiniao = this.perguntar("sua opinião (opcional)")
+        var r = Resposta(0, "", "")
+        if (opiniao.length == 0) {
+            r = ComentariosApi(this.cliente).republicar(this.post.id, null)
+        } else {
+            r = ComentariosApi(this.cliente).republicar(this.post.id, opiniao)
+        }
+        if (!r.ok()) {
+            this.status = Tema.erro(r.mensagem())
+            return
+        }
+        this.status = Tema.ok("repostado")
+    }
+
+    String perguntar(String rotulo) {
+        this.teclado.sair()
+        Ansi.escrever(Ansi.MOSTRAR_CURSOR)
+        var texto = Entrada.texto(rotulo)
+        Ansi.escrever(Ansi.OCULTAR_CURSOR)
+        this.teclado.entrar()
+        return texto
+    }
+
+    Int perguntarMenu(String titulo, List<String> opcoes) {
+        this.teclado.sair()
+        Ansi.escrever(Ansi.MOSTRAR_CURSOR)
+        var escolha = Entrada.menu(titulo, opcoes, "voltar")
+        Ansi.escrever(Ansi.OCULTAR_CURSOR)
+        this.teclado.entrar()
+        return escolha
+    }
+
+    void mostrarImagens() {
+        if (Cartao.totalImagens(this.post) == 0) {
+            this.status = Tema.mudo("este post não tem mídias")
+            return
+        }
+        this.teclado.sair()
+        Ansi.escrever(Ansi.MOSTRAR_CURSOR)
+        print(Ansi.NORMAL)
+        print(Ansi.LIMPAR)
+        TelaFeed(this.cliente).mostrarImagens(this.post)
+        Entrada.pausar()
+        print(Ansi.ALTERNATIVO)
+        Ansi.escrever(Ansi.OCULTAR_CURSOR)
+        this.teclado.entrar()
+    }
+
+    void executarSimples(PostResumo post) {
+        this.post = post
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
-            println(Menu.topo("Énóis", ""))
-            println(TelaFeed(this.cliente).card(post))
+            println(Cabecalho.linha(this.cliente, "post", this.contexto()))
+            println(Caixa.juntar(this.linhasDoPost(post)))
             TelaFeed(this.cliente).mostrarImagens(post)
-            this.comentarios(post.id)
+            this.comentariosSimples()
             var escolha = Entrada.menu("post",
                 listOf("comentar", "reagir", "salvar", "compartilhar", "repostar", "reações"), "voltar")
             if (escolha < 0) {
                 rodando = false
             } else if (escolha == 0) {
-                this.comentar(post.id)
+                this.comentarSimples(post.id)
             } else if (escolha == 1) {
-                this.reagir(post.id)
+                this.reagirSimples(post.id)
             } else if (escolha == 2) {
                 this.avisar(ComentariosApi(this.cliente).salvar(post.id), "post salvo")
             } else if (escolha == 3) {
                 this.avisar(ComentariosApi(this.cliente).compartilhar(post.id), "compartilhado")
             } else if (escolha == 4) {
-                this.repostar(post.id)
+                this.repostarSimples(post.id)
             } else if (escolha == 5) {
                 this.verReacoes(post.id)
             }
         }
     }
 
-    void comentarios(String postId) {
-        var r = ComentariosApi(this.cliente).listar(postId, null, 30)
+    void comentariosSimples() {
+        var r = ComentariosApi(this.cliente).listar(this.post.id, null, 30)
         if (!r.ok()) {
             println(Tema.mudo("comentários indisponíveis"))
             return
@@ -59,37 +423,20 @@ class TelaPost {
             println(Tema.mudo("sem comentários ainda"))
             return
         }
-        var linhas = listOf<String>()
         for (var i = 0; i < itens.size(); i = i + 1) {
-            linhas.add(this.comentario(itens.get(i)))
-        }
-        for (var i = 0; i < linhas.size(); i = i + 1) {
-            println(linhas.get(i))
+            for (var linha in this.linhasDoComentario(itens.get(i))) {
+                println(linha)
+            }
         }
     }
 
-    String comentario(Comentario c) {
-        var quem = "alguém"
-        if (c.authorUsername != null) { quem = "@" + c.authorUsername }
-        if (c.authorName != null) { quem = c.authorName + " " + quem }
-        if ("" + c.pinned == "true") { quem = "📌 " + quem }
-        if ("" + c.accepted == "true") { quem = "✔ " + quem }
-        var texto = ""
-        if (c.content != null) { texto = c.content }
-        var marca = ""
-        if (c.reactionCount != null && c.reactionCount > 0) {
-            marca = Tema.suave(" ♥ " + c.reactionCount)
-        }
-        return "  " + Tema.destaque(quem) + " " + texto + marca
-    }
-
-    void comentar(String postId) {
+    void comentarSimples(String postId) {
         var texto = Entrada.texto("comentário (vazio para voltar)")
         if (texto.length == 0) { return }
         this.avisar(ComentariosApi(this.cliente).comentar(postId, texto, null), "comentário enviado")
     }
 
-    void reagir(String postId) {
+    void reagirSimples(String postId) {
         var tipos = listOf("LIKE", "LOVE", "LAUGH", "ROFL", "WOW", "SAD",
             "ANGRY", "DISGUST", "SKEPTICAL", "CELEBRATE", "SUPPORT", "INSIGHTFUL")
         var rotulos = listOf("curtir", "amar", "rir", "gargalhar", "uau", "triste",
@@ -99,7 +446,7 @@ class TelaPost {
         this.avisar(ComentariosApi(this.cliente).reagir(postId, tipos.get(escolha)), "reação registrada")
     }
 
-    void repostar(String postId) {
+    void repostarSimples(String postId) {
         var opiniao = Entrada.texto("sua opinião (opcional)")
         var r = Resposta(0, "", "")
         if (opiniao.length == 0) {
@@ -125,21 +472,17 @@ class TelaPost {
         }
         var itens = lista.reactions
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("ninguém reagiu ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("ninguém reagiu ainda")))
             Entrada.pausar()
             return
         }
-        var linhas = listOf<String>()
         for (var i = 0; i < itens.size(); i = i + 1) {
             var reagente = itens.get(i)
             var quem = "alguém"
             if (reagente.userId != null) { quem = reagente.userId }
             var tipo = ""
             if (reagente.type != null) { tipo = " · " + reagente.type }
-            linhas.add("  " + Tema.destaque(quem) + Tema.suave(tipo))
-        }
-        for (var i = 0; i < linhas.size(); i = i + 1) {
-            println(linhas.get(i))
+            println("  " + Tema.destaque(quem) + Tema.suave(tipo))
         }
         Entrada.pausar()
     }

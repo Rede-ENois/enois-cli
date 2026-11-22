@@ -35,7 +35,7 @@ class TelaVagas {
                 opcoes.add(this.titulo(vagas.get(i)))
             }
             if (vagas.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma vaga encontrada")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma vaga encontrada")))
             }
             opcoes.add("minhas vagas")
             opcoes.add("candidaturas")
@@ -58,7 +58,7 @@ class TelaVagas {
     void lista(Resposta r, String titulo) {
         var itens = VagasApi.pagina(r).items
         if (itens == null || itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nada por aqui")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nada por aqui")))
             Entrada.pausar()
             return
         }
@@ -76,7 +76,7 @@ class TelaVagas {
     void abrir(Vaga v) {
         var api = VagasApi(this.cliente)
         print(Ansi.LIMPAR)
-        println(Caixa.simples(this.cartao(v)))
+        Caixa.desenhar(Caixa.simples(this.cartao(v)))
         var opcoes = listOf<String>()
         if ("" + v.applied == "true") {
             opcoes.add("ver candidaturas")
@@ -113,7 +113,7 @@ class TelaVagas {
         }
         var itens = VagasApi.inscricoesDe(r)
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhuma candidatura ainda")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma candidatura ainda")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var inscricao = itens.get(i)
@@ -135,7 +135,7 @@ class TelaVagas {
         print(Ansi.LIMPAR)
         println(Tema.destaque("minhas candidaturas"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("você ainda não se candidatou")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("você ainda não se candidatou")))
         }
         for (var i = 0; i < itens.size(); i = i + 1) {
             var c = itens.get(i)

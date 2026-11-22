@@ -27,7 +27,7 @@ class TelaDenuncias {
             println(Menu.topo("Énóis", ""))
             println(Tema.destaque("denúncias"))
             if (itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("você não denunciou nada")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("você não denunciou nada")))
             }
             for (var i = 0; i < itens.size(); i = i + 1) {
                 var d = itens.get(i)

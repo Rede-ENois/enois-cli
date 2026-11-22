@@ -34,7 +34,7 @@ class TelaMentoria {
                 opcoes.add(this.titulo(mentores.get(i)))
             }
             if (mentores.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhum mentor disponível")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhum mentor disponível")))
             }
             opcoes.add("minhas sessões")
             var escolha = Entrada.menu("mentores", opcoes, "voltar")
@@ -51,7 +51,7 @@ class TelaMentoria {
     void mentor(Mentor m) {
         var api = MentoriasApi(this.cliente)
         print(Ansi.LIMPAR)
-        println(Caixa.simples(this.cartao(m)))
+        Caixa.desenhar(Caixa.simples(this.cartao(m)))
         var escolha = Entrada.menu(this.titulo(m),
             listOf("ver horários", "minhas sessões"), "voltar")
         if (escolha == 0) {
@@ -72,7 +72,7 @@ class TelaMentoria {
             if ("" + slot.available == "true") { livres.add(slot) }
         }
         if (livres.size() == 0) {
-            println(Caixa.simples(Lista.vazia("sem horários livres")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("sem horários livres")))
             Entrada.pausar()
             return
         }
@@ -92,7 +92,7 @@ class TelaMentoria {
         print(Ansi.LIMPAR)
         println(Tema.destaque("minhas sessões"))
         if (itens.size() == 0) {
-            println(Caixa.simples(Lista.vazia("nenhuma sessão agendada")))
+            Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma sessão agendada")))
             Entrada.pausar()
             return
         }
