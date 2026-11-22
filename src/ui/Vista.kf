@@ -1,18 +1,25 @@
 package ui
 
-import core.Ansi
-import core.Regioes
-import core.Terminal
+import core.*
 
 class Vista {
 
     Regioes regioes = Regioes()
     Rolagem rolagem
     Int altura = 0
+    String contexto = ""
+    String secaoAtiva = ""
+    ContagensNavegacao contagens = null
 
     public constructor(Int altura) {
         this.altura = altura
         this.rolagem = Rolagem(altura)
+    }
+
+    void marcarSecoes(String contexto, String ativa, ContagensNavegacao contagens) {
+        this.contexto = contexto
+        this.secaoAtiva = ativa
+        this.contagens = contagens
     }
 
     static Int alturaPadrao() {
@@ -29,7 +36,14 @@ class Vista {
         return this.rolagem.tamanho()
     }
 
+    String posicao() {
+        var total = this.rolagem.tamanho()
+        if (total <= 0) { return "" }
+        return String.valueOf(this.rolagem.foco + 1) + "/" + String.valueOf(total)
+    }
+
     void desenhar(String topo, String cabecalho, String rodape) {
+        Ansi.medir()
         var partesTopo = topo.split("\n")
         var partesCabecalho = cabecalho.split("\n")
         var partesRodape = rodape.split("\n")
@@ -45,8 +59,13 @@ class Vista {
             println(parte)
             linha = linha + 1
         }
+        var indice = 0
         for (var parte in partesCabecalho) {
             println(parte)
+            if (indice == 0 && this.contexto.length > 0) {
+                BarraSecoes.registrar(this.regioes, linha, this.contexto, this.secaoAtiva, this.contagens)
+            }
+            indice = indice + 1
             linha = linha + 1
         }
         println("")

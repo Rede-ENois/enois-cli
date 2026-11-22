@@ -193,8 +193,20 @@ class Teclado {
         return valor
     }
 
+    static Bool inerte(Tecla tecla) {
+        if (tecla.nome == "desconhecida") { return true }
+        if (tecla.nome == "soltar") { return true }
+        if (tecla.nome == "clique-outro") { return true }
+        return tecla.nome == "arrastar"
+    }
+
     Tecla ler() {
         var primeiro = this.lerByte()
+        if (Ansi.LARGURA_CONTEUDO != Terminal.largura()) {
+            if (primeiro >= 0 && this.pendentes.size() == 0) { this.pendentes.add(primeiro) }
+            Ansi.medir()
+            return Tecla("redimensionar", "")
+        }
         if (primeiro < 0) { return Tecla("fim", "") }
         if (primeiro == 27) { return this.lerEscape() }
         if (primeiro == 13 || primeiro == 10) { return Tecla("enter", "") }
@@ -283,6 +295,7 @@ class Teclado {
         }
         if (soltou) { return Tecla("soltar", "", linha, coluna, botao) }
         if (codigo >= 32) { return Tecla("arrastar", "", linha, coluna, botao) }
+        if (botao != 0) { return Tecla("clique-outro", "", linha, coluna, botao) }
         return Tecla("clique", "", linha, coluna, botao)
     }
 }

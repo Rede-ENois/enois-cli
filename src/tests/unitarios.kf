@@ -6,7 +6,11 @@ import core.*
 import screens.*
 import ui.Abas
 import ui.Badge
+import ui.BarraContexto
+import ui.BarraSecoes
 import ui.Bloco
+import ui.Cabecalho
+import ui.Cartao
 import ui.Painel
 import ui.Rolagem
 import ui.Seletor
@@ -442,6 +446,14 @@ test "arrastar o botao tem nome proprio" {
     assert(Teclado.mouseDe("32;12;7M").nome == "arrastar")
 }
 
+test "so o botao esquerdo navega" {
+    var direito = Teclado.mouseDe("2;12;7M")
+    assert(direito.nome == "clique-outro")
+    assert(direito.botao == 2)
+    assert(Teclado.mouseDe("1;12;7M").nome == "clique-outro")
+    assert(Teclado.mouseDe("0;12;7M").nome == "clique")
+}
+
 test "roda do mouse aponta para cima e para baixo" {
     assert(Teclado.mouseDe("64;3;9M").nome == "roda-cima")
     assert(Teclado.mouseDe("65;3;9M").nome == "roda-baixo")
@@ -547,5 +559,293 @@ test "destino tira a barra final e a query" {
 test "destino acha o parametro da query" {
     assert(Destino.parametro("/eventos?evento=99", "evento") == "99")
     assert(Destino.parametro("/eventos?other=1", "evento") == "")
+}
+
+test "tempo relativo mede minutos horas e data antiga" {
+    assert(Tempo.data("2020-03-05T10:00:00Z") == "05 mar 2020")
+    assert(Tempo.data("") == "")
+    assert(Tempo.relativo(null) == "")
+    assert(Tempo.relativo("2020-03-05T00:00:00Z") == "05 mar 2020")
+    var hoje = Tempo.relativo(time.todayIso())
+    assert(hoje == "agora" || hoje.endsWith(" h") || hoje.endsWith(" min"))
+}
+
+test "tempo escolhe o mes certo e ignora data invalida" {
+    assert(Tempo.mes("01") == "jan")
+    assert(Tempo.mes("12") == "dez")
+    assert(Tempo.mes("13") == "13")
+    assert(Tempo.mes("ab") == "ab")
+    assert(Tempo.epoch("2020-03-05T00:00:00Z") == Tempo.epoch("2020-03-05"))
+    assert(Tempo.epoch("2020-03-05T01:00:00Z") - Tempo.epoch("2020-03-05") == 3600000L)
+    assert(Tempo.epoch("") == 0L)
+}
+
+test "cartao mostra autor tipo e contadores" {
+    var p = PostResumo("p1", "QUESTION", "Como comecar em Kof?", "2020-03-05T12:00:00Z",
+        "u1", "Mel", "mel", "", "mentora", "", listOf<String>("kof"),
+        Contadores(3, 2, 1, 0, 0), "", "", "", "", "", null, null, null, null, null, null, null)
+    var linhas = Cartao.linhas(p, 60, "mel")
+    assert(linhas.size() == 3)
+    assert(linhas.get(0).contains("Mel"))
+    assert(linhas.get(0).contains("@mel"))
+    assert(linhas.get(0).contains("mentora"))
+    assert(linhas.get(0).contains("pergunta"))
+    assert(linhas.get(0).contains("05 mar 2020"))
+    assert(linhas.get(0).contains("você"))
+    assert(linhas.get(1).contains("Como comecar em Kof?"))
+    assert(linhas.get(2).contains("♥ 3"))
+    assert(linhas.get(2).contains("↩ 2"))
+}
+
+test "cartao nao marca como proprio o post de outra pessoa" {
+    var p = PostResumo("p2", "INSIGHT", "conteudo", "2020-03-05T12:00:00Z",
+        "u2", "Outra", "outra", "", "", "", null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null)
+    var linhas = Cartao.linhas(p, 60, "mel")
+    assert(!linhas.get(0).contains("você"))
+    assert(linhas.get(0).contains("@outra"))
+}
+
+test "cartao limita texto longo e conta as midias" {
+    var texto = ""
+    for (var i = 0; i < 40; i = i + 1) { texto = texto + "palavra grande " }
+    var anexos = listOf<MidiaAnexo>(
+        MidiaAnexo("m1", "https://cdn.enois.ia.br/a.png", "image/png", 800, 600),
+        MidiaAnexo("m2", "https://cdn.enois.ia.br/b.mp4", "video/mp4", 1280, 720))
+    var p = PostResumo("p3", null, texto, "", "", "Mel", "mel", "", "", "",
+        null, null, null, null, null, null, null, null, null, null, null, null, null, anexos)
+    var linhas = Cartao.linhas(p, 40, "")
+    assert(linhas.size() == 6)
+    for (var linha in linhas) {
+        assert(Ansi.largura(linha) <= 40)
+    }
+    assert(Cartao.totalImagens(p) == 1)
+    assert(linhas.get(5).contains("▣ 1"))
+    assert(linhas.get(5).contains("♥ 0"))
+    assert(linhas.get(5).contains("↩ 0"))
+}
+
+test "cartao corta o autor que passa da largura" {
+    var p = PostResumo("p4", "OPPORTUNITY", "", "", "",
+        "Nome Muito Comprido Para o Terminal", "usuario_muito_comprido",
+        "", "selo", "", null, Contadores(0, 0, 0, 0, 0),
+        null, null, null, null, null, null, null, null, null, null, null, null)
+    var linha = Cartao.autor(p, 24, "")
+    assert(Ansi.largura(linha) <= 24)
+    assert(Cartao.tipoEmTexto("OPPORTUNITY") == "oportunidade")
+}
+
+test "cabecalho mostra identidade secao contexto e conexao" {
+    var cliente = Cliente(Config(), Sessao())
+    var linha = Cabecalho.linha(cliente, "feed", "social")
+    assert(linha.contains("Énóis"))
+    assert(linha.contains("feed"))
+    assert(linha.contains("social"))
+    assert(linha.contains("conectado"))
+    assert(Ansi.largura(linha) == Ansi.LARGURA_CONTEUDO)
+    cliente.estadoRede = "offline"
+    assert(Cabecalho.linha(cliente, "feed", "social").contains("sem rede"))
+    cliente.estadoRede = "sessao"
+    assert(Cabecalho.linha(cliente, "feed", "social").contains("sessão expirada"))
+    assert(Cabecalho.colunaContexto("feed") == Ansi.largura(Cabecalho.esquerda("feed", "")) + 6)
+}
+
+test "cabecalho encolhe a direita em terminal estreito" {
+    var antes = Ansi.LARGURA_CONTEUDO
+    var sessao = Sessao("token", "")
+    sessao.usuario = Usuario("u-mel", "Mel", "melmonfre", "mel@enois.ia.br", "", 128)
+    var cliente = Cliente(Config(), sessao)
+    Ansi.LARGURA_CONTEUDO = 40
+    var linha = Cabecalho.linha(cliente, "feed", "social")
+    assert(Ansi.largura(linha) <= 40)
+    assert(linha.contains("conectado"))
+    assert(!linha.contains("fagulhas"))
+    Ansi.LARGURA_CONTEUDO = antes
+}
+
+test "barra de secoes marca a area ativa e os selos" {
+    var social = Navegacao.secoesDe("social")
+    assert(social.size() == 6)
+    assert(social.get(2) == "comunidades")
+    assert(Navegacao.secoesDe("profissional").get(2) == "vagas")
+    var contagens = ContagensNavegacao(null, listOf<String>(), 4, 0)
+    var barra = BarraSecoes.barra("social", "feed", contagens)
+    assert(barra.contains("Feed"))
+    assert(barra.contains("Comunidades"))
+    assert(barra.contains("4"))
+    assert(barra.contains(Tema.FUNDO_PRIMARIO_SUAVE))
+    assert(BarraSecoes.linhas("social", "feed", null).size() == 2)
+}
+
+test "barra de secoes encurta rotulos em terminal estreito" {
+    var antes = Ansi.LARGURA_CONTEUDO
+    Ansi.LARGURA_CONTEUDO = 40
+    var rotulos = BarraSecoes.ajustados(Navegacao.secoesDe("social"), null)
+    assert(rotulos.contains("Comun."))
+    assert(rotulos.contains("Notif."))
+    assert(rotulos.contains("Mens."))
+    assert(!rotulos.contains("Comunidades"))
+    Ansi.LARGURA_CONTEUDO = antes
+}
+
+test "barra de secoes registra o clique de cada area" {
+    var regioes = Regioes()
+    BarraSecoes.registrar(regioes, 1, "social", "feed", null)
+    var primeira = regioes.em(1, 2)
+    assert(primeira.tipo == "secao")
+    assert(primeira.indice == 0)
+    assert(regioes.em(1, 7).indice == 1)
+    assert(regioes.em(1, 1).indice == -1)
+}
+
+test "barra de secoes cobre o rotulo inteiro com selo" {
+    var regioes = Regioes()
+    var contagens = ContagensNavegacao(null, listOf<String>(), 4, 0)
+    BarraSecoes.registrar(regioes, 1, "social", "feed", contagens)
+    var barra = BarraSecoes.barra("social", "feed", contagens)
+    var rotulos = BarraSecoes.ajustados(Navegacao.secoesDe("social"), contagens)
+    var coluna = 1
+    for (var i = 0; i < rotulos.size(); i = i + 1) {
+        var largura = Ansi.largura(BarraSecoes.secao(Navegacao.secoesDe("social").get(i), rotulos.get(i), contagens))
+        assert(regioes.em(1, coluna + 1).indice == i)
+        assert(regioes.em(1, coluna + largura).indice == i)
+        assert(regioes.em(1, coluna + largura + 1).indice == -1)
+        coluna = coluna + largura + 1
+    }
+    assert(Ansi.largura(barra) <= Ansi.LARGURA_CONTEUDO)
+}
+
+test "barra de contexto junta atalhos status e posicao" {
+    var linhas = BarraContexto.linhas(listOf<String>("↑↓ navegar", "enter abrir"), "pronto", "3/10")
+    assert(linhas.size() == 2)
+    assert(linhas.get(1).contains("↑↓ navegar"))
+    assert(linhas.get(1).contains("enter abrir"))
+    assert(linhas.get(1).contains("3/10"))
+    assert(linhas.get(1).contains("·"))
+    assert(Ansi.largura(linhas.get(1)) == Ansi.LARGURA_CONTEUDO)
+    assert(BarraContexto.linhas(listOf<String>(), "", "").size() == 2)
+    assert(BarraContexto.juntar(listOf<String>()) == "")
+    assert(BarraContexto.juntarAte(listOf<String>("↑↓ navegar", "enter abrir"), 16).contains("…"))
+    assert(BarraContexto.juntarAte(listOf<String>("↑↓ navegar"), 40).contains("↑↓ navegar"))
+}
+
+test "rolagem marca o bloco focado com a barra lateral" {
+    var rolagem = Rolagem(2)
+    rolagem.adicionar(Bloco(0, listOf<String>(" a", " b")))
+    rolagem.adicionar(Bloco(1, listOf<String>(" c")))
+    var visiveis = rolagem.visiveis()
+    assert(visiveis.get(0).contains("▌"))
+    assert(visiveis.get(1).contains("▌"))
+    rolagem.moverFoco(1)
+    var depois = rolagem.visiveis()
+    assert(!depois.get(0).contains("▌"))
+    assert(depois.get(1).contains("▌"))
+}
+
+test "aviso sem item nao recebe marcador de foco" {
+    var rolagem = Rolagem(2)
+    rolagem.adicionar(Bloco(-1, listOf<String>(" aviso")))
+    var visiveis = rolagem.visiveis()
+    assert(!visiveis.get(0).contains("▌"))
+}
+
+test "medir acompanha a largura do terminal" {
+    Ansi.LARGURA_CONTEUDO = 33
+    Ansi.medir()
+    assert(Ansi.LARGURA_CONTEUDO == Terminal.largura())
+    assert(Ansi.LARGURA_CONTEUDO >= Terminal.LARGURA_MINIMA)
+}
+
+test "falha de conexao derruba o estado para sem rede" {
+    var config = Config()
+    config.urlApi = "http://127.0.0.1:1/api"
+    var cliente = Cliente(config, Sessao())
+    cliente.timeoutRequisicao = 1
+    cliente.tentativas = 0
+    var resposta = cliente.get("/feed")
+    assert(resposta.codigo == 0)
+    assert(!resposta.ok())
+    assert(cliente.estadoRede == "offline")
+    assert(resposta.codigoDeErro() == "REDE")
+}
+
+test "secoes secundarias ficam fora da barra" {
+    var secundarios = Navegacao.secundarios("social")
+    var temRede = false
+    for (var item in secundarios) {
+        assert(item.rota != "feed")
+        assert(item.rota != "comunidades")
+        assert(item.rota != "notificações")
+        assert(item.rota != "mensagens")
+        assert(item.rota != "perfil")
+        if (item.rota == "rede") { temRede = true }
+    }
+    assert(temRede)
+    var indiceRede = Navegacao.indiceDaSecao("social", "rede")
+    assert(indiceRede == -1)
+    assert(Navegacao.indiceDaSecao("social", "feed") == 0)
+    assert(Navegacao.indiceDaSecao("profissional", "vagas") == 2)
+}
+
+test "regioes da barra cobrem a barra desenhada" {
+    var antes = Ansi.LARGURA_CONTEUDO
+    Ansi.LARGURA_CONTEUDO = 80
+    var contagens = ContagensNavegacao(null, listOf<String>(), 9, 3)
+    var rotas = Navegacao.secoesDe("social")
+    var regioes = Regioes()
+    BarraSecoes.registrar(regioes, 2, "social", "feed", contagens)
+    assert(regioes.tamanho() == rotas.size())
+    var largura = Ansi.largura(BarraSecoes.barra("social", "feed", contagens))
+    assert(regioes.em(2, 1).tipo == "")
+    assert(regioes.em(2, largura).tipo == "")
+    assert(regioes.em(2, largura - 1).indice == rotas.size() - 1)
+    assert(regioes.em(3, 2).tipo == "")
+    var coluna = 2
+    for (var i = 0; i < rotas.size(); i = i + 1) {
+        assert(regioes.em(2, coluna).indice == i)
+        var secao = BarraSecoes.secao(rotas.get(i), BarraSecoes.rotulos(rotas, false).get(i), contagens)
+        coluna = coluna + Ansi.largura(secao) + 1
+    }
+    Ansi.LARGURA_CONTEUDO = antes
+}
+
+test "regioes da barra seguem os rotulos curtos quando a tela estreita" {
+    var antes = Ansi.LARGURA_CONTEUDO
+    Ansi.LARGURA_CONTEUDO = 60
+    var contagens = ContagensNavegacao(null, listOf<String>(), 9, 3)
+    var rotas = Navegacao.secoesDe("social")
+    var regioes = Regioes()
+    BarraSecoes.registrar(regioes, 2, "social", "feed", contagens)
+    var largura = Ansi.largura(BarraSecoes.barra("social", "feed", contagens))
+    assert(largura <= 60)
+    assert(regioes.tamanho() == rotas.size())
+    assert(regioes.em(2, largura - 1).indice == rotas.size() - 1)
+    var curtos = BarraSecoes.ajustados(rotas, contagens)
+    var coluna = 2
+    for (var i = 0; i < rotas.size(); i = i + 1) {
+        assert(regioes.em(2, coluna).indice == i)
+        coluna = coluna + Ansi.largura(BarraSecoes.secao(rotas.get(i), curtos.get(i), contagens)) + 1
+    }
+    Ansi.LARGURA_CONTEUDO = antes
+}
+
+test "toda secao da barra tem atalho numerico na mesma ordem" {
+    var rotas = Navegacao.secoesDe("social")
+    assert(rotas.size() == 6)
+    for (var i = 0; i < rotas.size(); i = i + 1) {
+        assert(Seletor.digito(String.valueOf((49 + i) as Char)) == i)
+    }
+    assert(Seletor.digito("7") == 6)
+}
+
+test "eventos de mouse inertes nao redesenham" {
+    assert(Teclado.inerte(Tecla("soltar", "")))
+    assert(Teclado.inerte(Tecla("clique-outro", "")))
+    assert(Teclado.inerte(Tecla("arrastar", "")))
+    assert(Teclado.inerte(Tecla("desconhecida", "")))
+    assert(!Teclado.inerte(Tecla("clique", "")))
+    assert(!Teclado.inerte(Tecla("redimensionar", "")))
+    assert(!Teclado.inerte(Tecla("enter", "")))
+    assert(!Teclado.inerte(Tecla("texto", "k")))
 }
 

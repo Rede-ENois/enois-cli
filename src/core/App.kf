@@ -58,7 +58,7 @@ class App {
 
     String painel() {
         var seletor = Seletor(this.config.contexto, this.cliente)
-        var rota = seletor.escolher(this.topo(), "↑↓ navega · roda rola · clique abre · enter abre · tab troca contexto · r atualiza · q encerra")
+        var rota = seletor.escolher("↑↓ navega · enter abre · 1–6 seções · tab contexto · r atualiza · q encerra")
         this.guardarContexto(seletor.contexto)
         if (rota.length == 0) { return "sair" }
         return rota
@@ -68,7 +68,7 @@ class App {
         print(Ansi.LIMPAR)
         println(this.topo())
         if (!this.sessao.logado()) {
-            println(Caixa.simples(Tema.titulo("você") + "\n" + Tema.suave("alvo: " + this.config.alvo + " · " + this.config.urlApi)))
+            Caixa.desenhar(Caixa.simples(Tema.titulo("você") + "\n" + Tema.suave("alvo: " + this.config.alvo + " · " + this.config.urlApi)))
             var entrada = Entrada.menu("entrar", listOf("entrar", "trocar alvo"), "encerrar")
             if (entrada < 0) { return "sair" }
             if (entrada == 0) { return "entrar" }
@@ -139,7 +139,8 @@ class App {
             var entrar = TelaEntrar(this.cliente, this.config, this.sessao)
             if (entrar.executar()) { entrar.provarFeed() }
         } else if (escolha == "feed") {
-            TelaFeed(this.cliente, this.config.contexto).executar()
+            var destino = TelaFeed(this.cliente, this.config.contexto).executar()
+            if (destino.length > 0) { this.abrir(destino) }
         } else if (escolha == "mensagens") {
             TelaMensagens(this.cliente, this.sessao, this.config.contexto).executar()
         } else if (escolha == "rede") {
@@ -173,7 +174,8 @@ class App {
         } else if (escolha == "perfil") {
             TelaPerfil(this.cliente, this.sessao).executar()
         } else if (escolha == "notificações") {
-            TelaNotificacoes(this.cliente, this.sessao, this.config.contexto).executar()
+            var destino = TelaNotificacoes(this.cliente, this.sessao, this.config.contexto).executar()
+            if (destino.length > 0) { this.abrir(destino) }
         } else if (escolha == "conta") {
             TelaConta(this.cliente, this.sessao).executar()
         } else if (escolha == "trocar contexto") {

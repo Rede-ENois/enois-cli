@@ -2,16 +2,8 @@ package screens
 
 import tipos.*
 import api.*
-import core.Ansi
-import core.Cliente
-import core.Entrada
-import core.Sessao
-import core.Teclado
-import core.Tema
-import ui.Caixa
-import ui.Lista
-import ui.Menu
-import ui.Vista
+import core.*
+import ui.*
 
 class TelaNotificacoes {
 
@@ -25,6 +17,9 @@ class TelaNotificacoes {
     String proximo = ""
     Bool temMais = false
     String erro = ""
+    String status = ""
+    String destino = ""
+    Int largura = 0
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
@@ -49,32 +44,38 @@ class TelaNotificacoes {
         return "SOCIAL"
     }
 
-    void executar() {
+    String executar() {
         var teclado = Teclado()
         if (Teclado.disponivel() && teclado.entrar()) {
-            this.executarInterativo(teclado)
-            return
+            return this.executarInterativo(teclado)
         }
         this.executarSimples()
+        return ""
     }
 
-    void executarInterativo(Teclado teclado) {
+    String executarInterativo(Teclado teclado) {
         this.teclado = teclado
         this.vista = Vista(Vista.alturaPadrao())
         print(Ansi.OCULTAR_CURSOR)
         print(Ansi.ALTERNATIVO)
-        println("")
+        this.status = Tema.mudo("carregando…")
         this.carregarPagina("")
         var rodando = true
+        var pintar = true
         while (rodando && Entrada.ativa) {
             if (this.temMais && this.notificacoes.size() > 0 && this.vista.rolagem.noFim()) {
+                this.status = Tema.mudo("carregando mais…")
+                this.desenhar()
                 this.carregarPagina(this.proximo)
             }
-            this.desenhar()
-            teclado.ligarMouse()
+            if (pintar) {
+                this.desenhar()
+                teclado.ligarMouse()
+            }
+            pintar = true
             var tecla = teclado.ler()
             if (tecla.nome == "clique") {
-                this.clicar(tecla)
+                if (!this.clicar(tecla)) { pintar = false }
             } else if (tecla.nome == "cima") {
                 this.vista.rolagem.moverFoco(-1)
             } else if (tecla.nome == "baixo") {
@@ -90,21 +91,35 @@ class TelaNotificacoes {
                     this.vista.rolagem.moverFoco(-1)
                 } else if (tecla.caractere == "j") {
                     this.vista.rolagem.moverFoco(1)
-                } else if (tecla.caractere == "r") {
+                } else if (tecla.caractere == "r" || tecla.caractere == "R") {
                     this.recarregar()
-                } else if (tecla.caractere == "m") {
+                } else if (tecla.caractere == "m" || tecla.caractere == "M") {
                     this.marcarTodas()
                 } else if (tecla.caractere == "q") {
                     rodando = false
+                } else {
+                    this.destino = this.rotaDaSecao(tecla.caractere)
                 }
             } else if (tecla.nome == "escape" || tecla.nome == "ctrl-c") {
                 rodando = false
+            } else if (Teclado.inerte(tecla)) {
+                pintar = false
             }
+            if (this.destino.length > 0) { rodando = false }
         }
         teclado.desligarMouse()
         Ansi.escrever(Ansi.NORMAL)
         Ansi.escrever(Ansi.MOSTRAR_CURSOR)
         teclado.sair()
+        return this.destino
+    }
+
+    String rotaDaSecao(String caractere) {
+        var indice = Seletor.digito(caractere)
+        if (indice < 0) { return "" }
+        var rotas = Navegacao.secoesDe(this.contexto)
+        if (indice >= rotas.size()) { return "" }
+        return rotas.get(indice)
     }
 
     void executarSimples() {
@@ -123,7 +138,7 @@ class TelaNotificacoes {
             println(Menu.topo("Énóis", ""))
             println(Tema.destaque("notificações"))
             if (itens == null || itens.size() == 0) {
-                println(Caixa.simples(Lista.vazia("nenhuma notificação")))
+                Caixa.desenhar(Caixa.simples(Lista.vazia("nenhuma notificação")))
                 Entrada.pausar()
                 return
             }
@@ -143,10 +158,25 @@ class TelaNotificacoes {
     }
 
     void desenhar() {
-        this.vista.desenhar(
-            Menu.topo("Énóis", ""),
-            Menu.cabecalho("notificações", this.subtitulo()),
-            Menu.rodape("↑↓ move · roda rola · clique abre · enter abre · m marca todas · r recarrega · q volta"))
+        Ansi.medir()
+        if (this.largura != Ansi.LARGURA_CONTEUDO) { this.reconstruir() }
+        var topo = Cabecalho.linha(this.cliente, "notificações", this.contexto)
+        var cabecalho = Caixa.juntar(BarraSecoes.linhas(this.contexto, "notificações",
+            ContagensNavegacao(null, listOf<String>(), 0, 0)))
+        this.vista.marcarSecoes(this.contexto, "notificações", null)
+        var rodape = Caixa.juntar(BarraContexto.linhas(this.atalhos(), this.status, this.vista.posicao()))
+        this.vista.desenhar(topo, cabecalho, rodape)
+    }
+
+    List<String> atalhos() {
+        var lista = listOf<String>()
+        lista.add("↑↓ move")
+        lista.add("enter abre")
+        lista.add("M marca todas")
+        lista.add("R atualiza")
+        lista.add("1–6 seções")
+        lista.add("q volta")
+        return lista
     }
 
     String subtitulo() {
@@ -154,10 +184,16 @@ class TelaNotificacoes {
         return "o que chegou na sua rede"
     }
 
-    void clicar(Tecla tecla) {
+    Bool clicar(Tecla tecla) {
         var alvo = this.vista.regioes.em(tecla.linha, tecla.coluna)
-        if (alvo.tipo != "item") { return }
+        if (alvo.tipo == "secao") {
+            if (alvo.indice < 0 || alvo.indice >= Navegacao.secoesDe(this.contexto).size()) { return true }
+            this.destino = Navegacao.secoesDe(this.contexto).get(alvo.indice)
+            return true
+        }
+        if (alvo.tipo != "item") { return false }
         this.abrirNotificacao(alvo.indice)
+        return true
     }
 
     void abrirFoco() {
@@ -208,6 +244,7 @@ class TelaNotificacoes {
         this.proximo = ""
         this.temMais = false
         this.erro = ""
+        this.status = Tema.mudo("carregando…")
         this.vista = Vista(Vista.alturaPadrao())
         this.carregarPagina("")
     }
@@ -219,8 +256,14 @@ class TelaNotificacoes {
         for (var i = 0; i < this.notificacoes.size(); i = i + 1) {
             this.vista.adicionar(i, this.linhasDe(this.notificacoes.get(i), this.lidas.get(i)))
         }
+        if (this.vista.total() == 0) {
+            var texto = "nenhuma notificação"
+            if (this.erro.length > 0) { texto = this.erro }
+            this.vista.adicionar(-1, listOf<String>(" " + Tema.mudo("~ " + texto)))
+        }
         this.vista.rolagem.deslocamento = deslocamento
         this.vista.rolagem.foco = foco
+        this.largura = Ansi.LARGURA_CONTEUDO
     }
 
     void carregarPagina(String cursor) {
@@ -228,7 +271,8 @@ class TelaNotificacoes {
         if (!r.ok()) {
             this.erro = r.mensagem()
             this.temMais = false
-            this.estadoVazio()
+            this.status = Tema.erro(this.erro)
+            this.reconstruir()
             return
         }
         var pagina = NotificacoesApi.pagina(r)
@@ -239,7 +283,6 @@ class TelaNotificacoes {
                 var lida = "" + n.read == "true"
                 this.notificacoes.add(n)
                 this.lidas.add(lida)
-                this.vista.adicionar(this.notificacoes.size() - 1, this.linhasDe(n, lida))
             }
         }
         var novo = ""
@@ -250,14 +293,8 @@ class TelaNotificacoes {
             this.proximo = novo
             this.temMais = true
         }
-        this.estadoVazio()
-    }
-
-    void estadoVazio() {
-        if (this.vista.total() > 0) { return }
-        var texto = "nenhuma notificação"
-        if (this.erro.length > 0) { texto = this.erro }
-        this.vista.adicionar(-1, Caixa.simples(Lista.vazia(texto)))
+        this.reconstruir()
+        this.status = Tema.mudo(String.valueOf(this.notificacoes.size()) + " notificações")
     }
 
     String linha(Notificacao n) {
@@ -281,7 +318,7 @@ class TelaNotificacoes {
         if (n.title != null) { titulo = n.title }
         var marca = "· "
         if (!lida) { marca = "● " }
-        var primeira = marca + Tema.texto(titulo)
+        var primeira = " " + marca + Tema.texto(titulo)
         var detalhe = ""
         if (n.preview != null) { detalhe = n.preview }
         if (detalhe.length == 0 && n.body != null) { detalhe = n.body }
