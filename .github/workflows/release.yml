@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   release:
-    name: Jar + app nativo Linux
+    name: Jar + pacotes Linux
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,8 +36,17 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Instalar fakeroot
-        run: sudo apt-get update && sudo apt-get install -y fakeroot
+      - name: Instalar empacotadores
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot rpm squashfs-tools
+
+      - name: Baixar appimagetool
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/appimagetool" \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          echo "APPIMAGETOOL=$RUNNER_TEMP/appimagetool" >> "$GITHUB_ENV"
 
       - name: Definir versão
         id: versao
@@ -68,5 +77,7 @@ jobs:
             --generate-notes \
             build/release/enois-cli-${{ steps.versao.outputs.versao }}.jar \
             build/release/enois-cli-${{ steps.versao.outputs.versao }}-linux-x86_64.deb \
+            build/release/enois-cli-${{ steps.versao.outputs.versao }}-1.x86_64.rpm \
             build/release/enois-cli-${{ steps.versao.outputs.versao }}-linux-x86_64.tar.gz \
+            build/release/enois-cli-${{ steps.versao.outputs.versao }}-x86_64.AppImage \
             build/release/SHA256SUMS.txt
