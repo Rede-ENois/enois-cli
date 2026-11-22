@@ -18,13 +18,13 @@ class TelaPostSimples {
 
     void executar(PostResumo post) {
         this.post = post
+        Imagem.preparar(post)
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)
             println(Cabecalho.linha(this.cliente, "post", this.contexto()))
             println(Caixa.juntar(Cartao.linhasCompletas(post, Ansi.LARGURA_CONTEUDO,
                 Cartao.usuarioAtual(this.cliente))))
-            TelaFeed(this.cliente).mostrarImagens(post)
             this.comentariosSimples()
             var escolha = Entrada.menu("post",
                 listOf("comentar", "reagir", "salvar", "compartilhar", "repostar", "reações"), "voltar")

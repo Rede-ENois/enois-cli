@@ -1,0 +1,141 @@
+package core
+
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
+import javax.imageio.ImageIO
+
+record Amostra(BufferedImage imagem, Int colunas, Int linhas)
+
+class MeioBloco {
+
+    static Int COLUNAS_MAXIMAS = 72
+    static Int ALTURA_MAXIMA = 24
+    static String RAMPA = " .:-=+*#%@"
+    static Map<String, List<String>> cache = mapOf<String, List<String>>()
+
+    static List<String> deArquivo(String caminho, Int colunas, Int linhasMaximas) {
+        var limites = MeioBloco.limites(colunas, linhasMaximas)
+        var modo = MeioBloco.modo()
+        var chave = caminho + "|" + String.valueOf(limites.get(0)) + "x"
+            + String.valueOf(limites.get(1)) + "|" + modo
+        var guardado = MeioBloco.cache.get(chave)
+        if (guardado != null) { return guardado }
+        var linhas = MeioBloco.converter(caminho, limites.get(0), limites.get(1))
+        if (modo == "ascii") {
+            linhas = MeioBloco.converterAscii(caminho, limites.get(0), limites.get(1))
+        }
+        if (linhas.size() > 0) { MeioBloco.cache.put(chave, linhas) }
+        return linhas
+    }
+
+    static String modo() {
+        var cor = config.env("COLORTERM")
+        if (cor != null && cor.length > 0) {
+            if (cor.indexOf("truecolor") >= 0 || cor.indexOf("24bit") >= 0) { return "cor" }
+            if (cor == "yes" || cor == "1") { return "cor" }
+        }
+        var termo = config.env("TERM")
+        if (termo == null) { return "cor" }
+        if (termo == "linux" || termo == "dumb" || termo.indexOf("vt100") >= 0) { return "ascii" }
+        return "cor"
+    }
+
+    static List<Int> limites(Int colunas, Int linhasMaximas) {
+        var colunasAlvo = colunas
+        if (colunasAlvo < 2) { colunasAlvo = 2 }
+        if (colunasAlvo > MeioBloco.COLUNAS_MAXIMAS) { colunasAlvo = MeioBloco.COLUNAS_MAXIMAS }
+        var linhasAlvo = linhasMaximas
+        if (linhasAlvo < 1) { linhasAlvo = 1 }
+        if (linhasAlvo > MeioBloco.ALTURA_MAXIMA) { linhasAlvo = MeioBloco.ALTURA_MAXIMA }
+        return listOf(colunasAlvo, linhasAlvo)
+    }
+
+    static Amostra reduzir(String caminho, Int colunas, Int linhasMaximas) {
+        if (colunas < 2 || !File(caminho).exists()) { return null }
+        try {
+            var fonte = ImageIO.read(new java.io.File(caminho))
+            if (fonte == null) { return null }
+            var larguraPx = fonte.getWidth()
+            var alturaPx = fonte.getHeight()
+            if (larguraPx < 1 || alturaPx < 1) { return null }
+            var colunasAlvo = colunas
+            var linhasAlvo = colunasAlvo * alturaPx / larguraPx / 2
+            if (linhasAlvo < 1) { linhasAlvo = 1 }
+            if (linhasAlvo > linhasMaximas) {
+                linhasAlvo = linhasMaximas
+                colunasAlvo = linhasAlvo * 2 * larguraPx / alturaPx
+                if (colunasAlvo < 1) { colunasAlvo = 1 }
+            }
+            var imagem = new BufferedImage(colunasAlvo, linhasAlvo * 2, BufferedImage.TYPE_INT_ARGB)
+            var pincel = imagem.createGraphics()
+            pincel.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+            pincel.drawImage(fonte, 0, 0, colunasAlvo, linhasAlvo * 2, null)
+            pincel.dispose()
+            return Amostra(imagem, colunasAlvo, linhasAlvo)
+        } catch (String erro) {
+            return null
+        }
+    }
+
+    static List<String> converter(String caminho, Int colunas, Int linhasMaximas) {
+        var linhas = listOf<String>()
+        var amostra = MeioBloco.reduzir(caminho, colunas, linhasMaximas)
+        if (amostra == null) { return linhas }
+        for (var linha = 0; linha < amostra.linhas; linha = linha + 1) {
+            var saida = ""
+            for (var coluna = 0; coluna < amostra.colunas; coluna = coluna + 1) {
+                var cima = MeioBloco.cor(amostra.imagem.getRGB(coluna, linha * 2))
+                var baixo = MeioBloco.cor(amostra.imagem.getRGB(coluna, linha * 2 + 1))
+                saida = saida + Ansi.ESC + "[38;2;" + cima + "m"
+                    + Ansi.ESC + "[48;2;" + baixo + "m▀"
+            }
+            linhas.add(saida + Tema.RESET)
+        }
+        return linhas
+    }
+
+    static List<String> converterAscii(String caminho, Int colunas, Int linhasMaximas) {
+        var linhas = listOf<String>()
+        var amostra = MeioBloco.reduzir(caminho, colunas, linhasMaximas)
+        if (amostra == null) { return linhas }
+        for (var linha = 0; linha < amostra.linhas; linha = linha + 1) {
+            var saida = ""
+            for (var coluna = 0; coluna < amostra.colunas; coluna = coluna + 1) {
+                var tom = (MeioBloco.luz(amostra.imagem.getRGB(coluna, linha * 2))
+                    + MeioBloco.luz(amostra.imagem.getRGB(coluna, linha * 2 + 1))) / 2
+                var indice = tom * (MeioBloco.RAMPA.length - 1) / 255
+                saida = saida + MeioBloco.RAMPA.substring(indice, indice + 1)
+            }
+            linhas.add(saida)
+        }
+        return linhas
+    }
+
+    static String cor(Int argb) {
+        var rgb = MeioBloco.rgb(argb)
+        return String.valueOf(rgb.get(0)) + ";" + String.valueOf(rgb.get(1)) + ";" + String.valueOf(rgb.get(2))
+    }
+
+    static Int luz(Int argb) {
+        var rgb = MeioBloco.rgb(argb)
+        return (rgb.get(0) * 299 + rgb.get(1) * 587 + rgb.get(2) * 114) / 1000
+    }
+
+    static List<Int> rgb(Int argb) {
+        var alfa = (argb >> 24) & 255
+        var vermelho = (argb >> 16) & 255
+        var verde = (argb >> 8) & 255
+        var azul = argb & 255
+        if (alfa < 255) {
+            vermelho = (vermelho * alfa + 21 * (255 - alfa)) / 255
+            verde = (verde * alfa + 17 * (255 - alfa)) / 255
+            azul = (azul * alfa + 28 * (255 - alfa)) / 255
+        }
+        return listOf(vermelho, verde, azul)
+    }
+
+    static void limpar() {
+        MeioBloco.cache = mapOf<String, List<String>>()
+    }
+}

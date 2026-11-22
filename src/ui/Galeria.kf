@@ -63,8 +63,8 @@ class Galeria {
         return colunas
     }
 
-    static Bool mostrar(MidiaAnexo anexo) {
-        return Imagem.mostrar(Galeria.endereco(anexo), Galeria.colunas())
+    static Bool mostrar(MidiaAnexo anexo, Int linha, Int coluna) {
+        return Imagem.mostrar(Galeria.endereco(anexo), Galeria.colunas(), linha, coluna)
     }
 
     static String caminho(MidiaAnexo anexo) {
@@ -72,7 +72,6 @@ class Galeria {
     }
 
     static String aviso() {
-        if (Imagem.suportada()) { return "o terminal não entregou a imagem" }
-        return "imagem inline indisponível neste terminal"
+        return "não foi possível desenhar esta imagem aqui"
     }
 }

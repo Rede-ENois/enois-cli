@@ -3,8 +3,10 @@ package ui
 import core.Ansi
 import core.Base64
 import core.Download
+import core.MeioBloco
 import core.Midia
 import core.Tema
+import core.Terminal
 import tipos.*
 
 class Imagem {
@@ -45,39 +47,62 @@ class Imagem {
     }
 
     static Bool mostrar(String endereco, Int colunas) {
-        var protocolo = Imagem.protocoloDoTerminal()
-        if (protocolo.length == 0 || endereco.length == 0) { return false }
+        return Imagem.mostrar(endereco, colunas, 0, 1)
+    }
+
+    static Bool mostrar(String endereco, Int colunas, Int linha, Int coluna) {
+        if (endereco.length == 0) { return false }
         var caminho = Midia.arquivo(endereco)
         if (!Download.para(endereco, caminho)) { return false }
+        if (linha > 0) { print(Ansi.posicao(linha, coluna)) }
+        var protocolo = Imagem.protocoloDoTerminal()
+        if (protocolo.length == 0) { return Imagem.mostrarEmBlocos(caminho, colunas, linha, coluna) }
         try {
             if (protocolo == "iterm2") {
                 print(Imagem.iterm2(caminho, colunas))
             } else if (protocolo == "sixel") {
                 var sequencia = Sixel.codificar(caminho, colunas)
-                if (sequencia.length == 0) { return false }
+                if (sequencia.length == 0) { return Imagem.mostrarEmBlocos(caminho, colunas, linha, coluna) }
                 print(sequencia)
             } else {
                 var png = Imagem.paraPng(caminho)
-                if (png.length == 0) { return false }
+                if (png.length == 0) { return Imagem.mostrarEmBlocos(caminho, colunas, linha, coluna) }
                 print(Imagem.kitty(png, colunas))
             }
             println("")
             return true
         } catch (String erro) {
-            return false
+            return Imagem.mostrarEmBlocos(caminho, colunas, linha, coluna)
         }
     }
 
-    static void mostrarDoPost(PostResumo p) {
+    static Bool mostrarEmBlocos(String caminho, Int colunas, Int linha, Int coluna) {
+        var linhas = MeioBloco.deArquivo(caminho, colunas, Terminal.altura() - 6)
+        if (linhas.size() == 0) { return false }
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            if (linha > 0) {
+                print(Ansi.posicao(linha + i, coluna) + "  " + linhas.get(i))
+            } else {
+                println("  " + linhas.get(i))
+            }
+        }
+        return true
+    }
+
+    static List<String> miniaturas(String caminho, Int colunas, Int linhasMaximas) {
+        if (!File(caminho).exists() || File(caminho).size() == 0) { return listOf<String>() }
+        return MeioBloco.deArquivo(caminho, colunas, linhasMaximas)
+    }
+
+    static void preparar(PostResumo p) {
         var anexos = p.media
         if (anexos == null) { return }
-        for (var i = 0; i < anexos.size(); i = i + 1) {
-            var anexo = anexos.get(i)
+        for (var anexo in anexos) {
             if (!Imagem.eImagem(anexo.mimeType)) { continue }
             var url = ""
             if (anexo.cdnUrl != null) { url = Midia.url(anexo.cdnUrl) }
             if (url.length == 0) { continue }
-            Imagem.mostrar(url, Imagem.COLUNAS_AVATAR)
+            Download.para(url, Midia.arquivo(url))
         }
     }
 

@@ -24,7 +24,7 @@ class Faisca {
         }
         var saida = ""
         for (var i = 0; i < partes.size(); i = i + 1) {
-            if (i > 0) { saida = saida + " " }
+            if (i > 0) { saida = saida + " · " }
             saida = saida + partes.get(i)
         }
         return saida

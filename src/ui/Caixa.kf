@@ -54,6 +54,27 @@ class Caixa {
         return saida
     }
 
+    static List<String> paragrafos(String texto, Int largura) {
+        var linhas = listOf<String>()
+        if (texto == null || texto.length == 0) { return linhas }
+        for (var parte in Caixa.partes(texto)) {
+            var limpa = parte.trim()
+            if (limpa.length == 0) {
+                if (linhas.size() > 0 && linhas.get(linhas.size() - 1).length > 0) {
+                    linhas.add("")
+                }
+                continue
+            }
+            for (var pedaco in Ansi.quebrar(limpa, largura)) {
+                linhas.add(Ansi.cortar(pedaco, largura))
+            }
+        }
+        while (linhas.size() > 0 && linhas.get(linhas.size() - 1).length == 0) {
+            linhas.remove(linhas.size() - 1)
+        }
+        return linhas
+    }
+
     static String juntar(List<String> linhas) {
         var saida = ""
         for (var i = 0; i < linhas.size(); i = i + 1) {

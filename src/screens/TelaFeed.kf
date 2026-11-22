@@ -153,8 +153,10 @@ class TelaFeed {
                 return
             }
             for (var i = 0; i < itens.size(); i = i + 1) {
+                Imagem.preparar(itens.get(i))
+            }
+            for (var i = 0; i < itens.size(); i = i + 1) {
                 println(this.card(itens.get(i)))
-                this.mostrarImagens(itens.get(i))
             }
             var proximo = ""
             if (pagina.nextCursor != null) { proximo = pagina.nextCursor }
@@ -277,6 +279,7 @@ class TelaFeed {
         if (itens != null) {
             for (var i = 0; i < itens.size(); i = i + 1) {
                 this.posts.add(itens.get(i))
+                Imagem.preparar(itens.get(i))
             }
         }
         var novo = ""
@@ -407,10 +410,6 @@ class TelaFeed {
             return
         }
         this.restaurar()
-    }
-
-    void mostrarImagens(PostResumo p) {
-        Imagem.mostrarDoPost(p)
     }
 
     void compor() {
