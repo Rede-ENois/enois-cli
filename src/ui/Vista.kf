@@ -6,14 +6,22 @@ class Vista {
 
     Regioes regioes = Regioes()
     Rolagem rolagem
+    List<AcaoRegiao> acoes = listOf<AcaoRegiao>()
     Int altura = 0
     String contexto = ""
     String secaoAtiva = ""
     ContagensNavegacao contagens = null
+    Int linhaConteudo = 1
+    Int alturaConteudo = 0
+    List<String> quadro = listOf<String>()
 
     public constructor(Int altura) {
         this.altura = altura
         this.rolagem = Rolagem(altura)
+    }
+
+    List<String> fundo() {
+        return this.quadro
     }
 
     void marcarSecoes(String contexto, String ativa, ContagensNavegacao contagens) {
@@ -42,7 +50,7 @@ class Vista {
         return String.valueOf(this.rolagem.foco + 1) + "/" + String.valueOf(total)
     }
 
-    void desenhar(String topo, String cabecalho, String rodape) {
+    List<String> montar(String topo, String cabecalho, String rodape) {
         Ansi.medir()
         var partesTopo = topo.split("\n")
         var partesCabecalho = cabecalho.split("\n")
@@ -52,36 +60,51 @@ class Vista {
         this.altura = conteudo
         this.rolagem.altura = conteudo
         this.rolagem.limitar()
-        print(Ansi.LIMPAR)
         this.regioes.limpar()
-        var linha = 1
-        for (var parte in partesTopo) {
-            println(parte)
-            linha = linha + 1
-        }
+        var linhas = listOf<String>()
+        for (var parte in partesTopo) { linhas.add(parte) }
+        var linha = partesTopo.length + 1
         var indice = 0
         for (var parte in partesCabecalho) {
-            println(parte)
+            linhas.add(parte)
             if (indice == 0 && this.contexto.length > 0) {
                 BarraSecoes.registrar(this.regioes, linha, this.contexto, this.secaoAtiva, this.contagens)
             }
             indice = indice + 1
             linha = linha + 1
         }
-        println("")
+        linhas.add("")
         linha = linha + 1
+        this.linhaConteudo = linha
+        this.alturaConteudo = conteudo
         var visiveis = this.rolagem.visiveis()
         for (var i = 0; i < visiveis.size(); i = i + 1) {
-            println(visiveis.get(i))
+            linhas.add(visiveis.get(i))
             var bloco = this.rolagem.blocoDaLinha(this.rolagem.deslocamento + i)
             if (bloco >= 0) {
-                this.regioes.adicionar(linha, 1, Ansi.LARGURA_CONTEUDO, this.rolagem.dadoDoBloco(bloco), "item")
+                var dado = this.rolagem.dadoDoBloco(bloco)
+                var linhaNoBloco = this.rolagem.deslocamento + i - this.rolagem.inicioDoBloco(bloco)
+                for (var acao in this.acoes) {
+                    if (acao.dado != dado) { continue }
+                    if (acao.linha != linhaNoBloco) { continue }
+                    this.regioes.adicionarAcao(linha, acao.inicio, acao.fim, acao.indice, acao.tipo, dado)
+                }
+                this.regioes.adicionar(linha, 1, Ansi.LARGURA_CONTEUDO, dado, "item")
             }
             linha = linha + 1
         }
-        println("")
-        for (var parte in partesRodape) {
-            println(parte)
-        }
+        linhas.add("")
+        for (var parte in partesRodape) { linhas.add(parte) }
+        this.quadro = linhas
+        return linhas
+    }
+
+    void desenhar(String topo, String cabecalho, String rodape) {
+        print(Ansi.LIMPAR)
+        Vista.imprimir(this.montar(topo, cabecalho, rodape))
+    }
+
+    static void imprimir(List<String> linhas) {
+        for (var linha in linhas) { println(linha) }
     }
 }

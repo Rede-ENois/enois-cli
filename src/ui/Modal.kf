@@ -1,0 +1,317 @@
+package ui
+
+import core.*
+
+class Modal {
+
+    Teclado teclado
+    List<String> fundo = listOf<String>()
+    List<Foco> focos = listOf<Foco>()
+    Int foco = 0
+    Bool cancelado = false
+    Bool confirmado = false
+    String status = ""
+    Int linhaBase = 1
+    Int colunaBase = 1
+    Int larguraAtual = 40
+    Int textoLargura = 33
+    Int ultimaLinhaPintada = 0
+    List<String> linhasCorpo = listOf<String>()
+    List<String> tela = listOf<String>()
+
+    public constructor(Teclado teclado, List<String> fundo) {
+        this.teclado = teclado
+        this.fundo = fundo
+    }
+
+    String titulo() {
+        return ""
+    }
+
+    List<String> corpo() {
+        return listOf<String>()
+    }
+
+    List<Foco> alvos() {
+        return listOf<Foco>()
+    }
+
+    Bool aoTecla(Tecla tecla) {
+        return false
+    }
+
+    Bool aoCampo(Int linha, Int coluna) {
+        return false
+    }
+
+    Bool aoAtivar(Int indice) {
+        return false
+    }
+
+    String ajuda() {
+        return "tab move · enter confirma · esc cancela"
+    }
+
+    Bool executar() {
+        while (!this.confirmado && !this.cancelado) {
+            this.focos = this.alvos()
+            this.pintar()
+            this.tratar(this.teclado.ler())
+        }
+        return this.confirmado
+    }
+
+    Bool tratar(Tecla tecla) {
+        if (tecla.nome == "ctrl-c") {
+            this.cancelado = true
+            return false
+        }
+        if (tecla.nome == "escape") {
+            this.cancelado = true
+            return false
+        }
+        if (tecla.nome == "tab") {
+            this.moverFoco(1)
+            return true
+        }
+        if (tecla.nome == "voltar-aba") {
+            this.moverFoco(-1)
+            return true
+        }
+        if (tecla.nome == "redimensionar") {
+            Ansi.medir()
+            return true
+        }
+        if (this.aoTecla(tecla)) { return true }
+        if (tecla.nome == "enter") {
+            this.ativar()
+            return true
+        }
+        if (tecla.nome == "cima") {
+            this.moverFoco(-1)
+            return true
+        }
+        if (tecla.nome == "baixo") {
+            this.moverFoco(1)
+            return true
+        }
+        if (tecla.nome == "clique") {
+            this.clicar(tecla.linha, tecla.coluna)
+            return true
+        }
+        return true
+    }
+
+    void moverFoco(Int passo) {
+        if (this.focos.size() == 0) { return }
+        var novo = this.foco + passo
+        if (novo < 0) { novo = this.focos.size() - 1 }
+        if (novo >= this.focos.size()) { novo = 0 }
+        this.foco = novo
+    }
+
+    Foco focoAtual() {
+        if (this.focos.size() == 0) { return null }
+        if (this.foco < 0 || this.foco >= this.focos.size()) { return null }
+        return this.focos.get(this.foco)
+    }
+
+    void focar(String tipo) {
+        for (var i = 0; i < this.focos.size(); i = i + 1) {
+            if (this.focos.get(i).tipo == tipo) {
+                this.foco = i
+                return
+            }
+        }
+    }
+
+    void ativar() {
+        var alvo = this.focoAtual()
+        if (alvo == null) { return }
+        this.aoAtivar(alvo.indice)
+    }
+
+    void clicar(Int linha, Int coluna) {
+        var indice = this.alvoEm(linha, coluna)
+        if (indice < 0) { return }
+        this.foco = indice
+        var alvo = this.focos.get(indice)
+        if (alvo.tipo == "campo") {
+            this.aoCampo(this.linhaDoCorpo(linha), this.colunaDoTexto(coluna))
+            return
+        }
+        this.aoAtivar(alvo.indice)
+    }
+
+    Int alvoEm(Int linha, Int coluna) {
+        if (linha < this.linhaBase) { return -1 }
+        if (linha > this.linhaBase + this.altura() - 1) { return -1 }
+        if (coluna < this.colunaBase) { return -1 }
+        if (coluna > this.colunaBase + this.larguraAtual - 1) { return -1 }
+        var indice = this.linhaDoCorpo(linha)
+        if (indice < 0 || indice >= this.linhasCorpo.size()) { return -1 }
+        var texto = this.colunaDoTexto(coluna)
+        for (var i = 0; i < this.focos.size(); i = i + 1) {
+            var alvo = this.focos.get(i)
+            if (indice < alvo.linha || indice > alvo.linhaFim) { continue }
+            if (texto >= alvo.inicio && texto <= alvo.fim) { return i }
+        }
+        for (var i = 0; i < this.focos.size(); i = i + 1) {
+            var alvo = this.focos.get(i)
+            if (indice < alvo.linha || indice > alvo.linhaFim) { continue }
+            return i
+        }
+        return -1
+    }
+
+    Int linhaDoCorpo(Int linha) {
+        return linha - this.linhaBase - 1
+    }
+
+    Int colunaDoTexto(Int coluna) {
+        return coluna - this.colunaBase - 4
+    }
+
+    Int linhaDoStatus() {
+        return this.linhasCorpo.size()
+    }
+
+    Int linhaDoBase() {
+        return this.linhasCorpo.size() + 1
+    }
+
+    Int largura() {
+        var largura = Ansi.LARGURA_CONTEUDO - 6
+        if (largura < 34) { largura = 34 }
+        if (largura > 100) { largura = 100 }
+        return largura
+    }
+
+    Int colunaTela() {
+        return (Ansi.LARGURA_CONTEUDO - this.largura()) / 2 + 1
+    }
+
+    Int linhaTela() {
+        var linha = (Terminal.altura() - this.altura()) / 2 + 1
+        if (linha < 1) { linha = 1 }
+        if (linha + this.altura() - 1 > Terminal.altura()) {
+            linha = Terminal.altura() - this.altura() + 1
+        }
+        if (linha < 1) { linha = 1 }
+        return linha
+    }
+
+    Int altura() {
+        return this.linhasCorpo.size() + 3
+    }
+
+    Int larguraDoTexto() {
+        return this.largura() - 7
+    }
+
+    Bool marcada(Int indice) {
+        var alvo = this.focoAtual()
+        if (alvo == null) { return false }
+        return alvo.linha == indice
+    }
+
+    void pintar() {
+        this.linhasCorpo = this.corpo()
+        this.larguraAtual = this.largura()
+        this.colunaBase = this.colunaTela()
+        this.textoLargura = this.larguraDoTexto()
+        this.linhaBase = this.linhaTela()
+        var partes = this.caixa()
+        this.tela = Modal.compor(this.fundo, partes, this.linhaBase, this.colunaBase, this.larguraAtual)
+        var posicao = this.linhaBase
+        for (var parte in partes) {
+            Ansi.escrever(Ansi.posicao(posicao, 1) + Ansi.LIMPAR_LINHA + this.tela.get(posicao - 1))
+            posicao = posicao + 1
+        }
+        this.limparApos(posicao)
+        this.ultimaLinhaPintada = posicao - 1
+    }
+
+    List<String> caixa() {
+        var conteudo = listOf<String>()
+        conteudo.add(Modal.topo(this.larguraAtual, this.titulo()))
+        for (var i = 0; i < this.linhasCorpo.size(); i = i + 1) {
+            var marca = " "
+            if (this.marcada(i)) { marca = Tema.pinta(Tema.PRIMARIO, "▸") }
+            conteudo.add(Modal.meio(this.larguraAtual, marca, this.textoLargura, this.linhasCorpo.get(i)))
+        }
+        conteudo.add(Modal.meio(this.larguraAtual, " ", this.textoLargura, this.aviso()))
+        conteudo.add(Modal.base(this.larguraAtual, this.ajuda()))
+        return conteudo
+    }
+
+    String aviso() {
+        if (this.status.length == 0) { return " " }
+        if (this.status.startsWith(Ansi.ESC)) { return this.status }
+        return Tema.erro(this.status)
+    }
+
+    static List<String> compor(List<String> fundo, List<String> partes, Int linhaBase, Int colunaBase, Int larguraCaixa) {
+        var total = linhaBase + partes.size() - 1
+        if (fundo.size() > total) { total = fundo.size() }
+        if (Terminal.altura() > total) { total = Terminal.altura() }
+        var saida = listOf<String>()
+        for (var i = 0; i < total; i = i + 1) {
+            var base = ""
+            if (i < fundo.size()) { base = fundo.get(i) }
+            saida.add(Ansi.padDireita(base, Terminal.colunas()))
+        }
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            var indice = linhaBase - 1 + i
+            if (indice < 0 || indice >= saida.size()) { continue }
+            saida.set(indice, Ansi.sobrepor(saida.get(indice), partes.get(i), colunaBase, larguraCaixa))
+        }
+        return saida
+    }
+
+    void restaurar() {
+        print(Ansi.LIMPAR)
+        for (var linha in this.tela) { println(linha) }
+    }
+
+    void limparApos(Int posicao) {
+        var linha = posicao
+        while (linha <= this.ultimaLinhaPintada) {
+            var base = ""
+            if (linha - 1 < this.fundo.size()) { base = this.fundo.get(linha - 1) }
+            Ansi.escrever(Ansi.posicao(linha, 1) + Ansi.LIMPAR_LINHA
+                + Ansi.padDireita(base, Terminal.colunas()))
+            linha = linha + 1
+        }
+    }
+
+    static String topo(Int largura, String titulo) {
+        var texto = Ansi.cortar(" " + titulo, largura - 5)
+        var restante = largura - 5 - Ansi.largura(texto)
+        if (restante < 0) { restante = 0 }
+        return Tema.pinta(Tema.BORDA_SUAVE, "╭─ ") + Tema.destaque(texto)
+            + Modal.tracos(restante) + Tema.pinta(Tema.BORDA_SUAVE, " ╮")
+    }
+
+    static String base(Int largura, String ajuda) {
+        var texto = Ansi.cortar(" " + ajuda, largura - 5)
+        var restante = largura - 5 - Ansi.largura(texto)
+        if (restante < 0) { restante = 0 }
+        return Tema.pinta(Tema.BORDA_SUAVE, "╰─ ") + Tema.suave(texto)
+            + Modal.tracos(restante) + Tema.pinta(Tema.BORDA_SUAVE, " ╯")
+    }
+
+    static String meio(Int largura, String marca, Int textoLargura, String texto) {
+        var preenchido = Ansi.cortar(texto, textoLargura)
+        var folga = largura - 5 - Ansi.largura(preenchido)
+        if (folga < 0) { folga = 0 }
+        return Tema.pinta(Tema.BORDA_SUAVE, "│") + " " + marca + " " + preenchido
+            + Modal.tracos(folga) + Tema.pinta(Tema.BORDA_SUAVE, "│")
+    }
+
+    static String tracos(Int quantidade) {
+        var saida = ""
+        for (var i = 0; i < quantidade; i = i + 1) { saida = saida + "─" }
+        return Tema.pinta(Tema.BORDA_SUAVE, saida)
+    }
+}

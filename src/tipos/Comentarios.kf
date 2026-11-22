@@ -15,7 +15,99 @@ record Comentario(
     String? currentUserReaction,
     Int? reactionCount,
     Troolean? pinned,
-    Troolean? accepted
-)
+    Troolean? accepted,
+    List<String>? mediaIds,
+    Troolean? mediaSpoiler
+) {
+
+    Bool temReacao(String tipo) {
+        if (this.currentUserReaction == null) { return false }
+        return this.currentUserReaction == tipo
+    }
+
+    Bool reagido() {
+        if (this.currentUserReaction == null) { return false }
+        return this.currentUserReaction.length > 0
+    }
+
+    Int totalDeReacoes() {
+        if (this.reactionCount == null) { return 0 }
+        return this.reactionCount
+    }
+
+    Bool fixado() {
+        return "" + this.pinned == "true"
+    }
+
+    Bool aceito() {
+        return "" + this.accepted == "true"
+    }
+
+    String criadoEm() {
+        if (this.createdAt == null) { return "" }
+        return this.createdAt
+    }
+
+    String usuario() {
+        if (this.authorUsername == null) { return "alguém" }
+        return this.authorUsername
+    }
+
+    String nome() {
+        if (this.authorName == null) { return "" }
+        return this.authorName
+    }
+
+    Bool meu(String autorId) {
+        if (autorId.length == 0) { return false }
+        if (this.authorId == null) { return false }
+        return this.authorId == autorId
+    }
+
+    Bool resposta() {
+        if (this.parentCommentId == null) { return false }
+        return this.parentCommentId.length > 0
+    }
+
+    Int totalDeMidias() {
+        var midias = this.mediaIds
+        if (midias == null) { return 0 }
+        return midias.size()
+    }
+
+    Comentario comReacao(Int? contagem, String? reacao) {
+        return Comentario(this.id, this.postId, this.authorId, this.authorName, this.authorUsername,
+            this.authorAvatar, this.authorBadge, this.parentCommentId, this.content, this.createdAt,
+            this.editedAt, reacao, contagem, this.pinned, this.accepted, this.mediaIds, this.mediaSpoiler)
+    }
+
+    Comentario reacaoOtimista(String tipo) {
+        var atual = this.currentUserReaction
+        var removendo = atual != null && atual == tipo
+        var trocando = atual != null && atual != tipo
+        var total = this.totalDeReacoes()
+        if (removendo) {
+            if (total > 0) { total = total - 1 }
+            return this.comReacao(total, null)
+        }
+        if (!trocando) { total = total + 1 }
+        return this.comReacao(total, tipo)
+    }
+
+    Comentario comConteudo(String texto, String? editado) {
+        return Comentario(this.id, this.postId, this.authorId, this.authorName, this.authorUsername,
+            this.authorAvatar, this.authorBadge, this.parentCommentId, texto, this.createdAt,
+            editado, this.currentUserReaction, this.reactionCount, this.pinned, this.accepted,
+            this.mediaIds, this.mediaSpoiler)
+    }
+}
 
 record PaginaComentarios(List<Comentario>? items, String? nextCursor)
+
+record EdicaoComentario(String? status, String? content, List<String>? mediaIds, String? editedAt) {
+
+    Bool editado() {
+        if (this.status == null) { return false }
+        return this.status == "COMMENT_EDITED"
+    }
+}

@@ -19,18 +19,18 @@ class ComentariosApi {
     }
 
     Resposta comentar(String postId, String conteudo, String? comentarioPai) {
-        var corpo = json.encode(mapOf("content", conteudo))
-        if (comentarioPai != null) {
-            corpo = json.encode(mapOf("content", conteudo,
-                "parentCommentId", comentarioPai))
-        }
-        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/comments", corpo)
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/comments",
+            ComentariosApi.corpoDeComentario(conteudo, comentarioPai, listOf<String>(), false))
     }
 
-    Resposta editar(String postId, String comentarioId, String conteudo) {
-        var corpo = json.encode(mapOf("content", conteudo))
+    Resposta editar(String postId, String comentarioId, String conteudo, List<String>? mediaIds) {
+        var partes = listOf<String>()
+        partes.add("\"content\":" + json.encode(conteudo))
+        if (mediaIds != null) {
+            partes.add("\"mediaIds\":" + ComentariosApi.lista(mediaIds))
+        }
         return this.cliente.patch("/feed/posts/" + Cliente.caminho(postId)
-            + "/comments/" + Cliente.caminho(comentarioId), corpo)
+            + "/comments/" + Cliente.caminho(comentarioId), "{" + PostApi.juntar(partes) + "}")
     }
 
     Resposta apagar(String postId, String comentarioId) {
@@ -48,50 +48,62 @@ class ComentariosApi {
             + "/comments/" + Cliente.caminho(comentarioId) + "/pin")
     }
 
-    Resposta reagir(String postId, String tipo) {
-        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/reactions",
-            json.encode(mapOf("type", tipo)))
-    }
-
-    Resposta desreagir(String postId) {
-        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/reactions")
-    }
-
     Resposta reagirComentario(String postId, String comentarioId, String tipo) {
         return this.cliente.post("/feed/posts/" + Cliente.caminho(postId)
             + "/comments/" + Cliente.caminho(comentarioId) + "/reactions",
             json.encode(mapOf("type", tipo)))
     }
 
-    Resposta reacoes(String postId) {
-        return this.cliente.get("/feed/posts/" + Cliente.caminho(postId) + "/reactions")
+    Resposta desreagirComentario(String postId, String comentarioId) {
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId) + "/reactions")
     }
 
-    Resposta salvar(String postId) {
-        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/saves", "{}")
+    Resposta reacoesDoComentario(String postId, String comentarioId) {
+        return this.cliente.get("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId) + "/reactions")
     }
 
-    Resposta dessalvar(String postId) {
-        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/saves")
+    static String corpoDeComentario(String conteudo, String? comentarioPai, List<String> mediaIds, Bool spoiler) {
+        var partes = listOf<String>()
+        partes.add("\"content\":" + json.encode(conteudo))
+        if (comentarioPai != null) {
+            partes.add("\"parentCommentId\":" + json.encode(comentarioPai))
+        } else {
+            partes.add("\"parentCommentId\":null")
+        }
+        partes.add("\"mediaIds\":" + ComentariosApi.lista(mediaIds))
+        partes.add("\"mentionedUserIds\":[]")
+        partes.add("\"website\":\"\"")
+        if (spoiler) {
+            partes.add("\"mediaSpoiler\":true")
+        } else {
+            partes.add("\"mediaSpoiler\":false")
+        }
+        return "{" + PostApi.juntar(partes) + "}"
     }
 
-    Resposta compartilhar(String postId) {
-        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/shares", "{}")
+    static String lista(List<String>? itens) {
+        if (itens == null) { return "[]" }
+        return json.encode(itens)
     }
 
-    Resposta republicar(String postId, String? opiniao) {
-        var corpo = "{}"
-        if (opiniao != null) { corpo = json.encode(mapOf("opinion", opiniao)) }
-        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/repost", corpo)
+    static Comentario? criado(Resposta resposta) {
+        if (resposta.codigo != 201) { return null }
+        try {
+            return json.decode<Comentario>(resposta.corpo)
+        } catch (String e) {
+            return null
+        }
     }
 
-    Resposta republicarNaComunidade(String postId, String comunidadeId, String opiniao) {
-        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/repost",
-            json.encode(mapOf("communityId", comunidadeId, "opinion", opiniao)))
-    }
-
-    Resposta desfazerRepost(String postId) {
-        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/repost")
+    static EdicaoComentario edicao(Resposta resposta) {
+        if (!resposta.ok()) { return EdicaoComentario(null, null, null, null) }
+        try {
+            return json.decode<EdicaoComentario>(resposta.corpo)
+        } catch (String e) {
+            return EdicaoComentario(null, null, null, null)
+        }
     }
 
     static PaginaComentarios pagina(Resposta r) {

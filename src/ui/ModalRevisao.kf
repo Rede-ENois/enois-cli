@@ -1,0 +1,91 @@
+package ui
+
+import core.*
+import tipos.*
+
+class ModalRevisao extends Modal {
+
+    Borrador borrador
+    List<String> midias = listOf<String>()
+
+    public constructor(Teclado teclado, List<String> fundo, Borrador borrador, List<String> midias) {
+        super(teclado, fundo)
+        this.borrador = borrador
+        this.midias = midias
+    }
+
+    String titulo() {
+        return "revisar publicação"
+    }
+
+    String ajuda() {
+        return "tab move · enter publica · esc volta"
+    }
+
+    List<String> corpo() {
+        var linhas = listOf<String>()
+        linhas.add(Tema.suave("tipo     ") + Assuntos.rotuloTipo(this.borrador.tipo))
+        linhas.add(Tema.suave("assunto  ") + Assuntos.rotulo(this.borrador.topico))
+        linhas.add("")
+        for (var linha in Ansi.quebrar(this.borrador.conteudo, this.larguraDoTexto())) {
+            linhas.add(Tema.texto(linha))
+        }
+        if (this.borrador.corpoArtigo.length > 0) {
+            linhas.add("")
+            linhas.add(Tema.mudo("corpo do artigo:"))
+            for (var linha in Ansi.quebrar(this.borrador.corpoArtigo, this.larguraDoTexto())) {
+                linhas.add(Tema.texto(linha))
+            }
+        }
+        var opcoes = this.borrador.opcoesEnquete
+        if (opcoes != null && opcoes.size() > 0) {
+            linhas.add("")
+            linhas.add(Tema.mudo("opções da enquete:"))
+            for (var opcao in opcoes) {
+                linhas.add(Tema.texto("  " + opcao))
+            }
+        }
+        if (this.midias.size() > 0) {
+            linhas.add("")
+            linhas.add(Tema.mudo("mídias:"))
+            for (var midia in this.midias) {
+                linhas.add(Tema.texto("  " + midia))
+            }
+        }
+        var tags = this.borrador.tags
+        if (tags != null && tags.size() > 0) {
+            var juntas = listOf<String>()
+            for (var tag in tags) { juntas.add("#" + tag) }
+            linhas.add("")
+            linhas.add(Tema.suave("tags     ") + String.join(" ", juntas))
+        }
+        linhas.add("")
+        linhas.add(this.botao("publicar", 0))
+        linhas.add(this.botao("voltar", 1))
+        return linhas
+    }
+
+    String botao(String rotulo, Int indice) {
+        if (this.marcada(indice)) {
+            return Tema.selecionado("  " + rotulo + "  ")
+        }
+        return "  " + Tema.suave(rotulo)
+    }
+
+    List<Foco> alvos() {
+        var linhas = this.corpo()
+        var base = linhas.size() - 2
+        return listOf(
+            Foco(base, base, 3, 20, 0, "publicar", "botao"),
+            Foco(base + 1, base + 1, 3, 20, 1, "voltar", "botao"))
+    }
+
+    Bool aoAtivar(Int indice) {
+        if (indice == 0) {
+            this.confirmado = true
+            return true
+        }
+        this.cancelado = true
+        return true
+    }
+}

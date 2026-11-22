@@ -1,0 +1,172 @@
+package core
+
+import tipos.*
+
+class Anexo {
+
+    static List<String> MIMES = listOf(
+        "image/jpeg", "image/png", "image/gif", "image/webp", "image/avif", "image/svg+xml",
+        "video/mp4", "video/webm", "video/quicktime",
+        "audio/mpeg", "audio/ogg", "audio/wav", "audio/webm",
+        "application/pdf")
+
+    static Int TETO_GERAL = 524288000
+    static Int TETO_VIDEO = 10485760
+    static Int TETO_SELO = 2097152
+
+    static String mimeDe(String nome) {
+        var extensao = Midia.extensao(nome)
+        if (extensao.startsWith(".")) { extensao = extensao.substring(1) }
+        if (extensao == "jpg" || extensao == "jpeg") { return "image/jpeg" }
+        if (extensao == "png") { return "image/png" }
+        if (extensao == "gif") { return "image/gif" }
+        if (extensao == "webp") { return "image/webp" }
+        if (extensao == "avif") { return "image/avif" }
+        if (extensao == "svg") { return "image/svg+xml" }
+        if (extensao == "mp4") { return "video/mp4" }
+        if (extensao == "webm") { return "video/webm" }
+        if (extensao == "mov") { return "video/quicktime" }
+        if (extensao == "mp3") { return "audio/mpeg" }
+        if (extensao == "ogg") { return "audio/ogg" }
+        if (extensao == "wav") { return "audio/wav" }
+        if (extensao == "pdf") { return "application/pdf" }
+        return ""
+    }
+
+    static Bool aceito(String mimeType) {
+        for (var permitido in Anexo.MIMES) {
+            if (permitido == mimeType) { return true }
+        }
+        return false
+    }
+
+    static Bool video(String mimeType) {
+        if (mimeType == "video/mp4" || mimeType == "video/webm" || mimeType == "video/quicktime") {
+            return true
+        }
+        return false
+    }
+
+    static Bool audio(String mimeType) {
+        return mimeType.startsWith("audio/")
+    }
+
+    static Bool imagem(String mimeType) {
+        return mimeType.startsWith("image/")
+    }
+
+    static Int teto(String mimeType, String proposito) {
+        var teto = Anexo.TETO_GERAL
+        if (proposito == "BADGE") { teto = Anexo.TETO_SELO }
+        if (Anexo.video(mimeType) && Anexo.TETO_VIDEO < teto) { teto = Anexo.TETO_VIDEO }
+        return teto
+    }
+
+    static String nomeDe(String caminho) {
+        var barra = -1
+        for (var i = 0; i < caminho.length; i = i + 1) {
+            if (caminho.charAt(i) == '/') { barra = i }
+        }
+        if (barra < 0) { return caminho }
+        return caminho.substring(barra + 1)
+    }
+
+    static String nomeSanitizado(String nome) {
+        var saida = ""
+        for (var i = 0; i < nome.length(); i = i + 1) {
+            var c = nome.substring(i, i + 1)
+            if (Anexo.ASCII(c)) {
+                saida = saida + c
+            } else {
+                saida = saida + "_"
+            }
+        }
+        if (saida.length() == 0) { return "arquivo" }
+        return saida
+    }
+
+    static Bool ASCII(String c) {
+        if (c == "." || c == "-") { return true }
+        return "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".indexOf(c) >= 0
+    }
+
+    static String nomeDeEnvio(String nome) {
+        return "media/" + uuid.v4() + "/" + Anexo.nomeSanitizado(nome)
+    }
+
+    static String rotulo(String mimeType) {
+        if (Anexo.imagem(mimeType)) { return "imagem" }
+        if (Anexo.video(mimeType)) { return "vídeo" }
+        if (Anexo.audio(mimeType)) { return "áudio" }
+        if (mimeType == "application/pdf") { return "pdf" }
+        return "arquivo"
+    }
+
+    static String legivel(Long bytes) {
+        if (bytes < 1024) { return String.valueOf(bytes) + " B" }
+        var kb = bytes / 1024
+        if (kb < 1024) { return String.valueOf(kb) + " KB" }
+        var mb = kb / 1024
+        if (mb < 1024) { return String.valueOf(mb) + " MB" }
+        return String.valueOf(mb / 1024) + " GB"
+    }
+
+    static String origemDe(String endereco) {
+        var marca = endereco.indexOf("://")
+        if (marca < 0) { return "" }
+        var inicio = marca + 3
+        var fim = endereco.length
+        var i = inicio
+        while (i < endereco.length) {
+            var c = endereco.charAt(i)
+            if (c == '/' || c == '?' || c == '#') {
+                fim = i
+                break
+            }
+            i = i + 1
+        }
+        return endereco.substring(0, fim).toLowerCase()
+    }
+
+    static Bool mesmaOrigem(String primeiro, String segundo) {
+        var a = Anexo.origemDe(primeiro)
+        var b = Anexo.origemDe(segundo)
+        if (a.length == 0 || b.length == 0) { return false }
+        return a == b
+    }
+
+    static tipos.AnexoLocal recusado(String caminho, String nome, String mimeType, Long tamanho, String erro) {
+        return tipos.AnexoLocal(caminho, nome, mimeType, tamanho, "recusado", erro, "", 0)
+    }
+
+    static tipos.AnexoLocal de(String caminho, String proposito) {
+        var nome = Anexo.nomeDe(caminho)
+        var arquivo = File(caminho)
+        if (!arquivo.exists()) {
+            return Anexo.recusado(caminho, nome, "", 0, "arquivo não encontrado")
+        }
+        if (arquivo.isDirectory()) {
+            return Anexo.recusado(caminho, nome, "", 0, "isso é uma pasta")
+        }
+        var tamanho = arquivo.size()
+        var mimeType = Anexo.mimeDe(nome)
+        if (!Anexo.aceito(mimeType)) {
+            var formato = nome
+            var ponto = -1
+            for (var i = 0; i < nome.length; i = i + 1) {
+                if (nome.charAt(i) == '.') { ponto = i }
+            }
+            if (ponto >= 0) { formato = nome.substring(ponto + 1) }
+            return Anexo.recusado(caminho, nome, mimeType, tamanho, "formato ." + formato + " não aceito")
+        }
+        var teto = Anexo.teto(mimeType, proposito)
+        if (tamanho > teto) {
+            return Anexo.recusado(caminho, nome, mimeType, tamanho,
+                "passa do limite de " + Anexo.legivel(teto) + " para " + Anexo.rotulo(mimeType))
+        }
+        if (tamanho == 0) {
+            return Anexo.recusado(caminho, nome, mimeType, tamanho, "arquivo vazio")
+        }
+        return tipos.AnexoLocal(caminho, nome, mimeType, tamanho, "pronto", "", "", 0)
+    }
+}

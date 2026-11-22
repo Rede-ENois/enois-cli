@@ -1,0 +1,69 @@
+package ui
+
+import core.*
+
+class ModalConfirmacao extends Modal {
+
+    String pergunta
+    String rotuloSim
+    String rotuloNao
+    String detalhe
+
+    public constructor(Teclado teclado, List<String> fundo, String pergunta) {
+        super(teclado, fundo)
+        this.pergunta = pergunta
+        this.rotuloSim = "confirmar"
+        this.rotuloNao = "cancelar"
+        this.detalhe = ""
+    }
+
+    String titulo() {
+        return "confirmar"
+    }
+
+    String ajuda() {
+        return "tab move · enter confirma · esc cancela"
+    }
+
+    List<String> corpo() {
+        var linhas = listOf<String>()
+        linhas.add(Tema.texto(this.pergunta))
+        if (this.detalhe.length > 0) {
+            linhas.add("")
+            linhas.add(Tema.mudo(this.detalhe))
+        }
+        linhas.add("")
+        linhas.add(this.botao(this.rotuloSim, 0))
+        linhas.add(this.botao(this.rotuloNao, 1))
+        return linhas
+    }
+
+    String botao(String rotulo, Int indice) {
+        if (this.marcada(indice)) {
+            return Tema.selecionado("  " + rotulo + "  ")
+        }
+        return "  " + Tema.suave(rotulo)
+    }
+
+    List<Foco> alvos() {
+        var linha = this.linhaDoBotao()
+        return listOf(
+            Foco(linha, linha, 3, 20, 0, this.rotuloSim, "botao"),
+            Foco(linha + 1, linha + 1, 3, 20, 1, this.rotuloNao, "botao"))
+    }
+
+    Int linhaDoBotao() {
+        var base = 3
+        if (this.detalhe.length > 0) { base = 5 }
+        return base
+    }
+
+    Bool aoAtivar(Int indice) {
+        if (indice == 0) {
+            this.confirmado = true
+            return true
+        }
+        this.cancelado = true
+        return true
+    }
+}

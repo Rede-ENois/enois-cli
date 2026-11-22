@@ -1,0 +1,24 @@
+package core
+
+class Abrir {
+
+    static String externo(String endereco) {
+        if (endereco.length == 0) { return "sem endereço" }
+        var caminho = Midia.arquivo(endereco)
+        if (!Download.para(endereco, caminho)) { return "não baixou a mídia" }
+        if (Abrir.comando("xdg-open", caminho)) { return "" }
+        return "abra manualmente: " + caminho
+    }
+
+    static Bool comando(String programa, String caminho) {
+        var script = "command -v " + programa + " >/dev/null 2>&1 || exit 1; "
+            + programa + " " + caminho + " >/dev/null 2>&1 &"
+        try {
+            var resultado = process.run("sh", "-c", script)
+            if (resultado.exitCode == 0) { return true }
+            return false
+        } catch (String erro) {
+            return false
+        }
+    }
+}

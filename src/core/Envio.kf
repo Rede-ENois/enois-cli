@@ -1,0 +1,43 @@
+package core
+
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpRequest.BodyPublishers
+import java.net.http.HttpResponse
+import java.net.http.HttpResponse.BodyHandlers
+import java.nio.file.Path
+import java.time.Duration
+
+class Envio {
+
+    static Int SEGUNDOS_CONEXAO = 30
+    static Int MINUTOS_ENVIO = 30
+
+    static Resposta put(String endereco, String arquivo, List<String> cabecalhos) {
+        if (!File(arquivo).exists()) {
+            return Resposta(0, "{\"code\":\"ARQUIVO\",\"message\":\"arquivo não encontrado\"}", "")
+        }
+        try {
+            var construtor = HttpRequest.newBuilder()
+            construtor.uri(URI.create(endereco))
+            construtor.timeout(Duration.ofMinutes(Envio.MINUTOS_ENVIO))
+            for (var cabecalho in cabecalhos) {
+                var corte = cabecalho.indexOf(":")
+                if (corte <= 0) { continue }
+                construtor.header(cabecalho.substring(0, corte).trim(), cabecalho.substring(corte + 1).trim())
+            }
+            construtor.method("PUT", BodyPublishers.ofFile(Path.of(arquivo)))
+            var cliente = Envio.cliente()
+            var resposta = cliente.send(construtor.build(), BodyHandlers.ofString())
+            var corpo = resposta.body() as String
+            return Resposta(resposta.statusCode(), corpo, "")
+        } catch (String erro) {
+            return Resposta(0, "{\"code\":\"REDE\",\"message\":\"não foi possível enviar o arquivo\"}", "")
+        }
+    }
+
+    static HttpClient cliente() {
+        return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(Envio.SEGUNDOS_CONEXAO)).build()
+    }
+}

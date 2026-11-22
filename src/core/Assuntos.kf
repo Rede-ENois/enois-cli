@@ -1,0 +1,106 @@
+package core
+
+class Assuntos {
+
+    static List<String> TODOS = listOf(
+        "TECNOLOGIA", "ENGENHARIA", "DESIGN", "PRODUTO", "LIDERANCA", "CARREIRA", "FREELANCE", "OUTROS",
+        "GAMES", "ART", "MUSIC", "EDUCACAO", "CIENCIA", "EMPREENDER", "FINANCAS", "MARKETING",
+        "RH", "DADOS",
+        "FUN", "QUALIDADE_VIDA", "SAUDE", "VIAGEM", "COMIDA", "ESPORTES", "CINEMA", "LIVROS",
+        "FOTOGRAFIA", "CASA", "PETS", "PARENTALIDADE", "RELACIONAMENTOS", "MODA", "POLITICA",
+        "RELIGIAO",
+        "DESABAFO", "MEIO_AMBIENTE", "ANIMAIS", "CULINARIA", "JARDINAGEM", "ARTESANATO",
+        "HISTORIA", "FILOSOFIA", "IDIOMAS")
+
+    static List<String> ROTULOS = listOf(
+        "Tecnologia", "Engenharia", "Design", "Produto", "Liderança", "Carreira", "Freelance", "Outros",
+        "Jogos", "Arte", "Música", "Educação", "Ciência", "Empreendedorismo", "Finanças", "Marketing",
+        "Recursos humanos", "Dados e IA",
+        "Engraçado", "Qualidade de vida", "Saúde", "Viagem", "Comida e bebida", "Esportes",
+        "Cinema e séries", "Livros", "Fotografia", "Casa e decoração", "Pets", "Parentalidade",
+        "Relacionamentos", "Moda e estilo", "Política", "Religião",
+        "Desabafo", "Meio ambiente", "Animais", "Culinária", "Jardinagem", "Artesanato",
+        "História", "Filosofia", "Idiomas")
+
+    static List<String> TIPOS = listOf(
+        "INSIGHT", "ARTICLE", "QUESTION", "PROJECT", "OPPORTUNITY", "PAGE", "NEWS", "TUTORIAL",
+        "REVIEW", "DIVERTIDO", "MOMENT", "INSTANTE", "POLL", "BLOG", "BUSINESS", "COMPLAINT")
+
+    static List<String> ROTULOS_TIPO = listOf(
+        "insight", "artigo", "pergunta", "projeto", "oportunidade", "página", "notícia", "tutorial",
+        "resenha", "divertido", "momento", "instante", "enquete", "blog", "profissional", "reclamação")
+
+    static Int limiteDe(String tipo) {
+        if (tipo == "DIVERTIDO") { return 400 }
+        if (tipo == "MOMENT") { return 500 }
+        if (tipo == "INSTANTE") { return 500 }
+        if (tipo == "POLL") { return 400 }
+        if (tipo == "REVIEW") { return 600 }
+        if (tipo == "PROJECT") { return 2000 }
+        if (tipo == "NEWS") { return 2000 }
+        if (tipo == "OPPORTUNITY") { return 1500 }
+        if (tipo == "TUTORIAL") { return 5000 }
+        if (tipo == "BUSINESS") { return 2000 }
+        return 1200
+    }
+
+    static List<String> COMPOSITOR = listOf(
+        "INSIGHT", "ARTICLE", "QUESTION", "PROJECT", "OPPORTUNITY", "NEWS", "TUTORIAL",
+        "REVIEW", "DIVERTIDO", "MOMENT", "INSTANTE", "COMPLAINT", "POLL")
+
+    static List<String> tiposDoCompositor(Bool profissional) {
+        var lista = listOf<String>()
+        for (var tipo in Assuntos.COMPOSITOR) { lista.add(tipo) }
+        if (profissional) { lista.add("BUSINESS") }
+        return lista
+    }
+
+    static List<String> assuntosDoCompositor() {
+        var lista = listOf<String>()
+        for (var assunto in Assuntos.TODOS) {
+            if (assunto == "RELACIONAMENTOS") { continue }
+            lista.add(assunto)
+        }
+        return lista
+    }
+
+    static Int LIMITE_ARTIGO = 10000
+
+    static Int MAX_TAGS = 5
+    static Int MAX_MIDIAS = 4
+    static Int MAX_MIDIAS_COMENTARIO = 4
+    static Int LIMITE_COMENTARIO = 800
+    static Int LIMITE_COMENTARIO_EDICAO = 1024
+    static Int MIN_OPCOES_ENQUETE = 2
+    static Int MAX_OPCOES_ENQUETE = 6
+    static Int MAX_OPCAO_ENQUETE = 120
+    static Int MAX_PRAZO_ENQUETE_DIAS = 30
+
+    static String rotulo(String assunto) {
+        for (var i = 0; i < Assuntos.TODOS.size(); i = i + 1) {
+            if (Assuntos.TODOS.get(i) == assunto) { return Assuntos.ROTULOS.get(i) }
+        }
+        return assunto
+    }
+
+    static String rotuloTipo(String tipo) {
+        for (var i = 0; i < Assuntos.TIPOS.size(); i = i + 1) {
+            if (Assuntos.TIPOS.get(i) == tipo) { return Assuntos.ROTULOS_TIPO.get(i) }
+        }
+        return tipo
+    }
+
+    static Bool assuntoValido(String assunto) {
+        for (var i = 0; i < Assuntos.TODOS.size(); i = i + 1) {
+            if (Assuntos.TODOS.get(i) == assunto) { return true }
+        }
+        return false
+    }
+
+    static Bool tipoValido(String tipo) {
+        for (var i = 0; i < Assuntos.TIPOS.size(); i = i + 1) {
+            if (Assuntos.TIPOS.get(i) == tipo) { return true }
+        }
+        return false
+    }
+}

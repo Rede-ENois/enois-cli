@@ -1,6 +1,36 @@
 package tipos
 
-record Contadores(Int? reactions, Int? comments, Int? saves, Int? shares, Int? reposts)
+record Contadores(Int? reactions, Int? comments, Int? saves, Int? shares, Int? reposts) {
+
+    static Contadores zero() {
+        return Contadores(0, 0, 0, 0, 0)
+    }
+
+    Int reacao() {
+        if (this.reactions == null) { return 0 }
+        return this.reactions
+    }
+
+    Int comentario() {
+        if (this.comments == null) { return 0 }
+        return this.comments
+    }
+
+    Int salvamento() {
+        if (this.saves == null) { return 0 }
+        return this.saves
+    }
+
+    Int compartilhamento() {
+        if (this.shares == null) { return 0 }
+        return this.shares
+    }
+
+    Int republicacao() {
+        if (this.reposts == null) { return 0 }
+        return this.reposts
+    }
+}
 
 record Enquete(
     List<String>? options,
@@ -37,9 +67,121 @@ record PostResumo(
     String? acceptedCommentId,
     String? topic,
     String? editedAt,
-    List<MidiaAnexo>? media
-)
+    List<MidiaAnexo>? media,
+    List<String>? mediaIds,
+    Troolean? mediaSpoiler
+) {
+
+    static PostResumo vazio() {
+        return PostResumo("", null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    }
+
+    PostResumo comContadores(Contadores novo, String? reacao) {
+        return PostResumo(this.id, this.type, this.content, this.createdAt, this.authorId, this.authorName,
+            this.authorUsername, this.authorAvatar, this.authorBadge, this.authorHeadline, this.tags,
+            novo, reacao, this.communityId, this.repostOf, this.repostOfAuthor, this.repostOfContent,
+            this.repostWithOpinion, this.poll, this.currentUserReposted, this.acceptedCommentId, this.topic,
+            this.editedAt, this.media, this.mediaIds, this.mediaSpoiler)
+    }
+
+    PostResumo comReacao(String? reacao) {
+        if (this.counters == null) {
+            return this.comContadores(Contadores.zero(), reacao)
+        }
+        return this.comContadores(this.counters, reacao)
+    }
+
+    PostResumo comResultado(ResultadoAcao resultado, String tipo) {
+        if (resultado.counters == null) { return this }
+        if (resultado.status == "REACTION_REMOVED" || resultado.status == "REACTION_NOT_FOUND") {
+            return this.comContadores(resultado.counters, null)
+        }
+        return this.comContadores(resultado.counters, tipo)
+    }
+
+    PostResumo comComentario() {
+        var contadores = Contadores(this.totalDeReacoes(), this.totalDeComentarios() + 1,
+            this.totalDeSalvamentos(), this.totalDeCompartilhamentos(), this.totalDeRepublicacoes())
+        return this.comContadores(contadores, this.currentUserReaction)
+    }
+
+    Bool temReacao(String tipo) {
+        if (this.currentUserReaction == null) { return false }
+        return this.currentUserReaction == tipo
+    }
+
+    PostResumo reacaoOtimista(String tipo) {
+        var atual = this.currentUserReaction
+        var removendo = atual != null && atual == tipo
+        var trocando = atual != null && atual != tipo
+        var c = this.counters
+        var reacoes = 0
+        if (c != null && c.reactions != null) { reacoes = c.reactions }
+        var comentarios = 0
+        if (c != null && c.comments != null) { comentarios = c.comments }
+        var salvos = 0
+        if (c != null && c.saves != null) { salvos = c.saves }
+        var compartilhados = 0
+        if (c != null && c.shares != null) { compartilhados = c.shares }
+        var republicados = 0
+        if (c != null && c.reposts != null) { republicados = c.reposts }
+        if (removendo) {
+            if (reacoes > 0) { reacoes = reacoes - 1 }
+        } else if (!trocando) {
+            reacoes = reacoes + 1
+        }
+        var contadores = Contadores(reacoes, comentarios, salvos, compartilhados, republicados)
+        if (removendo) { return this.comContadores(contadores, null) }
+        return this.comContadores(contadores, tipo)
+    }
+
+    Int totalDeReacoes() {
+        if (this.counters == null) { return 0 }
+        return this.counters.reacao()
+    }
+
+    Int totalDeComentarios() {
+        if (this.counters == null) { return 0 }
+        return this.counters.comentario()
+    }
+
+    Int totalDeSalvamentos() {
+        if (this.counters == null) { return 0 }
+        return this.counters.salvamento()
+    }
+
+    Int totalDeCompartilhamentos() {
+        if (this.counters == null) { return 0 }
+        return this.counters.compartilhamento()
+    }
+
+    Int totalDeRepublicacoes() {
+        if (this.counters == null) { return 0 }
+        return this.counters.republicacao()
+    }
+
+    Bool curtido() {
+        if (this.currentUserReaction == null) { return false }
+        return this.currentUserReaction.length > 0
+    }
+
+    List<MidiaAnexo> midias() {
+        if (this.media == null) { return listOf<MidiaAnexo>() }
+        return this.media
+    }
+}
 
 record PaginaPost(List<PostResumo>? items, String? nextCursor)
 
 record PaginaFeed(List<PostResumo>? items, String? nextCursor, String? lastSeenAt)
+
+record ResultadoAcao(String postId, String? status, Contadores? counters) {
+
+    Bool removida() {
+        if (this.status == null) { return false }
+        return this.status == "REACTION_REMOVED" || this.status == "SAVE_REMOVED"
+            || this.status == "REMOVED" || this.status == "REACTION_NOT_FOUND"
+            || this.status == "SAVE_NOT_FOUND"
+    }
+}

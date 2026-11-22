@@ -1,0 +1,138 @@
+package ui
+
+import core.*
+
+record ItemArquivo(String nome, String caminho, Bool pasta, Long tamanho)
+
+class SeletorArquivo extends Modal {
+
+    String caminho = ""
+    List<ItemArquivo> entradas = listOf<ItemArquivo>()
+    Int cursor = 0
+    String proposito = "POST_IMAGE"
+    String escolhido = ""
+    String filtro = ""
+
+    public constructor(Teclado teclado, List<String> fundo, String proposito) {
+        super(teclado, fundo)
+        this.proposito = proposito
+        this.caminho = SeletorArquivo.inicial()
+        this.abrir(this.caminho)
+    }
+
+    static String inicial() {
+        var casa = config.env("HOME")
+        var base = ""
+        if (casa != null) { base = casa }
+        if (base.length == 0) { return Path(".").toAbsolute() }
+        return base
+    }
+
+    String titulo() {
+        return "anexar arquivo"
+    }
+
+    String ajuda() {
+        return "↑↓ move · enter escolhe · esc cancela"
+    }
+
+    void abrir(String caminho) {
+        this.caminho = caminho
+        this.entradas = listOf<ItemArquivo>()
+        var dir = Directory(caminho)
+        if (!dir.exists()) {
+            this.status = "pasta não existe"
+            return
+        }
+        var nomes = dir.list()
+        for (var nome in nomes) {
+            if (nome.startsWith(".")) { continue }
+            var completo = caminho + "/" + nome
+            var arquivo = File(completo)
+            var pasta = arquivo.isDirectory()
+            var tamanho = 0L
+            if (!pasta) {
+                try {
+                    tamanho = arquivo.size()
+                } catch (String e) {
+                    tamanho = 0L
+                }
+            }
+            this.entradas.add(ItemArquivo(nome, completo, pasta, tamanho))
+        }
+        this.cursor = 0
+        if (this.entradas.size() == 0) {
+            this.status = "pasta vazia"
+        } else {
+            this.status = ""
+        }
+    }
+
+    List<String> corpo() {
+        var linhas = listOf<String>()
+        linhas.add(Tema.mudo(this.caminho))
+        linhas.add("")
+        if (this.entradas.size() == 0) {
+            linhas.add(Tema.mudo("  nada aqui"))
+        }
+        for (var i = 0; i < this.entradas.size(); i = i + 1) {
+            var item = this.entradas.get(i)
+            var nome = item.nome
+            if (item.pasta) {
+                nome = nome + "/"
+            }
+            var marca = " "
+            if (i == this.cursor) { marca = Tema.pinta(Tema.PRIMARIO, "▸") }
+            var detalhe = ""
+            if (!item.pasta) {
+                detalhe = Tema.mudo("  " + Anexo.legivel(item.tamanho))
+            }
+            var texto = marca + " " + nome
+            if (i == this.cursor) {
+                texto = Tema.selecionado(Ansi.padDireita(nome, this.larguraDoTexto() - 4))
+            }
+            linhas.add(Tema.pinta(Tema.PRIMARIO, marca) + " " + Tema.texto(nome) + detalhe)
+        }
+        return linhas
+    }
+
+    List<Foco> alvos() {
+        var focos = listOf<Foco>()
+        for (var i = 0; i < this.entradas.size(); i = i + 1) {
+            focos.add(Foco(i + 2, i + 2, 3, this.larguraDoTexto(), i, this.entradas.get(i).nome, "item"))
+        }
+        return focos
+    }
+
+    Bool aoTecla(Tecla tecla) {
+        if (tecla.nome == "texto" && tecla.caractere == "u") {
+            this.subir()
+            return true
+        }
+        return false
+    }
+
+    Bool aoAtivar(Int indice) {
+        if (indice < 0 || indice >= this.entradas.size()) { return false }
+        var item = this.entradas.get(indice)
+        if (item.pasta) {
+            this.abrir(item.caminho)
+            return false
+        }
+        this.escolhido = item.caminho
+        this.confirmado = true
+        return true
+    }
+
+    void subir() {
+        var pai = Path(this.caminho).parent()
+        if (pai == null) { return }
+        var caminho: String = pai
+        if (caminho.length == 0) { return }
+        this.abrir(caminho)
+    }
+
+    List<ItemArquivo> itens() {
+        return this.entradas
+    }
+}

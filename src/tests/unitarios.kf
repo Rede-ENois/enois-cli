@@ -4,6 +4,8 @@ import tipos.*
 import api.*
 import core.*
 import screens.*
+import servicos.*
+import kof.json
 import ui.Abas
 import ui.Badge
 import ui.BarraContexto
@@ -11,9 +13,12 @@ import ui.BarraSecoes
 import ui.Bloco
 import ui.Cabecalho
 import ui.Cartao
+import ui.CartaoComentario
+import ui.Galeria
 import ui.Painel
 import ui.Rolagem
 import ui.Seletor
+import ui.Vista
 
 test "consulta ignora par vazio e nulo" {
     assert(Cliente.par("limit", "") == "")
@@ -583,7 +588,7 @@ test "tempo escolhe o mes certo e ignora data invalida" {
 test "cartao mostra autor tipo e contadores" {
     var p = PostResumo("p1", "QUESTION", "Como comecar em Kof?", "2020-03-05T12:00:00Z",
         "u1", "Mel", "mel", "", "mentora", "", listOf<String>("kof"),
-        Contadores(3, 2, 1, 0, 0), "", "", "", "", "", null, null, null, null, null, null, null)
+        Contadores(3, 2, 1, 0, 0), "", "", "", "", "", null, null, null, null, null, null, null, null, null)
     var linhas = Cartao.linhas(p, 60, "mel")
     assert(linhas.size() == 3)
     assert(linhas.get(0).contains("Mel"))
@@ -600,7 +605,7 @@ test "cartao mostra autor tipo e contadores" {
 test "cartao nao marca como proprio o post de outra pessoa" {
     var p = PostResumo("p2", "INSIGHT", "conteudo", "2020-03-05T12:00:00Z",
         "u2", "Outra", "outra", "", "", "", null,
-        null, null, null, null, null, null, null, null, null, null, null, null, null)
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
     var linhas = Cartao.linhas(p, 60, "mel")
     assert(!linhas.get(0).contains("você"))
     assert(linhas.get(0).contains("@outra"))
@@ -613,7 +618,7 @@ test "cartao limita texto longo e conta as midias" {
         MidiaAnexo("m1", "https://cdn.enois.ia.br/a.png", "image/png", 800, 600),
         MidiaAnexo("m2", "https://cdn.enois.ia.br/b.mp4", "video/mp4", 1280, 720))
     var p = PostResumo("p3", null, texto, "", "", "Mel", "mel", "", "", "",
-        null, null, null, null, null, null, null, null, null, null, null, null, null, anexos)
+        null, null, null, null, null, null, null, null, null, null, null, null, null, anexos, null, null)
     var linhas = Cartao.linhas(p, 40, "")
     assert(linhas.size() == 6)
     for (var linha in linhas) {
@@ -629,7 +634,7 @@ test "cartao corta o autor que passa da largura" {
     var p = PostResumo("p4", "OPPORTUNITY", "", "", "",
         "Nome Muito Comprido Para o Terminal", "usuario_muito_comprido",
         "", "selo", "", null, Contadores(0, 0, 0, 0, 0),
-        null, null, null, null, null, null, null, null, null, null, null, null)
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null)
     var linha = Cartao.autor(p, 24, "")
     assert(Ansi.largura(linha) <= 24)
     assert(Cartao.tipoEmTexto("OPPORTUNITY") == "oportunidade")
@@ -849,3 +854,438 @@ test "eventos de mouse inertes nao redesenham" {
     assert(!Teclado.inerte(Tecla("texto", "k")))
 }
 
+
+test "reacao otimista soma quando nao ha reacao" {
+    var p = PostResumo.vazio().comContadores(Contadores(4, 2, 0, 0, 0), null)
+    var otimista = p.reacaoOtimista("LIKE")
+    assert(otimista.totalDeReacoes() == 5)
+    assert(otimista.currentUserReaction == "LIKE")
+    assert(otimista.totalDeComentarios() == 2)
+}
+
+test "reacao otimista volta quando a reacao e a mesma" {
+    var p = PostResumo.vazio().comContadores(Contadores(4, 2, 0, 0, 0), "LIKE")
+    var otimista = p.reacaoOtimista("LIKE")
+    assert(otimista.totalDeReacoes() == 3)
+    assert(otimista.currentUserReaction == null)
+}
+
+test "reacao otimista troca de tipo sem mexer no contador" {
+    var p = PostResumo.vazio().comContadores(Contadores(4, 2, 0, 0, 0), "LIKE")
+    var otimista = p.reacaoOtimista("WOW")
+    assert(otimista.totalDeReacoes() == 4)
+    assert(otimista.currentUserReaction == "WOW")
+}
+
+test "contadores do servidor substituem a conta local" {
+    var p = PostResumo.vazio().comContadores(Contadores(4, 2, 1, 0, 0), "LIKE")
+    var resultado = ResultadoAcao("p4", "REACTED", Contadores(9, 3, 1, 2, 0))
+    var atualizado = p.comResultado(resultado, "WOW")
+    assert(atualizado.totalDeReacoes() == 9)
+    assert(atualizado.totalDeComentarios() == 3)
+    assert(atualizado.totalDeCompartilhamentos() == 2)
+    assert(atualizado.currentUserReaction == "WOW")
+}
+
+test "resposta de remocao limpa a reacao e mantem os contadores" {
+    var p = PostResumo.vazio().comContadores(Contadores(4, 2, 1, 0, 0), "LIKE")
+    var resultado = ResultadoAcao("p5", "REACTION_REMOVED", Contadores(3, 2, 1, 0, 0))
+    var atualizado = p.comResultado(resultado, "LIKE")
+    assert(atualizado.totalDeReacoes() == 3)
+    assert(atualizado.currentUserReaction == null)
+}
+
+test "resposta sem contadores mantem o post como estava" {
+    var p = PostResumo.vazio().comContadores(Contadores(4, 2, 1, 0, 0), "LIKE")
+    var atualizado = p.comResultado(ResultadoAcao("p6", "REACTED", null), "WOW")
+    assert(atualizado.totalDeReacoes() == 4)
+    assert(atualizado.currentUserReaction == "LIKE")
+}
+
+test "comentario soma no contador preservando o resto" {
+    var p = PostResumo.vazio().comContadores(Contadores(4, 2, 1, 3, 0), "LOVE")
+    var atualizado = p.comComentario()
+    assert(atualizado.totalDeComentarios() == 3)
+    assert(atualizado.totalDeReacoes() == 4)
+    assert(atualizado.totalDeSalvamentos() == 1)
+    assert(atualizado.totalDeCompartilhamentos() == 3)
+    assert(atualizado.currentUserReaction == "LOVE")
+}
+
+test "catalogo de reacoes cobre os 76 tipos do backend" {
+    assert(Reacoes.TIPOS.size() == 76)
+    assert(Reacoes.ROTULOS.size() == 76)
+    assert(Reacoes.TIPOS.get(0) == "LIKE")
+    assert(Reacoes.TIPOS.get(75) == "GHOST")
+    assert(Reacoes.rotulo("LIKE") == "curtir")
+    assert(Reacoes.rotulo("GHOST") == "fantasma")
+    assert(Reacoes.valido("WOW"))
+    assert(!Reacoes.valido("NAO_EXISTE"))
+    assert(Reacoes.rotulos().size() == 76)
+}
+
+test "servico bloqueia reacao repetida no mesmo instante" {
+    var servico = PostService(Cliente(Config(), Sessao()))
+    assert(servico.podeAlternar("p1"))
+    servico.marcar("p1")
+    assert(!servico.podeAlternar("p1"))
+    assert(servico.podeAlternar("p2"))
+}
+
+test "publicacao criada insere no topo sem duplicar" {
+    var criado = PublicacaoApi.criado(Resposta(201,
+        "{\"id\":\"p9\",\"type\":\"INSIGHT\",\"content\":\"ola\",\"createdAt\":\"2020-03-05T12:00:00Z\","
+        + "\"authorId\":\"u1\",\"authorName\":\"Mel\",\"authorUsername\":\"mel\","
+        + "\"counters\":{\"reactions\":0,\"comments\":0,\"saves\":0,\"shares\":0,\"reposts\":0}}", ""))
+    if (criado != null) {
+        assert(criado.id == "p9")
+        assert(criado.authorUsername == "mel")
+        assert(criado.totalDeReacoes() == 0)
+    } else {
+        assert(false)
+    }
+}
+
+test "publicacao com corpo invalido nao inventa post" {
+    assert(PublicacaoApi.criado(Resposta(201, "nao e json", "")) == null)
+    assert(PublicacaoApi.criado(Resposta(200, "{\"id\":\"p9\"}", "")) == null)
+}
+
+Comentario comentarioDeTeste(String id, String? pai, String criado, Int reacoes, String? reacao) {
+    return Comentario(id, "p1", "u1", "Ana", "ana", null, null, pai, "texto " + id,
+        criado, null, reacao, reacoes, null, null, listOf<String>(), null)
+}
+
+ComentarioService servicoDeComentarios() {
+    return ComentarioService(Cliente(Config(), Sessao()))
+}
+
+test "comentario decodificado traz fixado e contador" {
+    var c = json.decode<Comentario>("{\"id\":\"c1\",\"authorUsername\":\"mel\",\"pinned\":true,"
+        + "\"reactionCount\":7,\"currentUserReaction\":\"LIKE\",\"mediaIds\":[\"m1\",\"m2\"]}")
+    assert(c.fixado())
+    assert(c.totalDeReacoes() == 7)
+    assert(c.temReacao("LIKE"))
+    assert(c.totalDeMidias() == 2)
+}
+
+test "comentario sem fixacao nem reacao fica neutro" {
+    var c = comentarioDeTeste("c2", null, "2024-05-01T10:00:00Z", 0, null)
+    assert(!c.fixado())
+    assert(!c.aceito())
+    assert(!c.reagido())
+    assert(!c.resposta())
+    assert(c.usuario() == "ana")
+    assert(c.nome() == "Ana")
+    assert(c.criadoEm() == "2024-05-01T10:00:00Z")
+}
+
+test "comentario soma e desfaz reacao no proprio registro" {
+    var c = comentarioDeTeste("c3", null, "2024-05-01T10:00:00Z", 3, null)
+    var curtido = c.reacaoOtimista("LIKE")
+    assert(curtido.totalDeReacoes() == 4)
+    assert(curtido.temReacao("LIKE"))
+    var desfeito = curtido.reacaoOtimista("LIKE")
+    assert(desfeito.totalDeReacoes() == 3)
+    assert(!desfeito.reagido())
+}
+
+test "comentario troca reacao sem mexer no contador" {
+    var c = comentarioDeTeste("c4", null, "2024-05-01T10:00:00Z", 3, "LIKE")
+    var trocado = c.reacaoOtimista("WOW")
+    assert(trocado.totalDeReacoes() == 3)
+    assert(trocado.temReacao("WOW"))
+}
+
+test "comentario nunca deixa contador negativo" {
+    var c = comentarioDeTeste("c5", null, "", 0, "LIKE")
+    var desfeito = c.reacaoOtimista("LIKE")
+    assert(desfeito.totalDeReacoes() == 0)
+    assert(!desfeito.reagido())
+}
+
+test "comentario editado preserva reacao e fixacao" {
+    var c = json.decode<Comentario>("{\"id\":\"c6\",\"pinned\":true,\"reactionCount\":2,"
+        + "\"currentUserReaction\":\"LIKE\",\"content\":\"antes\"}")
+    var novo = c.comConteudo("depois", "2024-06-01T10:00:00Z")
+    assert(novo.content == "depois")
+    assert(novo.editedAt == "2024-06-01T10:00:00Z")
+    assert(novo.fixado())
+    assert(novo.temReacao("LIKE"))
+}
+
+test "comentario meu e resposta exigem identificadores" {
+    var raiz = comentarioDeTeste("c7", null, "", 0, null)
+    assert(raiz.meu("u1"))
+    assert(!raiz.meu("u2"))
+    assert(!raiz.meu(""))
+    var resposta = comentarioDeTeste("c8", "c7", "", 0, null)
+    assert(resposta.resposta())
+    assert(!raiz.resposta())
+}
+
+test "corpo de comentario carrega o contrato real" {
+    var corpo = ComentariosApi.corpoDeComentario("olá rede", null, listOf<String>(), false)
+    assert(corpo == "{\"content\":\"olá rede\",\"parentCommentId\":null,\"mediaIds\":[],"
+        + "\"mentionedUserIds\":[],\"website\":\"\",\"mediaSpoiler\":false}")
+}
+
+test "corpo de resposta aponta o comentario pai e as midias" {
+    var corpo = ComentariosApi.corpoDeComentario("sim", "c1", listOf<String>("m1"), true)
+    assert(corpo == "{\"content\":\"sim\",\"parentCommentId\":\"c1\",\"mediaIds\":[\"m1\"],"
+        + "\"mentionedUserIds\":[],\"website\":\"\",\"mediaSpoiler\":true}")
+}
+
+test "comentario criado so nasce de 201" {
+    var corpo = "{\"id\":\"c9\",\"content\":\"oi\",\"createdAt\":\"2024-01-01T00:00:00Z\","
+        + "\"authorId\":\"u1\",\"authorUsername\":\"mel\"}"
+    var criado = ComentariosApi.criado(Resposta(201, corpo, ""))
+    if (criado == null) {
+        assert(false)
+    } else {
+        assert(criado.id == "c9")
+        assert(criado.content == "oi")
+    }
+    assert(ComentariosApi.criado(Resposta(200, corpo, "")) == null)
+    assert(ComentariosApi.criado(Resposta(201, "nao e json", "")) == null)
+}
+
+test "edicao de comentario decodifica status e data" {
+    var r = Resposta(200, "{\"status\":\"COMMENT_EDITED\",\"content\":\"novo\","
+        + "\"mediaIds\":[],\"editedAt\":\"2024-02-02T00:00:00Z\"}", "")
+    var edicao = ComentariosApi.edicao(r)
+    assert(edicao.editado())
+    assert(edicao.content == "novo")
+    assert(edicao.editedAt == "2024-02-02T00:00:00Z")
+    assert(!ComentariosApi.edicao(Resposta(403, "", "")).editado())
+}
+
+test "pagina de comentarios decodifica itens e cursor" {
+    var r = Resposta(200, "{\"items\":[{\"id\":\"c1\",\"content\":\"a\"},{\"id\":\"c2\",\"content\":\"b\"}],"
+        + "\"nextCursor\":\"2024-01-01T00:00:00Z\"}", "")
+    var pagina = ComentariosApi.pagina(r)
+    var itens = pagina.items
+    if (itens == null) {
+        assert(false)
+    } else {
+        assert(itens.size() == 2)
+        assert(itens.get(1).id == "c2")
+    }
+    assert(pagina.nextCursor == "2024-01-01T00:00:00Z")
+    var vazia = ComentariosApi.pagina(Resposta(500, "", ""))
+    assert(vazia.items != null)
+}
+
+test "servico junta paginas sem duplicar" {
+    var servico = servicoDeComentarios()
+    servico.adicionarPagina(ComentariosApi.pagina(Resposta(200,
+        "{\"items\":[{\"id\":\"c1\"},{\"id\":\"c2\"}],\"nextCursor\":\"k2\"}", "")))
+    servico.adicionarPagina(ComentariosApi.pagina(Resposta(200,
+        "{\"items\":[{\"id\":\"c2\"},{\"id\":\"c3\"}],\"nextCursor\":\"k3\"}", "")))
+    assert(servico.comentarios.size() == 3)
+    assert(servico.cursor == "k3")
+    assert(servico.temMais)
+}
+
+test "servico para de paginar quando o cursor nao avanca" {
+    var servico = servicoDeComentarios()
+    servico.adicionarPagina(ComentariosApi.pagina(Resposta(200,
+        "{\"items\":[{\"id\":\"c1\"}],\"nextCursor\":\"k1\"}", "")))
+    assert(servico.temMais)
+    servico.adicionarPagina(ComentariosApi.pagina(Resposta(200,
+        "{\"items\":[{\"id\":\"c2\"}],\"nextCursor\":\"k1\"}", "")))
+    assert(!servico.temMais)
+    assert(servico.cursor == "k1")
+}
+
+test "servico ordena cronologicamente com fixado no topo" {
+    var servico = servicoDeComentarios()
+    servico.adicionarPagina(ComentariosApi.pagina(Resposta(200,
+        "{\"items\":[{\"id\":\"b\",\"createdAt\":\"2024-01-02T00:00:00Z\"},"
+        + "{\"id\":\"a\",\"createdAt\":\"2024-01-01T00:00:00Z\"},"
+        + "{\"id\":\"fixo\",\"createdAt\":\"2024-01-03T00:00:00Z\",\"pinned\":true}]}", "")))
+    assert(servico.comentarios.get(0).id == "fixo")
+    assert(servico.comentarios.get(1).id == "a")
+    assert(servico.comentarios.get(2).id == "b")
+}
+
+test "servico calcula o nivel da resposta" {
+    var servico = servicoDeComentarios()
+    servico.adicionarPagina(ComentariosApi.pagina(Resposta(200,
+        "{\"items\":[{\"id\":\"raiz\"},{\"id\":\"filho\",\"parentCommentId\":\"raiz\"},"
+        + "{\"id\":\"neto\",\"parentCommentId\":\"filho\"},"
+        + "{\"id\":\"orfao\",\"parentCommentId\":\"sumiu\"}]}", "")))
+    assert(servico.nivel("raiz") == 0)
+    assert(servico.nivel("filho") == 1)
+    assert(servico.nivel("neto") == 2)
+    assert(servico.nivel("orfao") == 1)
+}
+
+test "servico substitui e acha comentario por id" {
+    var servico = servicoDeComentarios()
+    servico.adicionarPagina(ComentariosApi.pagina(Resposta(200, "{\"items\":[{\"id\":\"c1\"}]}", "")))
+    var achado = servico.porId("c1")
+    if (achado == null) {
+        assert(false)
+    } else {
+        servico.substituir(achado.comConteudo("mudou", null))
+    }
+    var depois = servico.porId("c1")
+    if (depois == null) {
+        assert(false)
+    } else {
+        assert(depois.content == "mudou")
+    }
+    assert(servico.porId("nao-existe") == null)
+}
+
+test "servico bloqueia reacao repetida no comentario" {
+    var servico = servicoDeComentarios()
+    assert(servico.podeAlternar("c1"))
+    servico.marcar("c1")
+    assert(!servico.podeAlternar("c1"))
+    assert(servico.podeAlternar("c2"))
+}
+
+test "acoes do comentario batem com as colunas desenhadas" {
+    var c = comentarioDeTeste("c1", null, "", 2, "LIKE")
+    var linha = CartaoComentario.linhaDeAcoes(c, "u1")
+    var acoes = CartaoComentario.acoes(c, "u1")
+    assert(acoes.size() == 4)
+    for (var i = 0; i < acoes.size(); i = i + 1) {
+        var acao = acoes.get(i)
+        var visivel = Ansi.fatiar(linha, acao.inicio, acao.fim + 1)
+        assert(Ansi.largura(visivel) == acao.rotulo.length)
+        assert(visivel.contains(acao.rotulo))
+        assert(Ansi.largura(Ansi.fatiar(linha, acao.inicio - 1, acao.inicio)) == 1)
+    }
+    var deOutro = Comentario("c2", "p1", "u2", "Bia", "bia", null, null, null, "texto",
+        "", null, null, 0, null, null, listOf<String>(), null)
+    assert(CartaoComentario.acoes(deOutro, "u1").size() == 2)
+}
+
+test "cartao do comentario mostra contador e sinaliza fixado" {
+    var c = json.decode<Comentario>("{\"id\":\"c1\",\"authorUsername\":\"mel\",\"content\":\"oi\","
+        + "\"pinned\":true,\"reactionCount\":3,\"currentUserReaction\":\"LIKE\"}")
+    var linhas = CartaoComentario.linhas(c, 40, 0, "u1")
+    var cabeca = linhas.get(0)
+    assert(cabeca.contains("⚑"))
+    assert(cabeca.contains("@mel"))
+    assert(cabeca.contains("3"))
+    assert(cabeca.contains("♥"))
+    var ultima = linhas.get(linhas.size() - 1)
+    assert(ultima.contains("curtir"))
+}
+
+test "vista entrega a acao antes do cartao no hit test" {
+    var vista = Vista(10)
+    vista.adicionar(1, listOf<String>("cartao do comentario", "corpo", "   [curtir] [responder] "))
+    vista.adicionar(2, listOf<String>("outro comentario"))
+    vista.acoes = listOf(AcaoRegiao(1, 2, 5, 10, 0, "acao"))
+    vista.montar("topo", "", "")
+    var acao = vista.regioes.em(6, 5)
+    assert(acao.tipo == "acao")
+    assert(acao.dado == 1)
+    assert(acao.indice == 0)
+    assert(vista.regioes.em(6, 4).tipo == "item")
+    assert(vista.regioes.em(4, 2).tipo == "item")
+    assert(vista.regioes.em(7, 2).dado == 2)
+}
+
+test "sixel detectado no terminal e nos programas conhecidos" {
+    assert(Sixel.suportado("xterm-sixel", ""))
+    assert(Sixel.suportado("xterm-256color", "mlterm"))
+    assert(Sixel.suportado("", "foot"))
+    assert(!Sixel.suportado("xterm-256color", ""))
+    assert(!Sixel.suportado("xterm-kitty", "iTerm.app"))
+}
+
+test "protocolo cai no sixel quando o terminal declara suporte" {
+    assert(Imagem.protocolo("xterm-sixel", "", "") == "sixel")
+    assert(Imagem.protocolo("xterm-kitty", "", "") == "kitty")
+    assert(Imagem.protocolo("xterm-256color", "iTerm.app", "") == "iterm2")
+    assert(Imagem.protocolo("xterm-256color", "", "") == "")
+}
+
+test "quantizacao sixel cobre a rampa de 6 niveis" {
+    assert(Sixel.nivel(0) == 0)
+    assert(Sixel.nivel(51) == 1)
+    assert(Sixel.nivel(128) == 3)
+    assert(Sixel.nivel(255) == 5)
+    assert(Sixel.cor(-65536) == 180)
+    assert(Sixel.cor(0 - 16777216) == 0)
+    assert(Sixel.cor(0) == -1)
+}
+
+test "sixel monta cabecalho, paleta e bandas" {
+    var saida = Sixel.montar(listOf<Int>(-65536), 1, 1)
+    assert(saida.startsWith(Ansi.ESC + "P0;1;0q\"1;1;1;1"))
+    assert(saida.contains("#180;2;100;0;0"))
+    assert(saida.contains("#180@-"))
+    assert(saida.endsWith(Ansi.ESC + "\\"))
+}
+
+test "sixel usa o caractere vazio para coluna sem pixel" {
+    assert(Sixel.simbolo(0) == "?")
+    assert(Sixel.simbolo(63) == "~")
+    assert(Sixel.potencia(0) == 1)
+    assert(Sixel.potencia(5) == 32)
+}
+
+test "galeria lista apenas imagens com endereco" {
+    var p = json.decode<PostResumo>("{\"id\":\"p1\",\"media\":["
+        + "{\"id\":\"m1\",\"cdnUrl\":\"/a.jpg\",\"mimeType\":\"image/jpeg\",\"width\":100,\"height\":50},"
+        + "{\"id\":\"m2\",\"cdnUrl\":\"/b.mp4\",\"mimeType\":\"video/mp4\"},"
+        + "{\"id\":\"m3\",\"mimeType\":\"image/png\"}]}")
+    var imagens = Galeria.imagens(p)
+    assert(imagens.size() == 1)
+    assert(imagens.get(0).id == "m1")
+    assert(Galeria.indicador(1, 5) == "2/5")
+    assert(Galeria.tipo(imagens.get(0)) == "image/jpeg")
+    assert(Galeria.dimensoes(imagens.get(0)) == "100×50")
+    assert(Galeria.sufixo(imagens.get(0)) == " · 100×50")
+    assert(Galeria.endereco(imagens.get(0)) == Midia.CDN + "/a.jpg")
+}
+
+test "galeria limita colunas da imagem ao conteudo" {
+    var antes = Ansi.LARGURA_CONTEUDO
+    Ansi.LARGURA_CONTEUDO = 120
+    assert(Galeria.colunas() == 72)
+    Ansi.LARGURA_CONTEUDO = 40
+    assert(Galeria.colunas() == 34)
+    Ansi.LARGURA_CONTEUDO = 22
+    assert(Galeria.colunas() == 20)
+    Ansi.LARGURA_CONTEUDO = antes
+}
+
+test "acoes da galeria batem com as colunas desenhadas" {
+    var rotulos = listOf<String>()
+    rotulos.add("anterior")
+    rotulos.add("próxima")
+    rotulos.add("abre externo")
+    rotulos.add("detalhes")
+    rotulos.add("volta")
+    var acoes = Galeria.acoes(rotulos)
+    var texto = "  "
+    for (var acao in acoes) { texto = texto + "[" + acao.rotulo + "] " }
+    assert(acoes.size() == 5)
+    for (var i = 0; i < acoes.size(); i = i + 1) {
+        var acao = acoes.get(i)
+        var fatiado = Ansi.fatiar(texto, acao.inicio, acao.fim + 1)
+        assert(fatiado.startsWith(acao.rotulo))
+        assert(Ansi.largura(fatiado) == acao.rotulo.length)
+    }
+}
+
+test "abrir sem endereco nao dispara programa externo" {
+    assert(Abrir.externo("") == "sem endereço")
+}
+
+test "editor edita a partir do fim do texto carregado" {
+    var editor = Editor(200)
+    editor.definirTexto("linha um\nlinha dois")
+    assert(editor.linhaCursor == 1)
+    assert(editor.colunaCursor == "linha dois".length)
+    editor.inserir("!")
+    assert(editor.texto() == "linha um\nlinha dois!")
+}

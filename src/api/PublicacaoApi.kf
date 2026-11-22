@@ -1,0 +1,71 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class PublicacaoApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta publicar(Borrador borrador) {
+        return this.cliente.post("/feed/posts", PublicacaoApi.corpo(borrador))
+    }
+
+    static PostResumo? criado(Resposta resposta) {
+        if (resposta.codigo != 201) { return null }
+        try {
+            return json.decode<PostResumo>(resposta.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+
+    static String corpo(Borrador b) {
+        var partes = listOf<String>()
+        partes.add("\"type\":" + json.encode(b.tipo))
+        partes.add("\"content\":" + json.encode(b.conteudo))
+        if (b.corpoArtigo.length > 0) {
+            partes.add("\"articleBody\":" + json.encode(b.corpoArtigo))
+        }
+        if (b.topico.length > 0) {
+            partes.add("\"topic\":" + json.encode(b.topico))
+        }
+        if (b.comunidadeId.length > 0) {
+            partes.add("\"communityId\":" + json.encode(b.comunidadeId))
+        }
+        partes.add("\"mediaIds\":" + PublicacaoApi.lista(b.mediaIds))
+        partes.add("\"tags\":" + PublicacaoApi.lista(b.tags))
+        partes.add("\"mentionedUserIds\":" + PublicacaoApi.lista(b.mencoes))
+        partes.add("\"website\":\"\"")
+        if (b.spoiler != null) {
+            partes.add("\"mediaSpoiler\":" + PublicacaoApi.booleano(b.spoiler))
+        }
+        if (b.tipo == "POLL") {
+            partes.add("\"pollOptions\":" + PublicacaoApi.lista(b.opcoesEnquete))
+            if (b.enqueteMultipla != null) {
+                partes.add("\"pollMultipleChoice\":" + PublicacaoApi.booleano(b.enqueteMultipla))
+            }
+            if (b.prazoEnquete.length > 0) {
+                partes.add("\"pollEndsAt\":" + json.encode(b.prazoEnquete))
+            }
+        }
+        return "{" + PostApi.juntar(partes) + "}"
+    }
+
+    static String lista(List<String>? itens) {
+        if (itens == null) { return "[]" }
+        return json.encode(itens)
+    }
+
+    static String booleano(Troolean valor) {
+        var texto = "" + valor
+        if (texto == "true") { return "true" }
+        return "false"
+    }
+}

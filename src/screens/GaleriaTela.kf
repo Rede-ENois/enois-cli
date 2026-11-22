@@ -1,0 +1,162 @@
+package screens
+
+import core.*
+import tipos.*
+import ui.*
+
+class GaleriaTela {
+
+    Teclado teclado
+    List<MidiaAnexo> itens
+    Int indice = 0
+    Bool detalhes = false
+    Bool saindo = false
+    String status = ""
+    Regioes regioes = Regioes()
+
+    public constructor(Teclado teclado, List<MidiaAnexo> itens) {
+        this.teclado = teclado
+        this.itens = itens
+    }
+
+    static Bool abrir(Teclado teclado, PostResumo post) {
+        var itens = Galeria.imagens(post)
+        if (itens.size() == 0) { return false }
+        GaleriaTela(teclado, itens).executar()
+        return true
+    }
+
+    void executar() {
+        if (this.itens.size() == 0) { return }
+        var rodando = true
+        var pintar = true
+        while (rodando && Entrada.ativa) {
+            if (pintar) {
+                this.desenhar()
+                this.teclado.ligarMouse()
+            }
+            pintar = true
+            var tecla = this.teclado.ler()
+            if (tecla.nome == "clique") {
+                if (!this.clicar(tecla)) { pintar = false }
+            } else if (tecla.nome == "esquerda" || tecla.nome == "roda-cima") {
+                this.anterior()
+            } else if (tecla.nome == "direita" || tecla.nome == "roda-baixo") {
+                this.proxima()
+            } else if (tecla.nome == "texto") {
+                this.atalho(tecla.caractere)
+            } else if (tecla.nome == "escape" || tecla.nome == "enter" || tecla.nome == "ctrl-c") {
+                rodando = false
+            } else if (Teclado.inerte(tecla)) {
+                pintar = false
+            }
+            if (this.saindo) { rodando = false }
+        }
+        print(Ansi.LIMPAR)
+    }
+
+    void atalho(String caractere) {
+        if (caractere == "h" || caractere == "H") { this.anterior() }
+        if (caractere == "l" || caractere == "L") { this.proxima() }
+        if (caractere == "o" || caractere == "O") { this.abrirExterno() }
+        if (caractere == "i" || caractere == "I") { this.detalhes = !this.detalhes }
+        if (caractere == "q" || caractere == "Q") { this.saindo = true }
+    }
+
+    void anterior() {
+        this.indice = this.indice - 1
+        if (this.indice < 0) { this.indice = this.itens.size() - 1 }
+        this.status = ""
+    }
+
+    void proxima() {
+        this.indice = this.indice + 1
+        if (this.indice >= this.itens.size()) { this.indice = 0 }
+        this.status = ""
+    }
+
+    void abrirExterno() {
+        var anexo = this.itens.get(this.indice)
+        var erro = Abrir.externo(Galeria.endereco(anexo))
+        if (erro.length == 0) {
+            this.status = Tema.ok("aberto no visualizador do sistema")
+        } else {
+            this.status = Tema.erro(erro)
+        }
+    }
+
+    Bool clicar(Tecla tecla) {
+        var alvo = this.regioes.em(tecla.linha, tecla.coluna)
+        if (alvo.tipo != "acao") { return false }
+        if (alvo.indice == 0) { this.anterior() }
+        if (alvo.indice == 1) { this.proxima() }
+        if (alvo.indice == 2) { this.abrirExterno() }
+        if (alvo.indice == 3) { this.detalhes = !this.detalhes }
+        if (alvo.indice == 4) { this.saindo = true }
+        return true
+    }
+
+    void desenhar() {
+        var altura = Terminal.altura()
+        var anexo = this.itens.get(this.indice)
+        this.regioes.limpar()
+        print(Ansi.LIMPAR)
+        print(Ansi.posicao(1, 1) + Ansi.LIMPAR_LINHA + "  " + Tema.destaque("mídias")
+            + Tema.mudo(" · ") + Tema.destaque(Galeria.indicador(this.indice, this.itens.size()))
+            + Tema.mudo(" · " + Galeria.tipo(anexo) + Galeria.sufixo(anexo)))
+        print(Ansi.posicao(3, 3))
+        if (!Galeria.mostrar(anexo)) { this.painel(anexo) }
+        this.detalhesNaTela(altura)
+        this.rodape(altura)
+    }
+
+    void painel(MidiaAnexo anexo) {
+        var linhas = listOf<String>()
+        linhas.add("  " + Tema.mudo(Galeria.aviso()))
+        linhas.add("  " + Tema.destaque(Galeria.indicador(this.indice, this.itens.size()))
+            + Tema.mudo(" · " + Galeria.tipo(anexo) + Galeria.sufixo(anexo)))
+        linhas.add("  " + Tema.texto(Galeria.endereco(anexo)))
+        linhas.add("  " + Tema.mudo("o abre no visualizador do sistema"))
+        var linha = 3
+        for (var texto in linhas) {
+            print(Ansi.posicao(linha, 1) + Ansi.LIMPAR_LINHA + texto)
+            linha = linha + 1
+        }
+    }
+
+    void detalhesNaTela(Int altura) {
+        if (!this.detalhes) { return }
+        var anexo = this.itens.get(this.indice)
+        print(Ansi.posicao(altura - 4, 1) + Ansi.LIMPAR_LINHA + "  "
+            + Tema.mudo(Galeria.endereco(anexo)))
+        print(Ansi.posicao(altura - 3, 1) + Ansi.LIMPAR_LINHA + "  "
+            + Tema.mudo(Galeria.caminho(anexo)))
+    }
+
+    void rodape(Int altura) {
+        if (this.status.length > 0) {
+            print(Ansi.posicao(altura - 1, 1) + Ansi.LIMPAR_LINHA + "  " + this.status)
+        }
+        this.legenda(altura)
+    }
+
+    void legenda(Int linha) {
+        var acoes = Galeria.acoes(this.rotulos())
+        var texto = "  "
+        for (var acao in acoes) {
+            this.regioes.adicionarAcao(linha, acao.inicio + 1, acao.fim + 1, acao.indice, "acao", acao.indice)
+            texto = texto + "[" + Tema.suave(acao.rotulo) + "] "
+        }
+        print(Ansi.posicao(linha, 1) + Ansi.LIMPAR_LINHA + texto)
+    }
+
+    List<String> rotulos() {
+        var lista = listOf<String>()
+        lista.add("anterior")
+        lista.add("próxima")
+        lista.add("abre externo")
+        lista.add("detalhes")
+        lista.add("volta")
+        return lista
+    }
+}

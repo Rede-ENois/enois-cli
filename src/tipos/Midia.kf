@@ -7,3 +7,32 @@ record MidiaAnexo(
     Int? width,
     Int? height
 )
+
+record MediaUpload(
+    String id,
+    String? ownerId,
+    String? fileName,
+    String? mimeType,
+    Int? size,
+    String? purpose,
+    String? objectKey,
+    String? cdnUrl,
+    String? uploadUrl,
+    String? uploadMethod,
+    Map<String, String>? uploadHeaders,
+    String? provider,
+    String? status,
+    String? deleteStatus,
+    String? expiresAt
+)
+
+record AnexoLocal(
+    String caminho,
+    String nome,
+    String mimeType,
+    Long tamanho,
+    String estado,
+    String erro,
+    String mediaId,
+    Int progresso
+)

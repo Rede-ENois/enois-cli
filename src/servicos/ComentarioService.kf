@@ -1,0 +1,203 @@
+package servicos
+
+import api.ComentariosApi
+import core.Cliente
+import core.Resposta
+import tipos.*
+
+record ResultadoComentario(Bool sucesso, String mensagem, Comentario? comentario)
+
+class ComentarioService {
+
+    Cliente cliente
+    List<Comentario> comentarios = listOf<Comentario>()
+    String cursor = ""
+    Bool temMais = false
+    String ultimoAlvo = ""
+    Long ultimoMomento = 0L
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Bool carregar(String postId) {
+        var r = ComentariosApi(this.cliente).listar(postId, null, 30)
+        if (!r.ok()) { return false }
+        this.comentarios = listOf<Comentario>()
+        this.adicionarPagina(ComentariosApi.pagina(r))
+        return true
+    }
+
+    Bool carregarMais(String postId) {
+        if (!this.temMais) { return false }
+        var r = ComentariosApi(this.cliente).listar(postId, this.cursor, 30)
+        if (!r.ok()) { return false }
+        this.adicionarPagina(ComentariosApi.pagina(r))
+        return true
+    }
+
+    void adicionarPagina(PaginaComentarios pagina) {
+        var itens = pagina.items
+        if (itens != null) {
+            for (var i = 0; i < itens.size(); i = i + 1) {
+                var comentario = itens.get(i)
+                if (this.porId(comentario.id) == null) {
+                    this.comentarios.add(comentario)
+                }
+            }
+        }
+        var proximo = ""
+        if (pagina.nextCursor != null) { proximo = pagina.nextCursor }
+        if (proximo.length == 0 || proximo == this.cursor) {
+            this.temMais = false
+        } else {
+            this.cursor = proximo
+            this.temMais = true
+        }
+        this.ordenar()
+    }
+
+    void ordenar() {
+        this.comentarios = this.comentarios.sorted(
+            (a: Comentario, b: Comentario) -> ComentarioService.comparar(a, b))
+    }
+
+    static Int comparar(Comentario a, Comentario b) {
+        var fixadoA = a.fixado()
+        var fixadoB = b.fixado()
+        if (fixadoA != fixadoB) {
+            if (fixadoA) { return -1 }
+            return 1
+        }
+        return a.criadoEm().compareTo(b.criadoEm())
+    }
+
+    Comentario? porId(String id) {
+        for (var i = 0; i < this.comentarios.size(); i = i + 1) {
+            if (this.comentarios.get(i).id == id) { return this.comentarios.get(i) }
+        }
+        return null
+    }
+
+    void substituir(Comentario novo) {
+        var lista = listOf<Comentario>()
+        for (var i = 0; i < this.comentarios.size(); i = i + 1) {
+            if (this.comentarios.get(i).id == novo.id) {
+                lista.add(novo)
+            } else {
+                lista.add(this.comentarios.get(i))
+            }
+        }
+        this.comentarios = lista
+    }
+
+    Int nivel(String comentarioId) {
+        var saltos = 0
+        var atual = this.porId(comentarioId)
+        while (atual != null && saltos < 8) {
+            var pai = atual.parentCommentId
+            if (pai == null || pai.length == 0) { break }
+            saltos = saltos + 1
+            atual = this.porId(pai)
+        }
+        return saltos
+    }
+
+    ResultadoComentario criar(String postId, String texto, String? pai) {
+        var r = ComentariosApi(this.cliente).comentar(postId, texto, pai)
+        if (!r.ok()) { return ResultadoComentario(false, r.mensagem(), null) }
+        var criado = ComentariosApi.criado(r)
+        if (criado == null) {
+            this.carregar(postId)
+            return ResultadoComentario(true, "comentário enviado", null)
+        }
+        var novo = criado
+        this.comentarios.add(novo)
+        this.ordenar()
+        return ResultadoComentario(true, "comentário enviado", novo)
+    }
+
+    ResultadoComentario editar(String postId, String comentarioId, String texto) {
+        var r = ComentariosApi(this.cliente).editar(postId, comentarioId, texto, null)
+        if (!r.ok()) { return ResultadoComentario(false, r.mensagem(), null) }
+        var edicao = ComentariosApi.edicao(r)
+        var atual = this.porId(comentarioId)
+        if (atual == null) { return ResultadoComentario(true, "comentário editado", null) }
+        var conteudo = texto
+        if (edicao.content != null) { conteudo = edicao.content }
+        var editado = atual.editedAt
+        if (edicao.editedAt != null) { editado = edicao.editedAt }
+        var novo = atual.comConteudo(conteudo, editado)
+        this.substituir(novo)
+        return ResultadoComentario(true, "comentário editado", novo)
+    }
+
+    ResultadoComentario apagar(String postId, String comentarioId) {
+        var r = ComentariosApi(this.cliente).apagar(postId, comentarioId)
+        if (!r.ok()) { return ResultadoComentario(false, r.mensagem(), null) }
+        var lista = listOf<Comentario>()
+        for (var i = 0; i < this.comentarios.size(); i = i + 1) {
+            if (this.comentarios.get(i).id != comentarioId) {
+                lista.add(this.comentarios.get(i))
+            }
+        }
+        this.comentarios = lista
+        return ResultadoComentario(true, "comentário apagado", null)
+    }
+
+    ResultadoComentario reagir(String postId, String comentarioId, String tipo) {
+        if (!this.podeAlternar(comentarioId)) {
+            return ResultadoComentario(false, "aguarde um instante", null)
+        }
+        this.marcar(comentarioId)
+        var atual = this.porId(comentarioId)
+        if (atual == null) {
+            return ResultadoComentario(false, "comentário não encontrado", null)
+        }
+        var anterior = atual
+        var removendo = anterior.temReacao(tipo)
+        var otimista = anterior.reacaoOtimista(tipo)
+        this.substituir(otimista)
+        var r = Resposta(0, "", "")
+        if (removendo) {
+            r = ComentariosApi(this.cliente).desreagirComentario(postId, comentarioId)
+        } else {
+            r = ComentariosApi(this.cliente).reagirComentario(postId, comentarioId, tipo)
+        }
+        if (!r.ok()) {
+            this.substituir(anterior)
+            return ResultadoComentario(false, r.mensagem(), null)
+        }
+        var mensagem = "reação registrada"
+        if (removendo) { mensagem = "reação removida" }
+        return ResultadoComentario(true, mensagem, otimista)
+    }
+
+    ResultadoComentario fixar(String postId, String comentarioId) {
+        var r = ComentariosApi(this.cliente).fixar(postId, comentarioId)
+        if (!r.ok()) { return ResultadoComentario(false, r.mensagem(), null) }
+        var atual = this.porId(comentarioId)
+        if (atual != null) { this.ordenar() }
+        return ResultadoComentario(true, "comentário fixado", atual)
+    }
+
+    ResultadoComentario desafixar(String postId, String comentarioId) {
+        var r = ComentariosApi(this.cliente).desafixar(postId, comentarioId)
+        if (!r.ok()) { return ResultadoComentario(false, r.mensagem(), null) }
+        var atual = this.porId(comentarioId)
+        if (atual != null) { this.ordenar() }
+        return ResultadoComentario(true, "comentário desafixado", atual)
+    }
+
+    Bool podeAlternar(String comentarioId) {
+        if (this.ultimoAlvo != comentarioId) { return true }
+        var agora = time.now()
+        if (agora < this.ultimoMomento) { return true }
+        return agora - this.ultimoMomento >= 200L
+    }
+
+    void marcar(String comentarioId) {
+        this.ultimoAlvo = comentarioId
+        this.ultimoMomento = time.now()
+    }
+}

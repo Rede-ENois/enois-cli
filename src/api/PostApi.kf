@@ -1,0 +1,89 @@
+package api
+
+import core.Cliente
+import core.Resposta
+import tipos.*
+import kof.json
+
+class PostApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta reagir(String postId, String tipo) {
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/reactions",
+            json.encode(mapOf("type", tipo)))
+    }
+
+    Resposta desreagir(String postId) {
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/reactions")
+    }
+
+    Resposta salvar(String postId) {
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/saves", "{}")
+    }
+
+    Resposta dessalvar(String postId) {
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/saves")
+    }
+
+    Resposta compartilhar(String postId) {
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/shares", "{}")
+    }
+
+    Resposta republicar(String postId, String? opiniao, String? comunidadeId) {
+        var partes = listOf<String>()
+        var texto = ""
+        if (opiniao != null) { texto = opiniao as String }
+        if (texto.length > 0) {
+            partes.add("\"opinion\":" + json.encode(texto))
+        }
+        var comunidade = ""
+        if (comunidadeId != null) { comunidade = comunidadeId as String }
+        if (comunidade.length > 0) {
+            partes.add("\"communityId\":" + json.encode(comunidade))
+        }
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/repost",
+            "{" + PostApi.juntar(partes) + "}")
+    }
+
+    Resposta desfazerRepublicar(String postId) {
+        return this.cliente.delete("/feed/posts/" + Cliente.caminho(postId) + "/repost")
+    }
+
+    Resposta votar(String postId, Int opcao) {
+        return this.cliente.post("/feed/posts/" + Cliente.caminho(postId) + "/poll/vote",
+            json.encode(mapOf("option", opcao)))
+    }
+
+    Resposta reacoes(String postId) {
+        return this.cliente.get("/feed/posts/" + Cliente.caminho(postId) + "/reactions")
+    }
+
+    Resposta reacoesDoComentario(String postId, String comentarioId) {
+        return this.cliente.get("/feed/posts/" + Cliente.caminho(postId)
+            + "/comments/" + Cliente.caminho(comentarioId) + "/reactions")
+    }
+
+    static String juntar(List<String> partes) {
+        var saida = ""
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            if (i > 0) { saida = saida + "," }
+            saida = saida + partes.get(i)
+        }
+        return saida
+    }
+
+    static ResultadoAcao resultado(Resposta r) {
+        var vazio = ResultadoAcao("", null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<ResultadoAcao>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+}

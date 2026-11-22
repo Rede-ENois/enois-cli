@@ -1,0 +1,44 @@
+package core
+
+class Reacoes {
+
+    static List<String> TIPOS = listOf(
+        "LIKE", "LOVE", "LAUGH", "ROFL", "SKULL", "WOW", "SAD", "SOB", "CELEBRATE", "SUPPORT",
+        "INSIGHTFUL", "ANGRY", "DISGUST", "SKEPTICAL", "EYES", "NOTE", "FIRE", "CLAP", "CLOWN", "NAILS",
+        "USEFUL", "RELATABLE", "HYPE", "THANKS", "VIBE", "SALUTE", "COOL", "SLEEP", "THINK", "NERD",
+        "PARTY", "COFFEE", "SELFIE", "THERMOMETER", "PIRATE", "HERO", "ZANY", "SCREAM", "GRIMACE",
+        "MELTING", "CRYING", "MINDBLOWN", "VOMIT", "FUMING", "EYEROLL", "ROBOT", "WIZARD", "CHEF",
+        "SURF", "MAGIC", "REBEL", "WINK", "ALIEN", "RAGE", "MONEY", "FEAR", "WAVE", "PEACE", "OK",
+        "ROCK", "DISLIKE", "RAISED", "GASP", "POOP", "TONGUE", "KISS", "DROOL", "STARSTRUCK", "VULCAN",
+        "CROSSED", "POINT_RIGHT", "FISTBUMP", "MASK", "COWBOY", "SMIRK", "GHOST")
+
+    static List<String> ROTULOS = listOf(
+        "curtir", "amar", "rir", "gargalhar", "caveira", "uau", "triste", "chorar", "celebrar", "apoio",
+        "insight", "raiva", "nojo", "cético", "olhos", "nota", "fogo", "palmas", "palhaço", "unhas",
+        "útil", "identifiquei", "hype", "obrigado", "vibe", "salute", "estiloso", "sono", "pensando", "nerd",
+        "festa", "café", "selfie", "febre", "pirata", "herói", "doido", "grito", "constrangido",
+        "derretendo", "chorando", "mente explodida", "vomitando", "fervendo", "revirar os olhos", "robô",
+        "mago", "chef", "onda", "magia", "rebelde", "piscadinha", "alien", "fúria", "grana", "medo",
+        "tchau", "paz", "ok", "rock", "não curtir", "palmas pra cima", "suspense", "cocô", "língua",
+        "beijo", "babejando", "estrelas", "vulcano", "dedos cruzados", "apontando", "punho", "máscara",
+        "cowboy", "sorriso", "fantasma")
+
+    static List<String> rotulos() {
+        var lista = listOf<String>()
+        for (var i = 0; i < Reacoes.TIPOS.size(); i = i + 1) {
+            lista.add(Reacoes.ROTULOS.get(i) + " · " + Reacoes.TIPOS.get(i))
+        }
+        return lista
+    }
+
+    static String rotulo(String tipo) {
+        for (var i = 0; i < Reacoes.TIPOS.size(); i = i + 1) {
+            if (Reacoes.TIPOS.get(i) == tipo) { return Reacoes.ROTULOS.get(i) }
+        }
+        return tipo
+    }
+
+    static Bool valido(String tipo) {
+        return Reacoes.TIPOS.contains(tipo)
+    }
+}

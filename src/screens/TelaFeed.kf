@@ -4,6 +4,7 @@ import tipos.*
 import api.*
 import core.*
 import ui.*
+import servicos.*
 
 class TelaFeed {
 
@@ -17,15 +18,18 @@ class TelaFeed {
     String erro = ""
     String status = ""
     String destino = ""
+    Bool saindo = false
     Int larguraCartoes = 0
     ContagensNavegacao contagens
     SinaisApi sinaisApi
+    PostService servico
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
         this.contexto = "social"
         this.sinaisApi = SinaisApi(cliente)
         this.contagens = ContagensNavegacao(null, listOf<String>(), 0, 0)
+        this.servico = PostService(cliente)
     }
 
     public constructor(Cliente cliente, String contexto) {
@@ -33,6 +37,7 @@ class TelaFeed {
         this.contexto = contexto
         this.sinaisApi = SinaisApi(cliente)
         this.contagens = ContagensNavegacao(null, listOf<String>(), 0, 0)
+        this.servico = PostService(cliente)
     }
 
     Bool corporativo() {
@@ -100,7 +105,7 @@ class TelaFeed {
             } else if (Teclado.inerte(tecla)) {
                 pintar = false
             }
-            if (this.destino.length > 0) { rodando = false }
+            if (this.saindo || this.destino.length > 0) { rodando = false }
         }
         destino = this.destino
         teclado.desligarMouse()
@@ -111,12 +116,15 @@ class TelaFeed {
     }
 
     String atalho(String caractere) {
+        if (caractere == "q" || caractere == "Q") { this.saindo = true }
         if (caractere == "k") { this.vista.rolagem.moverFoco(-1) }
         if (caractere == "j") { this.vista.rolagem.moverFoco(1) }
         if (caractere == "l" || caractere == "L") { this.curtir() }
+        if (caractere == "e" || caractere == "E") { this.reagir() }
         if (caractere == "c" || caractere == "C") { this.comentar() }
         if (caractere == "r" || caractere == "R") { this.recarregar() }
         if (caractere == "m" || caractere == "M") { this.mostrarImagens() }
+        if (caractere == "n" || caractere == "N") { this.compor() }
         var indice = Seletor.digito(caractere)
         if (indice >= 0) {
             var rotas = Navegacao.secoesDe(this.contexto)
@@ -184,7 +192,9 @@ class TelaFeed {
         lista.add("↑↓ move")
         lista.add("enter abre")
         lista.add("L curtir")
+        lista.add("E reagir")
         lista.add("C comenta")
+        lista.add("N publica")
         lista.add("R atualiza")
         lista.add("q volta")
         lista.add("M mídias")
@@ -311,41 +321,51 @@ class TelaFeed {
     void curtir() {
         var p = this.postoFoco()
         if (p == null) { return }
-        var reagindo = p.currentUserReaction != null && p.currentUserReaction.length > 0
-        var api = ComentariosApi(this.cliente)
-        var r = Resposta(0, "", "")
-        if (reagindo) {
-            r = api.desreagir(p.id)
-        } else {
-            r = api.reagir(p.id, "LIKE")
+        this.aplicarReacao(p, "LIKE")
+    }
+
+    void reagir() {
+        var p = this.postoFoco()
+        if (p == null) { return }
+        var tipos = listOf<String>()
+        var rotulos = listOf<String>()
+        for (var i = 0; i < Reacoes.TIPOS.size(); i = i + 1) {
+            tipos.add(Reacoes.TIPOS.get(i))
+            rotulos.add(Reacoes.rotulo(Reacoes.TIPOS.get(i)))
         }
-        if (!r.ok()) {
-            this.status = Tema.erro(r.mensagem())
+        var modal = ModalReacoes(this.teclado, this.vista.fundo(), tipos, rotulos)
+        var escolheu = modal.executar()
+        this.restaurar()
+        if (!escolheu) { return }
+        this.aplicarReacao(p, modal.escolhido)
+    }
+
+    void aplicarReacao(PostResumo p, String tipo) {
+        if (!this.servico.podeAlternar(p.id)) { return }
+        this.servico.marcar(p.id)
+        var anterior = p
+        var removendo = anterior.temReacao(tipo)
+        this.atualizar(anterior.reacaoOtimista(tipo))
+        var r = this.servico.confirmar(anterior, tipo)
+        if (!r.sucesso) {
+            this.status = Tema.erro(r.mensagem)
+            this.atualizar(anterior)
             return
         }
-        var reacoes = 0
-        var comentarios = 0
-        if (p.counters != null) {
-            if (p.counters.reactions != null) { reacoes = p.counters.reactions }
-            if (p.counters.comments != null) { comentarios = p.counters.comments }
-        }
-        if (reagindo) {
-            if (reacoes > 0) { reacoes = reacoes - 1 }
-            this.status = Tema.mudo("reação removida")
-            this.atualizar(p, reacoes, comentarios, null)
-        } else {
-            reacoes = reacoes + 1
-            this.status = Tema.ok("curtido")
-            this.atualizar(p, reacoes, comentarios, "LIKE")
-        }
+        this.atualizar(r.post)
+        this.status = Tema.ok(if (removendo) { "reação removida" } else { "reação registrada" })
     }
 
     void comentar() {
         var p = this.postoFoco()
         if (p == null) { return }
-        var texto = this.perguntar("comentário")
+        var modal = ModalComentario(this.teclado, this.vista.fundo(), "", false, "")
+        var enviou = modal.executar()
+        this.restaurar()
+        if (!enviou) { return }
+        var texto = modal.texto().trim()
         if (texto.length == 0) {
-            this.status = Tema.mudo("comentário cancelado")
+            this.status = Tema.mudo("comentário vazio")
             return
         }
         var r = ComentariosApi(this.cliente).comentar(p.id, texto, null)
@@ -353,21 +373,14 @@ class TelaFeed {
             this.status = Tema.erro(r.mensagem())
             return
         }
-        var reacoes = 0
-        var comentarios = 0
-        if (p.counters != null) {
-            if (p.counters.reactions != null) { reacoes = p.counters.reactions }
-            if (p.counters.comments != null) { comentarios = p.counters.comments }
-        }
         this.status = Tema.ok("comentário enviado")
-        this.atualizar(p, reacoes, comentarios + 1, p.currentUserReaction)
+        this.atualizar(p.comComentario())
     }
 
-    void atualizar(PostResumo p, Int reacoes, Int comentarios, String? reacao) {
-        var novo = TelaFeed.comContadores(p, reacoes, comentarios, reacao)
+    void atualizar(PostResumo novo) {
         var lista = listOf<PostResumo>()
-        for (var i = 0; i < this.posts.size(); i = i + 1) {
-            if (this.posts.get(i).id == p.id) {
+        for (var i = 0; i < this.posts.size; i = i + 1) {
+            if (this.posts.get(i).id == novo.id) {
                 lista.add(novo)
             } else {
                 lista.add(this.posts.get(i))
@@ -375,23 +388,6 @@ class TelaFeed {
         }
         this.posts = lista
         this.reconstruir()
-    }
-
-    static PostResumo comContadores(PostResumo p, Int reacoes, Int comentarios, String? reacao) {
-        var salvos = 0
-        var compartilhados = 0
-        var republicados = 0
-        if (p.counters != null) {
-            if (p.counters.saves != null) { salvos = p.counters.saves }
-            if (p.counters.shares != null) { compartilhados = p.counters.shares }
-            if (p.counters.reposts != null) { republicados = p.counters.reposts }
-        }
-        var contadores = Contadores(reacoes, comentarios, salvos, compartilhados, republicados)
-        return PostResumo(p.id, p.type, p.content, p.createdAt, p.authorId, p.authorName,
-            p.authorUsername, p.authorAvatar, p.authorBadge, p.authorHeadline, p.tags,
-            contadores, reacao, p.communityId, p.repostOf, p.repostOfAuthor, p.repostOfContent,
-            p.repostWithOpinion, p.poll, p.currentUserReposted, p.acceptedCommentId, p.topic,
-            p.editedAt, p.media)
     }
 
     String perguntar(String rotulo) {
@@ -406,36 +402,65 @@ class TelaFeed {
     void mostrarImagens() {
         var p = this.postoFoco()
         if (p == null) { return }
-        if (Cartao.totalImagens(p) == 0) {
+        if (!GaleriaTela.abrir(this.teclado, p)) {
             this.status = Tema.mudo("este post não tem mídias")
             return
         }
-        this.teclado.sair()
-        Ansi.escrever(Ansi.MOSTRAR_CURSOR)
-        print(Ansi.NORMAL)
-        print(Ansi.LIMPAR)
-        this.imprimirImagens(p)
-        Entrada.pausar()
-        print(Ansi.ALTERNATIVO)
-        Ansi.escrever(Ansi.OCULTAR_CURSOR)
-        this.teclado.entrar()
-    }
-
-    void imprimirImagens(PostResumo p) {
-        var anexos = p.media
-        if (anexos == null) { return }
-        for (var i = 0; i < anexos.size(); i = i + 1) {
-            var anexo = anexos.get(i)
-            if (!Imagem.eImagem(anexo.mimeType)) { continue }
-            var url = ""
-            if (anexo.cdnUrl != null) { url = Midia.url(anexo.cdnUrl) }
-            if (url.length == 0) { continue }
-            Imagem.mostrar(url, Imagem.COLUNAS_AVATAR)
-        }
+        this.restaurar()
     }
 
     void mostrarImagens(PostResumo p) {
-        this.imprimirImagens(p)
+        Imagem.mostrarDoPost(p)
+    }
+
+    void compor() {
+        var editor = EditorPublicacao(this.teclado, this.cliente, this.vista.fundo(), this.corporativo())
+        var publicou = editor.executar()
+        this.restaurar()
+        if (!publicou) { return }
+        this.publicar(editor.borrador())
+    }
+
+    void publicar(Borrador borrador) {
+        var resposta = PublicacaoApi(this.cliente).publicar(borrador)
+        if (!resposta.ok()) {
+            this.status = Tema.erro("não publicou: " + resposta.mensagem())
+            this.reconstruir()
+            return
+        }
+        var criado = PublicacaoApi.criado(resposta)
+        if (criado == null) {
+            this.status = Tema.ok("publicado")
+            this.recarregar()
+            return
+        }
+        var post = criado
+        this.inserirNoTopo(post)
+        this.status = Tema.ok("publicado")
+    }
+
+    void inserirNoTopo(PostResumo post) {
+        if (post == null) { return }
+        if (this.indiceDoPost(post.id) >= 0) { return }
+        var lista = listOf<PostResumo>()
+        lista.add(post)
+        for (var i = 0; i < this.posts.size; i = i + 1) {
+            lista.add(this.posts.get(i))
+        }
+        this.posts = lista
+        this.vista.rolagem.foco = 0
+        this.vista.rolagem.deslocamento = 0
+        this.reconstruir()
+        this.vista.rolagem.foco = 0
+        this.vista.rolagem.alinhar()
+    }
+
+    void restaurar() {
+        print(Ansi.LIMPAR)
+        Vista.imprimir(this.vista.montar(
+            Cabecalho.linha(this.cliente, this.titulo(), this.contexto),
+            Caixa.juntar(BarraSecoes.linhas(this.contexto, "feed", this.contagens)),
+            Caixa.juntar(BarraContexto.linhas(this.atalhos(), this.status, this.vista.posicao()))))
     }
 
     String titulo() {

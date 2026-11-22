@@ -94,6 +94,35 @@ class Ansi {
         return saida
     }
 
+    static String fatiar(String s, Int de, Int ate) {
+        if (s == null) { return "" }
+        var saida = ""
+        var coluna = 0
+        var i = 0
+        while (i < s.length) {
+            var c = s.charAt(i)
+            if (c == 27) {
+                var fim = Ansi.pularSequencia(s, i)
+                saida = saida + Ansi.trecho(s, i, fim)
+                i = fim
+                continue
+            }
+            var peso = Ansi.peso(c)
+            if (coluna >= de && coluna + peso <= ate) {
+                saida = saida + c
+            }
+            coluna = coluna + peso
+            i = i + 1
+        }
+        return saida + Tema.RESET
+    }
+
+    static String sobrepor(String fundo, String caixa, Int coluna, Int larguraCaixa) {
+        var antes = Ansi.fatiar(fundo, 0, coluna - 1)
+        var depois = Ansi.fatiar(fundo, coluna - 1 + larguraCaixa, 1000000)
+        return antes + caixa + depois
+    }
+
     static String posicao(Int linha, Int coluna) {
         return ESC + "[" + linha + ";" + coluna + "H"
     }

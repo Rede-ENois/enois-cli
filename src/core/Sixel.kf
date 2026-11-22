@@ -1,0 +1,128 @@
+package core
+
+import java.awt.image.BufferedImage
+import javax.imageio.ImageIO
+
+class Sixel {
+
+    static Int CELULA = 8
+    static Int ALTURA_MAXIMA = 320
+    static Int CORES = 216
+
+    static Bool suportado(String termo, String programa) {
+        if (termo.indexOf("sixel") >= 0) { return true }
+        if (termo.indexOf("mlterm") >= 0) { return true }
+        if (termo.indexOf("foot") >= 0) { return true }
+        if (programa == "mlterm") { return true }
+        if (programa == "contour") { return true }
+        if (programa == "mintty") { return true }
+        if (programa == "foot") { return true }
+        return false
+    }
+
+    static String codificar(String caminho, Int colunas) {
+        if (colunas < 1) { return "" }
+        try {
+            var fonte = ImageIO.read(new java.io.File(caminho))
+            if (fonte == null) { return "" }
+            var origemLargura = fonte.getWidth()
+            var origemAltura = fonte.getHeight()
+            if (origemLargura < 1 || origemAltura < 1) { return "" }
+            var largura = colunas * Sixel.CELULA
+            if (largura > origemLargura) { largura = origemLargura }
+            var altura = origemAltura * largura / origemLargura
+            if (altura > Sixel.ALTURA_MAXIMA) {
+                altura = Sixel.ALTURA_MAXIMA
+                largura = origemLargura * altura / origemAltura
+            }
+            if (largura < 1) { largura = 1 }
+            if (altura < 1) { altura = 1 }
+            var alvo = new BufferedImage(largura, altura, BufferedImage.TYPE_INT_RGB)
+            var pincel = alvo.createGraphics()
+            pincel.setColor(new java.awt.Color(24, 20, 31))
+            pincel.fillRect(0, 0, largura, altura)
+            pincel.drawImage(fonte, 0, 0, largura, altura, null)
+            pincel.dispose()
+            var pixels = listOf<Int>()
+            for (var y = 0; y < altura; y = y + 1) {
+                for (var x = 0; x < largura; x = x + 1) {
+                    pixels.add(alvo.getRGB(x, y))
+                }
+            }
+            return Sixel.montar(pixels, largura, altura)
+        } catch (String erro) {
+            return ""
+        }
+    }
+
+    static String montar(List<Int> pixels, Int largura, Int altura) {
+        var usadas = listOf<Bool>()
+        for (var i = 0; i < Sixel.CORES; i = i + 1) { usadas.add(false) }
+        for (var pixel in pixels) {
+            var indice = Sixel.cor(pixel)
+            if (indice >= 0) { usadas.set(indice, true) }
+        }
+        var saida = Ansi.ESC + "P0;1;0q" + "\"1;1;" + String.valueOf(largura) + ";" + String.valueOf(altura)
+        for (var i = 0; i < Sixel.CORES; i = i + 1) {
+            if (!usadas.get(i)) { continue }
+            saida = saida + "#" + String.valueOf(i) + ";2;"
+                + String.valueOf((i / 36) * 20) + ";"
+                + String.valueOf(((i / 6) % 6) * 20) + ";"
+                + String.valueOf((i % 6) * 20)
+        }
+        for (var base = 0; base < altura; base = base + 6) {
+            var atual = -1
+            for (var x = 0; x < largura; x = x + 1) {
+                var escolhido = -1
+                var bits = 0
+                for (var linha = 0; linha < 6; linha = linha + 1) {
+                    var y = base + linha
+                    if (y >= altura) { break }
+                    var indice = Sixel.cor(pixels.get(y * largura + x))
+                    if (indice < 0) { continue }
+                    if (escolhido < 0) { escolhido = indice }
+                    if (indice == escolhido) { bits = bits + Sixel.potencia(linha) }
+                }
+                if (escolhido < 0) {
+                    if (atual != 0) {
+                        saida = saida + "#0"
+                        atual = 0
+                    }
+                    saida = saida + Sixel.simbolo(0)
+                    continue
+                }
+                if (escolhido != atual) {
+                    saida = saida + "#" + String.valueOf(escolhido)
+                    atual = escolhido
+                }
+                saida = saida + Sixel.simbolo(bits)
+            }
+            saida = saida + "-"
+        }
+        return saida + Ansi.ESC + "\\"
+    }
+
+    static Int cor(Int pixel) {
+        var cor = new java.awt.Color(pixel, true)
+        if (cor.getAlpha() < 128) { return -1 }
+        return Sixel.nivel(cor.getRed()) * 36 + Sixel.nivel(cor.getGreen()) * 6 + Sixel.nivel(cor.getBlue())
+    }
+
+    static Int nivel(Int valor) {
+        return (valor * 5 + 127) / 255
+    }
+
+    static Int potencia(Int linha) {
+        var valor = 1
+        var i = 0
+        while (i < linha) {
+            valor = valor * 2
+            i = i + 1
+        }
+        return valor
+    }
+
+    static String simbolo(Int bits) {
+        return String.valueOf((63 + bits) as Char)
+    }
+}

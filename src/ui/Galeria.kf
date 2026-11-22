@@ -1,0 +1,78 @@
+package ui
+
+import core.*
+import tipos.*
+
+record AcaoGaleria(String rotulo, Int inicio, Int fim, Int indice)
+
+class Galeria {
+
+    static List<AcaoGaleria> acoes(List<String> rotulos) {
+        var acoes = listOf<AcaoGaleria>()
+        var posicao = 2
+        for (var i = 0; i < rotulos.size(); i = i + 1) {
+            var rotulo = rotulos.get(i)
+            acoes.add(AcaoGaleria(rotulo, posicao + 1, posicao + rotulo.length, i))
+            posicao = posicao + rotulo.length + 3
+        }
+        return acoes
+    }
+
+    static List<MidiaAnexo> imagens(PostResumo p) {
+        var itens = listOf<MidiaAnexo>()
+        var anexos = p.media
+        if (anexos == null) { return itens }
+        for (var anexo in anexos) {
+            if (!Imagem.eImagem(anexo.mimeType)) { continue }
+            if (Galeria.endereco(anexo).length == 0) { continue }
+            itens.add(anexo)
+        }
+        return itens
+    }
+
+    static String endereco(MidiaAnexo anexo) {
+        if (anexo.cdnUrl == null) { return "" }
+        return Midia.url(anexo.cdnUrl)
+    }
+
+    static String indicador(Int indice, Int total) {
+        return String.valueOf(indice + 1) + "/" + String.valueOf(total)
+    }
+
+    static String tipo(MidiaAnexo anexo) {
+        if (anexo.mimeType == null) { return "mídia" }
+        return anexo.mimeType
+    }
+
+    static String dimensoes(MidiaAnexo anexo) {
+        if (anexo.width == null || anexo.height == null) { return "" }
+        if (anexo.width <= 0 || anexo.height <= 0) { return "" }
+        return String.valueOf(anexo.width) + "×" + String.valueOf(anexo.height)
+    }
+
+    static String sufixo(MidiaAnexo anexo) {
+        var dimensoes = Galeria.dimensoes(anexo)
+        if (dimensoes.length == 0) { return "" }
+        return " · " + dimensoes
+    }
+
+    static Int colunas() {
+        var colunas = Ansi.LARGURA_CONTEUDO - 6
+        if (colunas > 72) { colunas = 72 }
+        if (colunas < 20) { colunas = 20 }
+        return colunas
+    }
+
+    static Bool mostrar(MidiaAnexo anexo) {
+        return Imagem.mostrar(Galeria.endereco(anexo), Galeria.colunas())
+    }
+
+    static String caminho(MidiaAnexo anexo) {
+        return Midia.arquivo(Galeria.endereco(anexo))
+    }
+
+    static String aviso() {
+        if (Imagem.suportada()) { return "o terminal não entregou a imagem" }
+        return "imagem inline indisponível neste terminal"
+    }
+}

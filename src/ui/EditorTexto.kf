@@ -1,0 +1,146 @@
+package ui
+
+import core.Ansi
+import core.Editor
+import core.Tema
+import core.Teclado
+
+class EditorTexto {
+
+    Editor editor
+    Int largura
+    Int altura
+    Int deslocamento = 0
+
+    public constructor(Editor editor, Int largura, Int altura) {
+        this.editor = editor
+        this.largura = largura
+        this.altura = altura
+        if (this.altura < 1) { this.altura = 1 }
+    }
+
+    List<String> linhas() {
+        this.alinhar()
+        var pecas = this.editor.trechos(this.largura)
+        var saida = listOf<String>()
+        var linhaCursor = this.editor.linhaVisualDoCursor(this.largura)
+        var colunaCursor = this.editor.colunaVisualDoCursor(this.largura)
+        for (var i = 0; i < this.altura; i = i + 1) {
+            var indice = this.deslocamento + i
+            if (indice >= pecas.size()) {
+                saida.add("")
+                continue
+            }
+            var peca = pecas.get(indice)
+            var selecao = this.editor.selecaoNaLinha(peca.linha)
+            var selIni = 0
+            var selFim = 0
+            if (selecao.inicio >= 0) {
+                selIni = selecao.inicio - peca.colunaInicial
+                selFim = selecao.fim - peca.colunaInicial
+                if (selIni < 0) { selIni = 0 }
+                if (selFim > peca.texto.length) { selFim = peca.texto.length }
+                if (selFim < selIni) { selFim = selIni }
+            }
+            var cursor = -1
+            if (indice == linhaCursor) { cursor = colunaCursor }
+            saida.add(EditorTexto.pintar(peca.texto, selIni, selFim, cursor))
+        }
+        return saida
+    }
+
+    static String pintar(String texto, Int selIni, Int selFim, Int cursor) {
+        var saida = ""
+        for (var i = 0; i < texto.length; i = i + 1) {
+            var caractere = texto.substring(i, i + 1)
+            if (i == cursor) {
+                saida = saida + Tema.INVERSO + Tema.TEXTO + caractere + Tema.RESET
+                continue
+            }
+            if (i >= selIni && i < selFim) {
+                saida = saida + Tema.FUNDO_PRIMARIO_SUAVE + Tema.TEXTO + caractere + Tema.RESET
+                continue
+            }
+            saida = saida + caractere
+        }
+        if (cursor == texto.length) {
+            saida = saida + Tema.INVERSO + Tema.TEXTO + " " + Tema.RESET
+        }
+        return saida
+    }
+
+    void alinhar() {
+        var linhaCursor = this.editor.linhaVisualDoCursor(this.largura)
+        if (linhaCursor < this.deslocamento) { this.deslocamento = linhaCursor }
+        if (linhaCursor >= this.deslocamento + this.altura) {
+            this.deslocamento = linhaCursor - this.altura + 1
+        }
+        if (this.deslocamento < 0) { this.deslocamento = 0 }
+    }
+
+    Bool tratar(Tecla tecla) {
+        if (tecla.nome == "texto") {
+            this.editor.inserir(tecla.caractere)
+            return true
+        }
+        if (tecla.nome == "espaco") {
+            this.editor.inserir(" ")
+            return true
+        }
+        if (tecla.nome == "enter") {
+            this.editor.novaLinha()
+            return true
+        }
+        if (tecla.nome == "voltar") {
+            this.editor.apagar()
+            return true
+        }
+        if (tecla.nome == "cima") {
+            this.editor.moverParaCima()
+            return true
+        }
+        if (tecla.nome == "baixo") {
+            this.editor.moverParaBaixo()
+            return true
+        }
+        if (tecla.nome == "esquerda") {
+            this.editor.moverEsquerda()
+            return true
+        }
+        if (tecla.nome == "direita") {
+            this.editor.moverDireita()
+            return true
+        }
+        if (tecla.nome == "inicio") {
+            this.editor.irParaInicio()
+            return true
+        }
+        if (tecla.nome == "fim") {
+            this.editor.irParaFim()
+            return true
+        }
+        return false
+    }
+
+    void clicar(Int linhaVisual, Int colunaVisual) {
+        this.editor.moverParaVisual(this.deslocamento + linhaVisual, colunaVisual, this.largura)
+        this.alinhar()
+    }
+
+    Bool vazio() {
+        return this.editor.vazio()
+    }
+
+    String texto() {
+        return this.editor.texto()
+    }
+
+    String contador() {
+        if (this.editor.limite <= 0) { return "" }
+        return String.valueOf(this.editor.caracteres()) + "/" + String.valueOf(this.editor.limite)
+    }
+
+    Int restantes() {
+        return this.editor.restantes()
+    }
+}

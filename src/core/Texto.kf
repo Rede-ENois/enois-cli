@@ -1,0 +1,51 @@
+package core
+
+class Texto {
+
+    static List<String> linhas(String bruto) {
+        var saida = listOf<String>()
+        if (bruto == null) { return saida }
+        var atual = ""
+        for (var i = 0; i < bruto.length; i = i + 1) {
+            var c = bruto.substring(i, i + 1)
+            if (c == "\n") {
+                saida.add(atual)
+                atual = ""
+                continue
+            }
+            atual = atual + c
+        }
+        saida.add(atual)
+        return saida
+    }
+
+    static List<String> partes(String bruto, String separador) {
+        var saida = listOf<String>()
+        if (bruto == null) { return saida }
+        if (separador == null || separador.length == 0) { return saida }
+        var atual = ""
+        var i = 0
+        while (i < bruto.length) {
+            var achou = false
+            if (i + separador.length <= bruto.length) {
+                achou = true
+                for (var j = 0; j < separador.length; j = j + 1) {
+                    if (bruto.substring(i + j, i + j + 1) != separador.substring(j, j + 1)) {
+                        achou = false
+                        break
+                    }
+                }
+            }
+            if (achou) {
+                saida.add(atual)
+                atual = ""
+                i = i + separador.length
+                continue
+            }
+            atual = atual + bruto.substring(i, i + 1)
+            i = i + 1
+        }
+        saida.add(atual)
+        return saida
+    }
+}

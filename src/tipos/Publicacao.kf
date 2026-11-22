@@ -1,0 +1,78 @@
+package tipos
+
+record Borrador(
+    String tipo,
+    String topico,
+    String conteudo,
+    String corpoArtigo,
+    List<String>? tags,
+    List<String>? mediaIds,
+    List<String>? mencoes,
+    String comunidadeId,
+    Troolean? spoiler,
+    List<String>? opcoesEnquete,
+    Troolean? enqueteMultipla,
+    String prazoEnquete
+) {
+
+    static Borrador vazio() {
+        return Borrador("INSIGHT", "", "", "", listOf<String>(), listOf<String>(), listOf<String>(),
+            "", null, listOf<String>(), null, "")
+    }
+
+    Borrador comTipo(String novo) {
+        return Borrador(novo, this.topico, this.conteudo, this.corpoArtigo, this.tags, this.mediaIds,
+            this.mencoes, this.comunidadeId, this.spoiler, this.opcoesEnquete, this.enqueteMultipla,
+            this.prazoEnquete)
+    }
+
+    Borrador comTopico(String novo) {
+        return Borrador(this.tipo, novo, this.conteudo, this.corpoArtigo, this.tags, this.mediaIds,
+            this.mencoes, this.comunidadeId, this.spoiler, this.opcoesEnquete, this.enqueteMultipla,
+            this.prazoEnquete)
+    }
+
+    Borrador comConteudo(String novo) {
+        return Borrador(this.tipo, this.topico, novo, this.corpoArtigo, this.tags, this.mediaIds,
+            this.mencoes, this.comunidadeId, this.spoiler, this.opcoesEnquete, this.enqueteMultipla,
+            this.prazoEnquete)
+    }
+
+    Borrador comCorpoArtigo(String novo) {
+        return Borrador(this.tipo, this.topico, this.conteudo, novo, this.tags, this.mediaIds,
+            this.mencoes, this.comunidadeId, this.spoiler, this.opcoesEnquete, this.enqueteMultipla,
+            this.prazoEnquete)
+    }
+
+    Borrador comTags(List<String>? novas) {
+        return Borrador(this.tipo, this.topico, this.conteudo, this.corpoArtigo, novas, this.mediaIds,
+            this.mencoes, this.comunidadeId, this.spoiler, this.opcoesEnquete, this.enqueteMultipla,
+            this.prazoEnquete)
+    }
+
+    Borrador comMediaIds(List<String>? novos) {
+        return Borrador(this.tipo, this.topico, this.conteudo, this.corpoArtigo, this.tags, novos,
+            this.mencoes, this.comunidadeId, this.spoiler, this.opcoesEnquete, this.enqueteMultipla,
+            this.prazoEnquete)
+    }
+
+    Borrador comOpcoes(List<String>? novas) {
+        return Borrador(this.tipo, this.topico, this.conteudo, this.corpoArtigo, this.tags, this.mediaIds,
+            this.mencoes, this.comunidadeId, this.spoiler, novas, this.enqueteMultipla, this.prazoEnquete)
+    }
+
+    Borrador comMultipla(Troolean? nova) {
+        return Borrador(this.tipo, this.topico, this.conteudo, this.corpoArtigo, this.tags, this.mediaIds,
+            this.mencoes, this.comunidadeId, this.spoiler, this.opcoesEnquete, nova, this.prazoEnquete)
+    }
+
+    Borrador comPrazo(String novo) {
+        return Borrador(this.tipo, this.topico, this.conteudo, this.corpoArtigo, this.tags, this.mediaIds,
+            this.mencoes, this.comunidadeId, this.spoiler, this.opcoesEnquete, this.enqueteMultipla, novo)
+    }
+
+    Borrador comSpoiler(Troolean? novo) {
+        return Borrador(this.tipo, this.topico, this.conteudo, this.corpoArtigo, this.tags, this.mediaIds,
+            this.mencoes, this.comunidadeId, novo, this.opcoesEnquete, this.enqueteMultipla, this.prazoEnquete)
+    }
+}

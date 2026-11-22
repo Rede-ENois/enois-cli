@@ -1,0 +1,79 @@
+package ui
+
+import core.Ansi
+import core.Tema
+import core.Tempo
+import tipos.*
+
+record AcaoComentario(String rotulo, Int inicio, Int fim, Int indice)
+
+class CartaoComentario {
+
+    static List<AcaoComentario> acoes(Comentario c, String autorId) {
+        var rotulos = listOf<String>()
+        rotulos.add("curtir")
+        rotulos.add("responder")
+        if (c.meu(autorId)) {
+            rotulos.add("editar")
+            rotulos.add("apagar")
+        }
+        var acoes = listOf<AcaoComentario>()
+        var posicao = 3
+        for (var i = 0; i < rotulos.size(); i = i + 1) {
+            var rotulo = rotulos.get(i)
+            acoes.add(AcaoComentario(rotulo, posicao + 1, posicao + rotulo.length, i))
+            posicao = posicao + rotulo.length + 3
+        }
+        return acoes
+    }
+
+    static String linhaDeAcoes(Comentario c, String autorId) {
+        var acoes = CartaoComentario.acoes(c, autorId)
+        var linha = "   "
+        for (var i = 0; i < acoes.size(); i = i + 1) {
+            var acao = acoes.get(i)
+            linha = linha + "[" + Tema.suave(acao.rotulo) + "] "
+        }
+        return linha
+    }
+
+    static List<String> linhas(Comentario c, Int largura, Int nivel, String autorId) {
+        var linhas = listOf<String>()
+        var recuo = "   "
+        if (nivel > 0) { recuo = "   ↳ " }
+        var marca = ""
+        if (c.fixado()) { marca = "⚑ " }
+        if (c.aceito()) { marca = marca + "✔ " }
+        var cabeca = recuo + marca + Tema.destaque("@" + c.usuario())
+        var quando = Tempo.relativo(c.createdAt)
+        if (quando.length > 0) { cabeca = cabeca + Tema.mudo(" · " + quando) }
+        if (c.editedAt != null && c.editedAt.length > 0) {
+            cabeca = cabeca + Tema.mudo(" · editado")
+        }
+        if (c.meu(autorId)) { cabeca = cabeca + Tema.suave(" · você") }
+        var reacoes = c.totalDeReacoes()
+        if (reacoes > 0 || c.reagido()) {
+            var parte = "♥ " + String.valueOf(reacoes)
+            if (c.reagido()) {
+                cabeca = cabeca + Tema.amor(" · " + parte)
+            } else {
+                cabeca = cabeca + Tema.mudo(" · " + parte)
+            }
+        }
+        linhas.add(Ansi.cortar(cabeca, largura))
+        var texto = ""
+        if (c.content != null) { texto = c.content }
+        var disponivel = largura - recuo.length - 1
+        if (disponivel < 8) { disponivel = 8 }
+        for (var parte in Ansi.quebrar(texto, disponivel)) {
+            linhas.add(recuo + Tema.texto(parte))
+        }
+        var midias = c.totalDeMidias()
+        if (midias > 0) {
+            linhas.add(recuo + Tema.mudo("▣ " + String.valueOf(midias)
+                + (if (midias == 1) { " mídia" } else { " mídias" })))
+        }
+        linhas.add(CartaoComentario.linhaDeAcoes(c, autorId))
+        return linhas
+    }
+}

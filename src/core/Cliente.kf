@@ -40,6 +40,18 @@ class Cliente {
         return h
     }
 
+    List<String> cabecalhosDeEnvio(String endereco) {
+        var lista = listOf<String>()
+        lista.add("Accept: application/json")
+        if (!Anexo.mesmaOrigem(endereco, this.config.urlApi)) { return lista }
+        lista.add("X-Client-Origin: " + this.config.origem)
+        lista.add("X-CSRF-Protection: 1")
+        if (this.sessao.logado()) {
+            lista.add("X-Session-Token: " + this.sessao.token)
+        }
+        return lista
+    }
+
     static Bool escreve(String metodo) {
         return metodo == "POST" || metodo == "PUT" || metodo == "PATCH" || metodo == "DELETE"
     }

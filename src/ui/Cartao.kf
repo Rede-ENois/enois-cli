@@ -35,6 +35,48 @@ class Cartao {
         return linhas
     }
 
+    static List<String> linhasCompletas(PostResumo p, Int largura, String usuarioAtual) {
+        var linhas = listOf<String>()
+        linhas.add(Cartao.autor(p, largura, usuarioAtual))
+        var corpo = Cartao.corpo(p)
+        if (corpo.length > 0) {
+            for (var parte in Caixa.partes(corpo)) {
+                for (var linha in Ansi.quebrar(parte, largura - 3)) {
+                    linhas.add("   " + Tema.texto(linha))
+                }
+            }
+        }
+        for (var linha in Cartao.linhasDaEnquete(p, largura)) { linhas.add(linha) }
+        var extras = Cartao.extras(p)
+        if (extras.length > 0) { linhas.add("   " + extras) }
+        return linhas
+    }
+
+    static List<String> linhasDaEnquete(PostResumo p, Int largura) {
+        var linhas = listOf<String>()
+        var enquete = p.poll
+        if (enquete == null) { return linhas }
+        var opcoes = enquete.options
+        if (opcoes == null || opcoes.size() == 0) { return linhas }
+        var total = 0
+        if (enquete.totalVotes != null) { total = enquete.totalVotes }
+        for (var i = 0; i < opcoes.size(); i = i + 1) {
+            var votos = 0
+            if (enquete.counts != null && i < enquete.counts.size()) {
+                votos = enquete.counts.get(i)
+            }
+            var fatia = 0
+            if (total > 0) { fatia = (votos * 20) / total }
+            var barra = ""
+            for (var b = 0; b < 20; b = b + 1) {
+                if (b < fatia) { barra = barra + "█" } else { barra = barra + "░" }
+            }
+            linhas.add("   " + Tema.suave(barra + " " + String.valueOf(votos)) + " " + opcoes.get(i))
+        }
+        linhas.add("   " + Tema.mudo(String.valueOf(total) + " votos"))
+        return linhas
+    }
+
     static String autor(PostResumo p, Int largura, String usuarioAtual) {
         var nome = ""
         if (p.authorName != null) { nome = p.authorName }
