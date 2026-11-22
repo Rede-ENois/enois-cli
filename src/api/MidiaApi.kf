@@ -1,0 +1,100 @@
+package api
+
+import core.Cliente
+import core.Envio
+import core.Resposta
+import tipos.*
+import kof.json
+
+class MidiaApi {
+
+    Cliente cliente
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Resposta reservar(String nomeArquivo, String mimeType, Int tamanho, String proposito) {
+        var corpo = "{\"fileName\":" + json.encode(nomeArquivo)
+            + ",\"mimeType\":" + json.encode(mimeType)
+            + ",\"size\":" + String.valueOf(tamanho)
+            + ",\"purpose\":" + json.encode(proposito) + "}"
+        return this.cliente.post("/media/uploads", corpo)
+    }
+
+    Resposta enviar(MediaUpload reserva, String caminhoLocal) {
+        var endereco = MidiaApi.enderecoDe(reserva)
+        if (endereco.length == 0) {
+            return Resposta(0, "{\"code\":\"UPLOAD_SEM_DESTINO\",\"message\":\"o servidor não devolveu onde enviar o arquivo\"}", "")
+        }
+        var metodo = MidiaApi.metodoDe(reserva)
+        if (metodo != "PUT") {
+            return Resposta(0, "{\"code\":\"UPLOAD_METODO\",\"message\":\"método de envio não suportado: " + metodo + "\"}", "")
+        }
+        var cabecalhos = this.cliente.cabecalhosDeEnvio(endereco)
+        for (var linha in MidiaApi.linhasDe(reserva.uploadHeaders, MidiaApi.mimeDe(reserva))) {
+            cabecalhos.add(linha)
+        }
+        return Envio.put(endereco, caminhoLocal, cabecalhos)
+    }
+
+    Resposta obter(String id) {
+        return this.cliente.get("/media/" + Cliente.caminho(id))
+    }
+
+    Resposta apagar(String id) {
+        return this.cliente.delete("/media/" + Cliente.caminho(id))
+    }
+
+    static String enderecoDe(MediaUpload reserva) {
+        if (reserva.uploadUrl == null) { return "" }
+        return reserva.uploadUrl
+    }
+
+    static String metodoDe(MediaUpload reserva) {
+        if (reserva.uploadMethod == null) { return "PUT" }
+        if (reserva.uploadMethod.length == 0) { return "PUT" }
+        return reserva.uploadMethod.toUpperCase()
+    }
+
+    static String mimeDe(MediaUpload reserva) {
+        if (reserva.mimeType == null) { return "" }
+        return reserva.mimeType
+    }
+
+    static String provedorDe(MediaUpload reserva) {
+        if (reserva.provider == null) { return "" }
+        return reserva.provider
+    }
+
+    static String avisoDeProvedor(MediaUpload reserva) {
+        if (MidiaApi.provedorDe(reserva) == "S3") { return "" }
+        return "o envio de mídia está temporariamente desativado enquanto o armazenamento é migrado"
+    }
+
+    static MediaUpload ler(Resposta r) {
+        var vazio = MediaUpload("", null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+        if (!r.ok()) { return vazio }
+        try {
+            return json.decode<MediaUpload>(r.corpo)
+        } catch (String e) {
+            return vazio
+        }
+    }
+
+    static List<String> linhasDe(Map<String, String>? cab, String mimeType) {
+        var lista = listOf<String>()
+        if (cab != null) {
+            for (var chave in cab.keys()) {
+                var valor = ""
+                var bruto = cab.get(chave)
+                if (bruto != null) { valor = bruto as String }
+                if (valor.length > 0) { lista.add(chave + ": " + valor) }
+            }
+        }
+        if (lista.size() == 0 && mimeType.length > 0) {
+            lista.add("Content-Type: " + mimeType)
+        }
+        return lista
+    }
+}

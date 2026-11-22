@@ -1,0 +1,419 @@
+package ui
+
+import api.MidiaApi
+import core.*
+import tipos.*
+
+class EditorPublicacao extends Modal {
+
+    Cliente cliente
+    Bool profissional
+    String tipo = "INSIGHT"
+    String topico = ""
+    Editor conteudo = Editor(1200)
+    Editor artigo = Editor(Assuntos.LIMITE_ARTIGO)
+    Editor opcoes = Editor(780)
+    Editor tags = Editor(120)
+    EditorTexto campoConteudo
+    EditorTexto campoArtigo
+    EditorTexto campoOpcoes
+    EditorTexto campoTags
+    List<AnexoLocal> anexos = listOf<AnexoLocal>()
+    Int linhaTexto = 4
+    Int alturaTexto = 6
+    Int linhaExtra = 10
+    Int alturaExtra = 4
+    Int linhaMidias = 12
+    Int linhaAnexos = 13
+    Int linhaTags = 14
+    Int linhaBotoes = 16
+
+    public constructor(Teclado teclado, Cliente cliente, List<String> fundo, Bool profissional) {
+        super(teclado, fundo)
+        this.cliente = cliente
+        this.profissional = profissional
+        this.campoConteudo = EditorTexto(this.conteudo, 40, 6)
+        this.campoArtigo = EditorTexto(this.artigo, 40, 4)
+        this.campoOpcoes = EditorTexto(this.opcoes, 40, 4)
+        this.campoTags = EditorTexto(this.tags, 40, 1)
+    }
+
+    String titulo() {
+        return "nova publicação"
+    }
+
+    String ajuda() {
+        return "tab move · enter no texto quebra linha · enter no botão age · esc cancela"
+    }
+
+    Bool temExtra() {
+        return this.tipo == "ARTICLE" || this.tipo == "POLL"
+    }
+
+    Int larguraDoCampo() {
+        var largura = this.larguraDoTexto() - 1
+        if (largura < 8) { return 8 }
+        return largura
+    }
+
+    void preparar() {
+        this.conteudo.limite = Assuntos.limiteDe(this.tipo)
+        var extras = 0
+        if (this.temExtra()) { extras = 1 }
+        var reservado = 11 + this.anexos.size() + extras * 6
+        var altura = Terminal.altura() - 6 - reservado
+        if (altura < 3) { altura = 3 }
+        if (altura > 10) { altura = 10 }
+        this.alturaTexto = altura
+        this.linhaTexto = 4
+        var cursor = 5 + altura
+        if (extras == 1) {
+            this.linhaExtra = cursor + 1
+            this.alturaExtra = 4
+            cursor = this.linhaExtra + this.alturaExtra + 1
+        }
+        this.linhaMidias = cursor
+        this.linhaAnexos = cursor + 1
+        this.linhaTags = this.linhaAnexos + this.anexos.size() + 1
+        this.linhaBotoes = this.linhaTags + 2
+        this.campoConteudo.largura = this.larguraDoCampo()
+        this.campoConteudo.altura = this.alturaTexto
+        this.campoArtigo.largura = this.larguraDoCampo()
+        this.campoArtigo.altura = this.alturaExtra
+        this.campoOpcoes.largura = this.larguraDoCampo()
+        this.campoOpcoes.altura = this.alturaExtra
+        this.campoTags.largura = this.larguraDoCampo()
+    }
+
+    EditorTexto campoDeExtra() {
+        if (this.tipo == "POLL") { return this.campoOpcoes }
+        return this.campoArtigo
+    }
+
+    List<String> corpo() {
+        this.preparar()
+        var linhas = listOf<String>()
+        linhas.add(this.linhaCampo("tipo", Assuntos.rotuloTipo(this.tipo), "escolher"))
+        linhas.add(this.linhaCampo("assunto", this.rotuloDoAssunto(), "escolher"))
+        linhas.add("")
+        linhas.add(Tema.mudo("texto"))
+        for (var linha in this.campoConteudo.linhas()) { linhas.add(linha) }
+        linhas.add(this.contador(this.conteudo))
+        if (this.tipo == "ARTICLE") {
+            linhas.add(Tema.mudo("corpo do artigo"))
+            for (var linha in this.campoArtigo.linhas()) { linhas.add(linha) }
+            linhas.add(this.contador(this.artigo))
+        }
+        if (this.tipo == "POLL") {
+            linhas.add(Tema.mudo("opções (uma por linha, 2 a 6)"))
+            for (var linha in this.campoOpcoes.linhas()) { linhas.add(linha) }
+            linhas.add(this.contador(this.opcoes))
+        }
+        linhas.add(this.linhaDasMidias())
+        for (var i = 0; i < this.anexos.size(); i = i + 1) {
+            linhas.add(this.linhaDoAnexo(i))
+        }
+        linhas.add(this.linhaDasTags())
+        linhas.add("")
+        linhas.add(this.botao("publicar", 6))
+        linhas.add(this.botao("voltar", 7))
+        return linhas
+    }
+
+    String rotuloDoAssunto() {
+        if (Assuntos.assuntoValido(this.topico)) { return Assuntos.rotulo(this.topico) }
+        return ""
+    }
+
+    String linhaCampo(String rotulo, String valor, String vazio) {
+        var nome = Tema.mudo(Ansi.padDireita(rotulo, 9))
+        if (valor.length == 0) { return nome + Tema.mudo(vazio) }
+        return nome + Tema.texto(valor)
+    }
+
+    String contador(Editor editor) {
+        return Tema.mudo(String.valueOf(editor.caracteres()) + "/" + String.valueOf(editor.limite)
+            + " caracteres")
+    }
+
+    String linhaDasMidias() {
+        var texto = "mídias " + String.valueOf(this.anexos.size()) + "/" + String.valueOf(Assuntos.MAX_MIDIAS)
+        if (this.anexos.size() < Assuntos.MAX_MIDIAS) { texto = texto + " · enter anexa" }
+        return Tema.mudo(texto)
+    }
+
+    String linhaDoAnexo(Int indice) {
+        var anexo = this.anexos.get(indice)
+        var estado = anexo.estado
+        if (estado == "enviado") { estado = "enviada" }
+        return "  " + Tema.texto(anexo.nome) + Tema.mudo(" · " + Anexo.legivel(anexo.tamanho)
+            + " · " + estado + " · enter remove")
+    }
+
+    String linhaDasTags() {
+        var texto = this.campoTags.linhas()
+        var atual = ""
+        if (texto.size() > 0) { atual = texto.get(0) }
+        return Tema.mudo(Ansi.padDireita("tags", 9)) + atual
+    }
+
+    String botao(String rotulo, Int indice) {
+        if (this.marcada(this.linhaBotoes + (indice - 6))) {
+            return Tema.selecionado("  " + rotulo + "  ")
+        }
+        return "  " + Tema.suave(rotulo)
+    }
+
+    List<Foco> alvos() {
+        this.preparar()
+        var focos = listOf<Foco>()
+        focos.add(Foco(0, 0, 1, this.larguraDoTexto(), 0, "tipo", "botao"))
+        focos.add(Foco(1, 1, 1, this.larguraDoTexto(), 1, "assunto", "botao"))
+        focos.add(Foco(this.linhaTexto, this.linhaTexto + this.alturaTexto - 1, 1,
+            this.larguraDoTexto(), 2, "texto", "campo"))
+        if (this.temExtra()) {
+            focos.add(Foco(this.linhaExtra, this.linhaExtra + this.alturaExtra - 1, 1,
+                this.larguraDoTexto(), 3, "extra", "campo"))
+        }
+        focos.add(Foco(this.linhaMidias, this.linhaMidias, 1, this.larguraDoTexto(), 4, "mídias", "botao"))
+        for (var i = 0; i < this.anexos.size(); i = i + 1) {
+            var linha = this.linhaAnexos + i
+            focos.add(Foco(linha, linha, 1, this.larguraDoTexto(), 100 + i, this.anexos.get(i).nome, "botao"))
+        }
+        focos.add(Foco(this.linhaTags, this.linhaTags, 1, this.larguraDoTexto(), 5, "tags", "campo"))
+        focos.add(Foco(this.linhaBotoes, this.linhaBotoes, 2, 10, 6, "publicar", "botao"))
+        focos.add(Foco(this.linhaBotoes + 1, this.linhaBotoes + 1, 2, 8, 7, "voltar", "botao"))
+        return focos
+    }
+
+    void focarIndice(Int indice) {
+        for (var i = 0; i < this.focos.size(); i = i + 1) {
+            if (this.focos.get(i).indice == indice) {
+                this.foco = i
+                return
+            }
+        }
+    }
+
+    Bool aoTecla(Tecla tecla) {
+        var alvo = this.focoAtual()
+        if (alvo == null) { return false }
+        if (alvo.indice == 2) { return this.campoConteudo.tratar(tecla) }
+        if (alvo.indice == 3) { return this.campoDeExtra().tratar(tecla) }
+        if (alvo.indice == 5) {
+            if (tecla.nome == "enter") { return false }
+            if (tecla.nome == "cima" || tecla.nome == "baixo") { return false }
+            return this.campoTags.tratar(tecla)
+        }
+        if (tecla.nome == "texto" || tecla.nome == "espaco") { return false }
+        return false
+    }
+
+    Bool aoCampo(Int linha, Int coluna) {
+        if (linha >= this.linhaTexto && linha < this.linhaTexto + this.alturaTexto) {
+            this.campoConteudo.clicar(linha - this.linhaTexto, coluna)
+            return true
+        }
+        if (this.temExtra() && linha >= this.linhaExtra && linha < this.linhaExtra + this.alturaExtra) {
+            this.campoDeExtra().clicar(linha - this.linhaExtra, coluna)
+            return true
+        }
+        if (linha == this.linhaTags) {
+            var ajustada = coluna - 9
+            if (ajustada < 0) { ajustada = 0 }
+            this.campoTags.clicar(0, ajustada)
+            return true
+        }
+        return false
+    }
+
+    Bool aoAtivar(Int indice) {
+        if (indice == 0) { this.escolherTipo() }
+        if (indice == 1) { this.escolherAssunto() }
+        if (indice == 4) { this.anexar() }
+        if (indice == 5) { this.focarIndice(6) }
+        if (indice == 6) { this.revisar() }
+        if (indice == 7) { this.cancelado = true }
+        if (indice >= 100) { this.removerAnexo(indice - 100) }
+        return true
+    }
+
+    void escolherTipo() {
+        var tipos = Assuntos.tiposDoCompositor(this.profissional)
+        var rotulos = listOf<String>()
+        for (var valor in tipos) { rotulos.add(Assuntos.rotuloTipo(valor)) }
+        var lista = ModalLista(this.teclado, this.tela, "tipo de publicação", rotulos, tipos)
+        var escolheu = lista.executar()
+        this.restaurar()
+        if (escolheu) { this.tipo = lista.escolhido }
+        this.focarIndice(2)
+    }
+
+    void escolherAssunto() {
+        var assuntos = Assuntos.assuntosDoCompositor()
+        var rotulos = listOf<String>()
+        for (var valor in assuntos) { rotulos.add(Assuntos.rotulo(valor)) }
+        var lista = ModalLista(this.teclado, this.tela, "assunto", rotulos, assuntos)
+        var escolheu = lista.executar()
+        this.restaurar()
+        if (escolheu) { this.topico = lista.escolhido }
+        this.focarIndice(2)
+    }
+
+    void anexar() {
+        if (this.anexos.size() >= Assuntos.MAX_MIDIAS) {
+            this.status = "já são " + String.valueOf(Assuntos.MAX_MIDIAS) + " mídias neste post"
+            return
+        }
+        var seletor = SeletorArquivo(this.teclado, this.tela, "POST_IMAGE")
+        var escolheu = seletor.executar()
+        this.restaurar()
+        if (!escolheu) { return }
+        var local = Anexo.de(seletor.escolhido, "POST_IMAGE")
+        if (local.estado != "pronto") {
+            this.status = local.erro
+            return
+        }
+        this.enviar(local)
+    }
+
+    void enviar(AnexoLocal local) {
+        this.status = "enviando " + local.nome + "…"
+        this.pintar()
+        var api = MidiaApi(this.cliente)
+        var reserva = api.reservar(local.nome, local.mimeType, local.tamanho as Int, "POST_IMAGE")
+        if (!reserva.ok()) {
+            this.status = "não reservou o envio: " + reserva.mensagem()
+            return
+        }
+        var upload = MidiaApi.ler(reserva)
+        var aviso = MidiaApi.avisoDeProvedor(upload)
+        if (aviso.length > 0) {
+            this.status = aviso
+            return
+        }
+        var bruto = upload.id
+        if (bruto == null) {
+            this.status = "o servidor não devolveu o id da mídia"
+            return
+        }
+        var mediaId: String = bruto
+        if (mediaId.length == 0) {
+            this.status = "o servidor não devolveu o id da mídia"
+            return
+        }
+        var envio = api.enviar(upload, local.caminho)
+        if (!envio.ok()) {
+            this.status = "falhou o envio: " + envio.mensagem()
+            return
+        }
+        this.anexos.add(AnexoLocal(local.caminho, local.nome, local.mimeType, local.tamanho,
+            "enviado", "", mediaId, 100))
+        this.status = ""
+        this.focarIndice(4)
+    }
+
+    void removerAnexo(Int indice) {
+        if (indice < 0 || indice >= this.anexos.size()) { return }
+        var anexo = this.anexos.get(indice)
+        if (anexo.mediaId.length > 0) {
+            MidiaApi(this.cliente).apagar(anexo.mediaId)
+        }
+        this.anexos.remove(indice)
+        this.focarIndice(4)
+    }
+
+    void revisar() {
+        var falha = this.validar()
+        if (falha.length > 0) {
+            this.status = falha
+            return
+        }
+        var nomes = listOf<String>()
+        for (var anexo in this.anexos) {
+            nomes.add(anexo.nome + " · " + Anexo.legivel(anexo.tamanho))
+        }
+        var revisao = ModalRevisao(this.teclado, this.tela, this.borrador(), nomes)
+        var confirmou = revisao.executar()
+        this.restaurar()
+        if (confirmou) { this.confirmado = true }
+    }
+
+    String validar() {
+        if (this.conteudo.caracteres() == 0) { return "escreva alguma coisa antes de publicar" }
+        if (this.conteudo.caracteres() > this.conteudo.limite) {
+            return "o texto passa de " + String.valueOf(this.conteudo.limite) + " caracteres"
+        }
+        if (!Assuntos.assuntoValido(this.topico)) { return "escolha um assunto" }
+        if (this.tipo == "ARTICLE" && this.artigo.caracteres() == 0) {
+            return "o artigo precisa do corpo do artigo"
+        }
+        if (this.tipo == "POLL") {
+            var lista = this.linhasDeOpcoes()
+            if (lista.size < Assuntos.MIN_OPCOES_ENQUETE) {
+                return "a enquete precisa de " + String.valueOf(Assuntos.MIN_OPCOES_ENQUETE) + " opções"
+            }
+            if (lista.size > Assuntos.MAX_OPCOES_ENQUETE) {
+                return "a enquete aceita até " + String.valueOf(Assuntos.MAX_OPCOES_ENQUETE) + " opções"
+            }
+            for (var opcao in lista) {
+                if (opcao.length > Assuntos.MAX_OPCAO_ENQUETE) {
+                    return "cada opção da enquete cabe em "
+                        + String.valueOf(Assuntos.MAX_OPCAO_ENQUETE) + " caracteres"
+                }
+            }
+        }
+        if (this.listaDeTags().size > Assuntos.MAX_TAGS) {
+            return "no máximo " + String.valueOf(Assuntos.MAX_TAGS) + " tags"
+        }
+        for (var anexo in this.anexos) {
+            if (anexo.estado != "enviado") { return "termine o envio de " + anexo.nome }
+        }
+        return ""
+    }
+
+    List<String> linhasDeOpcoes() {
+        var lista = listOf<String>()
+        for (var linha in Texto.linhas(this.opcoes.texto())) {
+            var limpa = linha.trim()
+            if (limpa.length > 0) { lista.add(limpa) }
+        }
+        return lista
+    }
+
+    List<String> listaDeTags() {
+        var lista = listOf<String>()
+        var atual = ""
+        var bruto = this.tags.texto() + " "
+        for (var i = 0; i < bruto.length; i = i + 1) {
+            var c = bruto.charAt(i)
+            if (c == ' ' || c == ',' || c == '\n') {
+                var tag = this.semCerquilha(atual).toLowerCase()
+                if (tag.length > 0 && !lista.contains(tag)) { lista.add(tag) }
+                atual = ""
+                continue
+            }
+            atual = atual + c
+        }
+        return lista
+    }
+
+    String semCerquilha(String texto) {
+        var saida = texto.trim()
+        while (saida.startsWith("#")) { saida = saida.substring(1, saida.length) }
+        return saida.trim()
+    }
+
+    Borrador borrador() {
+        var opcoes = listOf<String>()
+        if (this.tipo == "POLL") { opcoes = this.linhasDeOpcoes() }
+        var corpoArtigo = ""
+        if (this.tipo == "ARTICLE") { corpoArtigo = this.artigo.texto() }
+        var ids = listOf<String>()
+        for (var anexo in this.anexos) {
+            if (anexo.mediaId.length > 0) { ids.add(anexo.mediaId) }
+        }
+        return Borrador(this.tipo, this.topico, this.conteudo.texto(), corpoArtigo,
+            this.listaDeTags(), ids, listOf<String>(), "", null, opcoes, null, "")
+    }
+}

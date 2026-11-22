@@ -1,0 +1,146 @@
+package screens
+
+import tipos.*
+import api.*
+import core.*
+import ui.*
+import kof.json
+
+class TelaPostSimples {
+
+    Cliente cliente
+    PostResumo post
+    List<Comentario> comentarios = listOf<Comentario>()
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    void executar(PostResumo post) {
+        this.post = post
+        var rodando = true
+        while (rodando && Entrada.ativa) {
+            print(Ansi.LIMPAR)
+            println(Cabecalho.linha(this.cliente, "post", this.contexto()))
+            println(Caixa.juntar(Cartao.linhasCompletas(post, Ansi.LARGURA_CONTEUDO,
+                Cartao.usuarioAtual(this.cliente))))
+            TelaFeed(this.cliente).mostrarImagens(post)
+            this.comentariosSimples()
+            var escolha = Entrada.menu("post",
+                listOf("comentar", "reagir", "salvar", "compartilhar", "repostar", "reações"), "voltar")
+            if (escolha < 0) {
+                rodando = false
+            } else if (escolha == 0) {
+                this.comentarSimples(post.id)
+            } else if (escolha == 1) {
+                this.reagirSimples(post.id)
+            } else if (escolha == 2) {
+                this.avisar(PostApi(this.cliente).salvar(post.id), "post salvo")
+            } else if (escolha == 3) {
+                this.avisar(PostApi(this.cliente).compartilhar(post.id), "compartilhado")
+            } else if (escolha == 4) {
+                this.repostarSimples(post.id)
+            } else if (escolha == 5) {
+                this.verReacoes(post.id)
+            }
+        }
+    }
+
+    String contexto() {
+        if (this.cliente == null || this.cliente.config == null) { return "social" }
+        return this.cliente.config.contexto
+    }
+
+    void comentariosSimples() {
+        var r = ComentariosApi(this.cliente).listar(this.post.id, null, 30)
+        if (!r.ok()) {
+            println(Tema.mudo("comentários indisponíveis"))
+            return
+        }
+        var pagina = ComentariosApi.pagina(r)
+        var itens = pagina.items
+        if (itens == null || itens.size() == 0) {
+            println(Tema.mudo("sem comentários ainda"))
+            return
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            for (var linha in CartaoComentario.linhas(itens.get(i), Ansi.LARGURA_CONTEUDO, 0,
+                this.usuarioId())) {
+                println(linha)
+            }
+        }
+    }
+
+    String usuarioId() {
+        if (this.cliente == null || this.cliente.sessao == null) { return "" }
+        var usuario = this.cliente.sessao.usuario
+        if (usuario == null) { return "" }
+        return usuario.id
+    }
+
+    void comentarSimples(String postId) {
+        var texto = Entrada.texto("comentário (vazio para voltar)")
+        if (texto.length == 0) { return }
+        this.avisar(ComentariosApi(this.cliente).comentar(postId, texto, null), "comentário enviado")
+    }
+
+    void reagirSimples(String postId) {
+        var tipos = listOf("LIKE", "LOVE", "LAUGH", "ROFL", "WOW", "SAD",
+            "ANGRY", "DISGUST", "SKEPTICAL", "CELEBRATE", "SUPPORT", "INSIGHTFUL")
+        var rotulos = listOf("curtir", "amar", "rir", "gargalhar", "uau", "triste",
+            "raiva", "nojo", "cético", "celebrar", "apoio", "insight")
+        var escolha = Entrada.menu("reagir", rotulos, "voltar")
+        if (escolha < 0) { return }
+        this.avisar(PostApi(this.cliente).reagir(postId, tipos.get(escolha)), "reação registrada")
+    }
+
+    void repostarSimples(String postId) {
+        var opiniao = Entrada.texto("sua opinião (opcional)")
+        var r = Resposta(0, "", "")
+        if (opiniao.length == 0) {
+            r = PostApi(this.cliente).republicar(postId, null, null)
+        } else {
+            r = PostApi(this.cliente).republicar(postId, opiniao, null)
+        }
+        this.avisar(r, "repostado")
+    }
+
+    void verReacoes(String postId) {
+        var r = PostApi(this.cliente).reacoes(postId)
+        if (!r.ok()) {
+            println(Tema.erro(r.mensagem()))
+            Entrada.pausar()
+            return
+        }
+        var lista = ListaReacoes(null)
+        try {
+            lista = json.decode<ListaReacoes>(r.corpo)
+        } catch (String e) {
+            lista = ListaReacoes(null)
+        }
+        var itens = lista.reactions
+        if (itens == null || itens.size() == 0) {
+            Caixa.desenhar(Caixa.simples(Lista.vazia("ninguém reagiu ainda")))
+            Entrada.pausar()
+            return
+        }
+        for (var i = 0; i < itens.size(); i = i + 1) {
+            var reagente = itens.get(i)
+            var quem = "alguém"
+            if (reagente.userId != null) { quem = reagente.userId }
+            var tipo = ""
+            if (reagente.type != null) { tipo = " · " + reagente.type }
+            println("  " + Tema.destaque(quem) + Tema.suave(tipo))
+        }
+        Entrada.pausar()
+    }
+
+    void avisar(Resposta r, String sucesso) {
+        if (r.ok()) {
+            println(Tema.ok(sucesso))
+        } else {
+            println(Tema.erro(r.mensagem()))
+        }
+        Entrada.pausar()
+    }
+}

@@ -1,0 +1,143 @@
+package ui
+
+import core.*
+
+class ModalReacoes extends Modal {
+
+    List<String> tipos = listOf<String>()
+    List<String> rotulos = listOf<String>()
+    Int cursor = 0
+    Int janela = 0
+    Int alturaJanela = 8
+    String filtro = ""
+    String escolhido = ""
+
+    public constructor(Teclado teclado, List<String> fundo, List<String> tipos, List<String> rotulos) {
+        super(teclado, fundo)
+        this.tipos = tipos
+        this.rotulos = rotulos
+        this.alturaJanela = Terminal.altura() - 12
+        if (this.alturaJanela < 4) { this.alturaJanela = 4 }
+        if (this.alturaJanela > 14) { this.alturaJanela = 14 }
+    }
+
+    String titulo() {
+        return "reagir"
+    }
+
+    String ajuda() {
+        return "↑↓ move · digita para filtrar · enter escolhe · esc cancela"
+    }
+
+    List<Int> visiveis() {
+        var indices = listOf<Int>()
+        for (var i = 0; i < this.rotulos.size(); i = i + 1) {
+            if (this.combina(i)) { indices.add(i) }
+        }
+        return indices
+    }
+
+    Bool combina(Int indice) {
+        if (this.filtro.length == 0) { return true }
+        var alvo = this.rotulos.get(indice).toLowerCase() + " " + this.tipos.get(indice).toLowerCase()
+        return alvo.indexOf(this.filtro.toLowerCase()) >= 0
+    }
+
+    void ajustar() {
+        var total = this.visiveis().size()
+        if (this.cursor >= total) { this.cursor = total - 1 }
+        if (this.cursor < 0) { this.cursor = 0 }
+        if (this.cursor < this.janela) { this.janela = this.cursor }
+        if (this.cursor >= this.janela + this.alturaJanela) { this.janela = this.cursor - this.alturaJanela + 1 }
+        var maximo = total - this.alturaJanela
+        if (maximo < 0) { maximo = 0 }
+        if (this.janela > maximo) { this.janela = maximo }
+    }
+
+    List<String> corpo() {
+        this.ajustar()
+        var indices = this.visiveis()
+        var linhas = listOf<String>()
+        var fim = this.janela + this.alturaJanela
+        if (fim > indices.size()) { fim = indices.size() }
+        for (var i = this.janela; i < fim; i = i + 1) {
+            var indice = indices.get(i)
+            var texto = this.rotulos.get(indice) + " · " + this.tipos.get(indice)
+            if (i == this.cursor) {
+                linhas.add(Tema.selecionado(Ansi.padDireita(" " + texto, this.larguraDoTexto() - 1)))
+            } else {
+                linhas.add(" " + Tema.texto(texto))
+            }
+        }
+        if (indices.size() == 0) {
+            linhas.add(Tema.mudo("  nada com esse filtro"))
+        }
+        return linhas
+    }
+
+    Bool marcada(Int indice) {
+        return indice == this.cursor - this.janela
+    }
+
+    List<Foco> alvos() {
+        this.ajustar()
+        var indices = this.visiveis()
+        var focos = listOf<Foco>()
+        var fim = this.janela + this.alturaJanela
+        if (fim > indices.size()) { fim = indices.size() }
+        for (var i = this.janela; i < fim; i = i + 1) {
+            var indice = indices.get(i)
+            var linha = i - this.janela
+            focos.add(Foco(linha, linha, 1, this.larguraDoTexto(), indice,
+                this.rotulos.get(indice), "item"))
+        }
+        return focos
+    }
+
+    Bool aoTecla(Tecla tecla) {
+        if (tecla.nome == "texto") {
+            this.filtro = this.filtro + tecla.caractere
+            this.cursor = 0
+            this.janela = 0
+            return true
+        }
+        if (tecla.nome == "espaco") {
+            this.filtro = this.filtro + " "
+            this.cursor = 0
+            this.janela = 0
+            return true
+        }
+        if (tecla.nome == "voltar") {
+            if (this.filtro.length > 0) {
+                this.filtro = this.filtro.substring(0, this.filtro.length - 1)
+                this.cursor = 0
+                this.janela = 0
+            }
+            return true
+        }
+        if (tecla.nome == "cima") {
+            this.cursor = this.cursor - 1
+            return true
+        }
+        if (tecla.nome == "baixo") {
+            this.cursor = this.cursor + 1
+            return true
+        }
+        if (tecla.nome == "roda-cima") {
+            this.cursor = this.cursor - 3
+            return true
+        }
+        if (tecla.nome == "roda-baixo") {
+            this.cursor = this.cursor + 3
+            return true
+        }
+        return false
+    }
+
+    Bool aoAtivar(Int indice) {
+        if (indice < 0 || indice >= this.tipos.size()) { return false }
+        this.escolhido = this.tipos.get(indice)
+        this.confirmado = true
+        return true
+    }
+}

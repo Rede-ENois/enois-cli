@@ -5,6 +5,7 @@ import core.Base64
 import core.Download
 import core.Midia
 import core.Tema
+import tipos.*
 
 class Imagem {
 
@@ -19,6 +20,7 @@ class Imagem {
         if (termo.indexOf("kitty") >= 0) { return "kitty" }
         if (termo.indexOf("ghostty") >= 0) { return "kitty" }
         if (termo.indexOf("wezterm") >= 0) { return "kitty" }
+        if (Sixel.suportado(termo, programa)) { return "sixel" }
         return ""
     }
 
@@ -50,6 +52,10 @@ class Imagem {
         try {
             if (protocolo == "iterm2") {
                 print(Imagem.iterm2(caminho, colunas))
+            } else if (protocolo == "sixel") {
+                var sequencia = Sixel.codificar(caminho, colunas)
+                if (sequencia.length == 0) { return false }
+                print(sequencia)
             } else {
                 var png = Imagem.paraPng(caminho)
                 if (png.length == 0) { return false }
@@ -59,6 +65,19 @@ class Imagem {
             return true
         } catch (String erro) {
             return false
+        }
+    }
+
+    static void mostrarDoPost(PostResumo p) {
+        var anexos = p.media
+        if (anexos == null) { return }
+        for (var i = 0; i < anexos.size(); i = i + 1) {
+            var anexo = anexos.get(i)
+            if (!Imagem.eImagem(anexo.mimeType)) { continue }
+            var url = ""
+            if (anexo.cdnUrl != null) { url = Midia.url(anexo.cdnUrl) }
+            if (url.length == 0) { continue }
+            Imagem.mostrar(url, Imagem.COLUNAS_AVATAR)
         }
     }
 

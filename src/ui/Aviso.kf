@@ -1,0 +1,88 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+class Aviso {
+
+    static Int DURACAO_PADRAO = 4000
+
+    String texto
+    String tipo
+    Long expiraEm
+
+    public constructor(String texto, String tipo, Long duracaoMs) {
+        this.texto = texto
+        this.tipo = tipo
+        this.expiraEm = time.now() + duracaoMs
+    }
+
+    Bool expirado() {
+        return time.now() >= this.expiraEm
+    }
+
+    Long restante() {
+        var faltando: Long = this.expiraEm - time.now()
+        if (faltando < 0L) { return 0L }
+        return faltando
+    }
+
+    String pintado() {
+        if (this.tipo == "erro") { return Tema.erro(this.texto) }
+        if (this.tipo == "ok") { return Tema.ok(this.texto) }
+        if (this.tipo == "alerta") { return Tema.alerta(this.texto) }
+        return Tema.mudo(this.texto)
+    }
+}
+
+class Avisos {
+
+    List<Aviso> itens = listOf<Aviso>()
+
+    void mostrar(String texto, String tipo) {
+        this.mostrar(texto, tipo, 4000L)
+    }
+
+    void mostrar(String texto, String tipo, Long duracaoMs) {
+        this.limpar()
+        this.itens.add(Aviso(texto, tipo, duracaoMs))
+    }
+
+    void erro(String texto) {
+        this.mostrar(texto, "erro")
+    }
+
+    void ok(String texto) {
+        this.mostrar(texto, "ok")
+    }
+
+    void info(String texto) {
+        this.mostrar(texto, "mudo")
+    }
+
+    void limpar() {
+        this.itens.clear()
+    }
+
+    Bool vazio() {
+        this.limpar()
+        return this.itens.size() == 0
+    }
+
+    String texto() {
+        this.limpar()
+        if (this.itens.size() == 0) { return "" }
+        return this.itens.get(0).texto
+    }
+
+    String pintado() {
+        this.limpar()
+        if (this.itens.size() == 0) { return "" }
+        return this.itens.get(0).pintado()
+    }
+
+    Bool ativo() {
+        this.limpar()
+        return this.itens.size() > 0
+    }
+}

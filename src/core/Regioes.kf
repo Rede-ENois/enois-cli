@@ -13,7 +13,11 @@ class Regioes {
     }
 
     void adicionarFaixa(Int linha, Int linhaFim, Int inicio, Int fim, Int indice, String tipo) {
-        this.lista.add(Regiao(linha, linhaFim, inicio, fim, indice, tipo))
+        this.lista.add(Regiao(linha, linhaFim, inicio, fim, indice, tipo, indice))
+    }
+
+    void adicionarAcao(Int linha, Int inicio, Int fim, Int indice, String tipo, Int dado) {
+        this.lista.add(Regiao(linha, linha, inicio, fim, indice, tipo, dado))
     }
 
     Int tamanho() {
@@ -26,6 +30,6 @@ class Regioes {
             if (coluna < regiao.inicio || coluna > regiao.fim) { continue }
             return regiao
         }
-        return Regiao(0, 0, 0, 0, -1, "")
+        return Regiao(0, 0, 0, 0, -1, "", -1)
     }
 }

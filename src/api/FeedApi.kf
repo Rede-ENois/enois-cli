@@ -83,6 +83,15 @@ class FeedApi {
         return json.decode<PaginaPost>(r.corpo)
     }
 
+    static PostResumo? post(Resposta r) {
+        if (!r.ok()) { return null }
+        try {
+            return json.decode<PostResumo>(r.corpo)
+        } catch (String e) {
+            return null
+        }
+    }
+
     static PaginaFeed paginaFeed(Resposta r) {
         if (!r.ok()) { return PaginaFeed(listOf(), null, null) }
         return json.decode<PaginaFeed>(r.corpo)

@@ -1,3 +1,5 @@
 package core
 
-record Regiao(Int linha, Int linhaFim, Int inicio, Int fim, Int indice, String tipo)
+record Regiao(Int linha, Int linhaFim, Int inicio, Int fim, Int indice, String tipo, Int dado)
+
+record AcaoRegiao(Int dado, Int linha, Int inicio, Int fim, Int indice, String tipo)

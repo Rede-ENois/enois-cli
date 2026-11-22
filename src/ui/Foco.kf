@@ -1,0 +1,3 @@
+package ui
+
+record Foco(Int linha, Int linhaFim, Int inicio, Int fim, Int indice, String rotulo, String tipo)

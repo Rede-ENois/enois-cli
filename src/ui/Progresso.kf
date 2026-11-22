@@ -1,0 +1,43 @@
+package ui
+
+import core.Ansi
+import core.Tema
+
+class Progresso {
+
+    Int total
+    Int feito
+    String rotulo
+
+    public constructor(Int total, String rotulo) {
+        this.total = total
+        this.feito = 0
+        this.rotulo = rotulo
+    }
+
+    void avancar(Int passo) {
+        this.feito = this.feito + passo
+        if (this.feito > this.total) { this.feito = this.total }
+        if (this.feito < 0) { this.feito = 0 }
+    }
+
+    Bool concluido() {
+        return this.feito >= this.total
+    }
+
+    Int percentual() {
+        if (this.total <= 0) { return 0 }
+        return (this.feito * 100) / this.total
+    }
+
+    String linha(Int largura) {
+        var interna = largura - 8
+        if (interna < 6) { interna = 6 }
+        var cheio = (this.percentual() * interna) / 100
+        var vazio = interna - cheio
+        var barra = ""
+        for (var i = 0; i < cheio; i = i + 1) { barra = barra + "█" }
+        for (var i = 0; i < vazio; i = i + 1) { barra = barra + "░" }
+        return Tema.suave(barra) + " " + Tema.mudo(String.valueOf(this.percentual()) + "%")
+    }
+}

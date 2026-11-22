@@ -5,6 +5,7 @@ class Tema {
     static String RESET = "\u001b[0m"
     static String NEGRITO = "\u001b[1m"
     static String APAGADA = "\u001b[2m"
+    static String INVERSO = "\u001b[7m"
 
     static String FUNDO = "\u001b[48;2;21;17;28m"
     static String SUPERFICIE = "\u001b[48;2;27;22;35m"
@@ -50,8 +51,12 @@ class Tema {
     }
 
     static String comFundoSobre(String fundo, String texto) {
-        if (texto == null) { return fundo + RESET }
-        var saida = fundo
+        return Tema.reaplicar(fundo, texto)
+    }
+
+    static String reaplicar(String estilo, String texto) {
+        if (texto == null) { return estilo + RESET }
+        var saida = estilo
         var restante = texto
         var seguindo = true
         while (seguindo) {
@@ -61,7 +66,7 @@ class Tema {
                 seguindo = false
             } else {
                 var fim = marca + Tema.RESET.length
-                saida = saida + restante.substring(0, fim) + fundo
+                saida = saida + restante.substring(0, fim) + estilo
                 restante = restante.substring(fim, restante.length)
             }
         }

@@ -1,0 +1,126 @@
+package ui
+
+import core.*
+
+class ModalComentario extends Modal {
+
+    Editor conteudo
+    EditorTexto campo
+    String parentUsuario = ""
+    Bool edicao = false
+    Int linhaTexto = 2
+    Int alturaTexto = 8
+    Int linhaBotoes = 12
+
+    public constructor(Teclado teclado, List<String> fundo, String parentUsuario, Bool edicao, String atual) {
+        super(teclado, fundo)
+        this.parentUsuario = parentUsuario
+        this.edicao = edicao
+        var limite = 800
+        if (edicao) { limite = 1024 }
+        this.conteudo = Editor(limite)
+        if (atual.length > 0) { this.conteudo.definirTexto(atual) }
+        this.campo = EditorTexto(this.conteudo, 40, 8)
+    }
+
+    String titulo() {
+        if (this.edicao) { return "editar comentário" }
+        if (this.parentUsuario.length > 0) { return "responder" }
+        return "novo comentário"
+    }
+
+    String ajuda() {
+        return "tab move · enter no texto quebra linha · enter no botão envia · esc cancela"
+    }
+
+    Int limite() {
+        return this.conteudo.limite
+    }
+
+    void preparar() {
+        var altura = Terminal.altura() - 14
+        if (altura < 3) { altura = 3 }
+        if (altura > 8) { altura = 8 }
+        this.alturaTexto = altura
+        this.linhaTexto = 2
+        this.linhaBotoes = this.linhaTexto + this.alturaTexto + 2
+        this.campo.largura = this.larguraDoCampo()
+        this.campo.altura = this.alturaTexto
+    }
+
+    Int larguraDoCampo() {
+        var largura = this.larguraDoTexto() - 1
+        if (largura < 8) { return 8 }
+        return largura
+    }
+
+    List<String> corpo() {
+        this.preparar()
+        var linhas = listOf<String>()
+        if (this.parentUsuario.length > 0) {
+            linhas.add(Tema.mudo("em resposta a @" + this.parentUsuario))
+        } else {
+            linhas.add(Tema.mudo("comentário"))
+        }
+        linhas.add("")
+        for (var linha in this.campo.linhas()) { linhas.add(linha) }
+        linhas.add(Tema.mudo(String.valueOf(this.conteudo.caracteres())
+            + "/" + String.valueOf(this.conteudo.limite) + " caracteres"))
+        linhas.add("")
+        linhas.add(this.botao("enviar", 0))
+        linhas.add(this.botao("cancelar", 1))
+        return linhas
+    }
+
+    String botao(String rotulo, Int indice) {
+        if (this.marcada(this.linhaBotoes + indice)) {
+            return Tema.selecionado("  " + rotulo + "  ")
+        }
+        return "  " + Tema.suave(rotulo)
+    }
+
+    List<Foco> alvos() {
+        this.preparar()
+        return listOf(
+            Foco(this.linhaTexto, this.linhaTexto + this.alturaTexto - 1, 1,
+                this.larguraDoTexto(), 0, "texto", "campo"),
+            Foco(this.linhaBotoes, this.linhaBotoes, 2, 10, 1, "enviar", "botao"),
+            Foco(this.linhaBotoes + 1, this.linhaBotoes + 1, 2, 10, 2, "cancelar", "botao"))
+    }
+
+    Bool aoTecla(Tecla tecla) {
+        var alvo = this.focoAtual()
+        if (alvo == null) { return false }
+        if (alvo.indice == 0) { return this.campo.tratar(tecla) }
+        if (tecla.nome == "texto" || tecla.nome == "espaco") { return false }
+        return false
+    }
+
+    Bool aoCampo(Int linha, Int coluna) {
+        if (linha >= this.linhaTexto && linha < this.linhaTexto + this.alturaTexto) {
+            this.campo.clicar(linha - this.linhaTexto, coluna)
+            return true
+        }
+        return false
+    }
+
+    Bool aoAtivar(Int indice) {
+        if (indice == 1) {
+            if (this.conteudo.vazio()) {
+                this.status = "escreva o comentário antes de enviar"
+                return true
+            }
+            this.confirmado = true
+            return true
+        }
+        if (indice == 2) {
+            this.cancelado = true
+            return true
+        }
+        return true
+    }
+
+    String texto() {
+        return this.conteudo.texto()
+    }
+}

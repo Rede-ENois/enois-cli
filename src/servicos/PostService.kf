@@ -1,0 +1,44 @@
+package servicos
+
+import api.PostApi
+import core.Cliente
+import core.Resposta
+import tipos.*
+
+record ResultadoReacao(Bool sucesso, PostResumo post, String mensagem)
+
+class PostService {
+
+    Cliente cliente
+    String ultimoPost = ""
+    Long ultimoMomento = 0L
+
+    public constructor(Cliente cliente) {
+        this.cliente = cliente
+    }
+
+    Bool podeAlternar(String postId) {
+        if (this.ultimoPost != postId) { return true }
+        var agora = time.now()
+        if (agora < this.ultimoMomento) { return true }
+        return agora - this.ultimoMomento >= 200L
+    }
+
+    void marcar(String postId) {
+        this.ultimoPost = postId
+        this.ultimoMomento = time.now()
+    }
+
+    ResultadoReacao confirmar(PostResumo anterior, String tipo) {
+        var r = Resposta(0, "", "")
+        if (anterior.temReacao(tipo)) {
+            r = PostApi(this.cliente).desreagir(anterior.id)
+        } else {
+            r = PostApi(this.cliente).reagir(anterior.id, tipo)
+        }
+        if (!r.ok()) {
+            return ResultadoReacao(false, anterior, r.mensagem())
+        }
+        return ResultadoReacao(true, anterior.comResultado(PostApi.resultado(r), tipo), "")
+    }
+}

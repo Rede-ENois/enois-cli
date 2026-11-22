@@ -4,25 +4,30 @@ import tipos.*
 import api.*
 import core.*
 import ui.*
-import kof.json
+import servicos.*
 
 class TelaPost {
 
     Cliente cliente
     PostResumo post
-    List<Comentario> comentarios = listOf<Comentario>()
+    ComentarioService servico
+    PostService postServico
     Vista vista
     Teclado teclado
     String status = ""
     String destino = ""
     Int largura = 0
+    Bool ocupado = false
+    Bool saindo = false
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
+        this.servico = ComentarioService(cliente)
+        this.postServico = PostService(cliente)
     }
 
     void executar(PostResumo post) {
-        this.executarSimples(post)
+        TelaPostSimples(this.cliente).executar(post)
     }
 
     String executarInterativo(PostResumo post, Teclado teclado) {
@@ -33,6 +38,9 @@ class TelaPost {
         var rodando = true
         var pintar = true
         while (rodando && Entrada.ativa) {
+            if (this.servico.temMais && this.vista.rolagem.noFim()) {
+                this.carregarMais()
+            }
             if (pintar) {
                 this.desenhar()
                 teclado.ligarMouse()
@@ -53,25 +61,33 @@ class TelaPost {
                 this.responderFoco()
             } else if (tecla.nome == "texto") {
                 this.destino = this.atalho(tecla.caractere)
-                if (this.destino.length > 0) { rodando = false }
             } else if (tecla.nome == "escape" || tecla.nome == "ctrl-c") {
                 rodando = false
             } else if (Teclado.inerte(tecla)) {
                 pintar = false
             }
-            if (this.destino.length > 0) { rodando = false }
+            if (this.saindo || this.destino.length > 0) { rodando = false }
         }
         return this.destino
     }
 
     String atalho(String caractere) {
-        if (caractere == "l" || caractere == "L") { this.curtir() }
-        if (caractere == "c" || caractere == "C") { this.comentar() }
-        if (caractere == "r" || caractere == "R") { this.reagir() }
-        if (caractere == "s" || caractere == "S") { this.salvar() }
-        if (caractere == "x" || caractere == "X") { this.compartilhar() }
-        if (caractere == "p" || caractere == "P") { this.repostar() }
+        var comentario = this.comentarioFoco()
+        if (caractere == "q" || caractere == "Q") { this.saindo = true }
+        if (caractere == "r" || caractere == "R") { this.recarregar() }
         if (caractere == "m" || caractere == "M") { this.mostrarImagens() }
+        if (caractere == "c" || caractere == "C") { this.comentar(comentario) }
+        if (caractere == "l" || caractere == "L") { this.curtir(comentario) }
+        if (caractere == "e" || caractere == "E") { this.reagir(comentario) }
+        if (comentario == null) {
+            if (caractere == "s" || caractere == "S") { this.salvar() }
+            if (caractere == "x" || caractere == "X") { this.compartilhar() }
+            if (caractere == "p" || caractere == "P") { this.repostar() }
+        } else {
+            if (caractere == "t" || caractere == "T") { this.editar(comentario) }
+            if (caractere == "d" || caractere == "D") { this.apagar(comentario) }
+            if (caractere == "p" || caractere == "P") { this.fixar(comentario) }
+        }
         var indice = Seletor.digito(caractere)
         if (indice >= 0) {
             var rotas = Navegacao.secoesDe(this.contexto())
@@ -83,6 +99,18 @@ class TelaPost {
     String contexto() {
         if (this.cliente == null || this.cliente.config == null) { return "social" }
         return this.cliente.config.contexto
+    }
+
+    String usuarioId() {
+        if (this.cliente == null || this.cliente.sessao == null) { return "" }
+        var usuario = this.cliente.sessao.usuario
+        if (usuario == null) { return "" }
+        return usuario.id
+    }
+
+    Bool meuPost() {
+        if (this.post.authorId == null) { return false }
+        return this.post.authorId == this.usuarioId()
     }
 
     void desenhar() {
@@ -101,15 +129,33 @@ class TelaPost {
 
     List<String> atalhos() {
         var lista = listOf<String>()
+        var comentario = this.comentarioFoco()
+        if (comentario == null) {
+            lista.add("↑↓ navega")
+            lista.add("L curtir")
+            lista.add("E reagir")
+            lista.add("C comenta")
+            lista.add("R atualiza")
+            lista.add("S salvar")
+            lista.add("X compartilhar")
+            lista.add("P reposta")
+            lista.add("M mídias")
+            lista.add("Q volta")
+            return lista
+        }
         lista.add("enter responde")
         lista.add("L curtir")
+        lista.add("E reagir")
+        if (comentario.meu(this.usuarioId())) {
+            lista.add("T editar")
+            lista.add("D apagar")
+        } else if (this.meuPost()) {
+            lista.add("P fixa")
+        }
         lista.add("C comenta")
-        lista.add("R reagir")
-        lista.add("q volta")
-        lista.add("S salvar")
-        lista.add("X compartilhar")
+        lista.add("R atualiza")
         lista.add("M mídias")
-        lista.add("1–6 seções")
+        lista.add("Q volta")
         return lista
     }
 
@@ -122,202 +168,251 @@ class TelaPost {
             }
             return true
         }
+        if (alvo.tipo == "acao") {
+            this.clicarAcao(alvo.dado, alvo.indice)
+            return true
+        }
         if (alvo.tipo != "item") { return false }
-        this.vista.rolagem.foco = alvo.indice
+        this.vista.rolagem.foco = alvo.dado
         return true
+    }
+
+    void clicarAcao(Int dado, Int acao) {
+        var indice = dado - 1
+        if (indice < 0 || indice >= this.servico.comentarios.size()) { return }
+        this.vista.rolagem.foco = dado
+        var comentario = this.servico.comentarios.get(indice)
+        if (acao == 0) { this.reagirComentario(comentario, "LIKE") }
+        if (acao == 1) { this.comentar(comentario) }
+        if (acao == 2) { this.editar(comentario) }
+        if (acao == 3) { this.apagar(comentario) }
+    }
+
+    Comentario? comentarioFoco() {
+        var dado = this.vista.rolagem.dadoDoBloco(this.vista.rolagem.foco)
+        if (dado <= 0) { return null }
+        var indice = dado - 1
+        if (indice >= this.servico.comentarios.size()) { return null }
+        return this.servico.comentarios.get(indice)
     }
 
     void reconstruir() {
         var deslocamento = this.vista.rolagem.deslocamento
         var foco = this.vista.rolagem.foco
         this.vista = Vista(Vista.alturaPadrao())
-        this.vista.adicionar(0, this.linhasDoPost(this.post))
-        for (var i = 0; i < this.comentarios.size(); i = i + 1) {
-            this.vista.adicionar(i + 1, this.linhasDoComentario(this.comentarios.get(i)))
+        this.vista.adicionar(0, Cartao.linhasCompletas(this.post, Ansi.LARGURA_CONTEUDO,
+            Cartao.usuarioAtual(this.cliente)))
+        var autor = this.usuarioId()
+        var acoes = listOf<AcaoRegiao>()
+        for (var i = 0; i < this.servico.comentarios.size(); i = i + 1) {
+            var comentario = this.servico.comentarios.get(i)
+            var linhas = CartaoComentario.linhas(comentario, Ansi.LARGURA_CONTEUDO,
+                this.servico.nivel(comentario.id), autor)
+            this.vista.adicionar(i + 1, linhas)
+            var daLinha = CartaoComentario.acoes(comentario, autor)
+            var linha = linhas.size() - 1
+            for (var j = 0; j < daLinha.size(); j = j + 1) {
+                var acao = daLinha.get(j)
+                acoes.add(AcaoRegiao(i + 1, linha, acao.inicio + 1, acao.fim + 1, acao.indice, "acao"))
+            }
         }
+        this.vista.acoes = acoes
         this.vista.rolagem.deslocamento = deslocamento
         this.vista.rolagem.foco = foco
         this.largura = Ansi.LARGURA_CONTEUDO
     }
 
-    List<String> linhasDoPost(PostResumo p) {
-        var largura = Ansi.LARGURA_CONTEUDO
-        var linhas = listOf<String>()
-        linhas.add(Cartao.autor(p, largura, Cartao.usuarioAtual(this.cliente)))
-        var corpo = Cartao.corpo(p)
-        if (corpo.length > 0) {
-            for (var parte in Caixa.partes(corpo)) {
-                for (var linha in Ansi.quebrar(parte, largura - 3)) {
-                    linhas.add("   " + Tema.texto(linha))
-                }
-            }
-        }
-        var enquete = this.linhasDaEnquete(p)
-        for (var linha in enquete) { linhas.add(linha) }
-        linhas.add("   " + Cartao.extras(p))
-        return linhas
-    }
-
-    List<String> linhasDaEnquete(PostResumo p) {
-        var linhas = listOf<String>()
-        if (p.poll == null) { return linhas }
-        var e = p.poll
-        var opcoes = e.options
-        if (opcoes == null || opcoes.size() == 0) { return linhas }
-        var total = 0
-        if (e.totalVotes != null) { total = e.totalVotes }
-        for (var i = 0; i < opcoes.size(); i = i + 1) {
-            var votos = 0
-            if (e.counts != null && i < e.counts.size()) { votos = e.counts.get(i) }
-            var fatia = 0
-            if (total > 0) { fatia = (votos * 20) / total }
-            var barra = ""
-            for (var b = 0; b < 20; b = b + 1) {
-                if (b < fatia) { barra = barra + "█" } else { barra = barra + "░" }
-            }
-            linhas.add("   " + Tema.suave(barra + " " + String.valueOf(votos)) + " " + opcoes.get(i))
-        }
-        linhas.add("   " + Tema.mudo(String.valueOf(total) + " votos"))
-        return linhas
-    }
-
-    List<String> linhasDoComentario(Comentario c) {
-        var linhas = listOf<String>()
-        var quem = "alguém"
-        if (c.authorUsername != null) { quem = "@" + c.authorUsername }
-        var marca = ""
-        if ("" + c.pinned == "true") { marca = "⚑ " }
-        if ("" + c.accepted == "true") { marca = "✔ " }
-        var cabeca = " " + marca + Tema.destaque(quem)
-        var quando = Tempo.relativo(c.createdAt)
-        if (quando.length > 0) { cabeca = cabeca + Tema.mudo(" · " + quando) }
-        if (c.reactionCount != null && c.reactionCount > 0) {
-            cabeca = cabeca + Tema.mudo(" · ♥ " + String.valueOf(c.reactionCount))
-        }
-        linhas.add(Ansi.cortar(cabeca, Ansi.LARGURA_CONTEUDO))
-        var texto = ""
-        if (c.content != null) { texto = c.content }
-        for (var parte in Ansi.quebrar(texto, Ansi.LARGURA_CONTEUDO - 3)) {
-            linhas.add("   " + Tema.texto(parte))
-        }
-        return linhas
-    }
-
     void carregarComentarios() {
-        this.comentarios = listOf<Comentario>()
-        var r = ComentariosApi(this.cliente).listar(this.post.id, null, 30)
-        if (!r.ok()) {
+        if (!this.servico.carregar(this.post.id)) {
             this.status = Tema.mudo("comentários indisponíveis")
-            return
-        }
-        var pagina = ComentariosApi.pagina(r)
-        var itens = pagina.items
-        if (itens != null) {
-            for (var i = 0; i < itens.size(); i = i + 1) {
-                this.comentarios.add(itens.get(i))
-            }
         }
         this.reconstruir()
+    }
+
+    void carregarMais() {
+        this.status = Tema.mudo("carregando mais comentários…")
+        this.desenhar()
+        if (!this.servico.carregarMais(this.post.id)) {
+            this.status = Tema.erro("não carregou mais comentários")
+            return
+        }
+        this.reconstruir()
+        this.status = Tema.mudo(String.valueOf(this.servico.comentarios.size()) + " comentários")
     }
 
     void responderFoco() {
-        var indice = this.vista.rolagem.dadoDoBloco(this.vista.rolagem.foco)
-        if (indice <= 0) { return }
-        var comentario = this.comentarios.get(indice - 1)
-        var texto = this.perguntar("resposta")
-        if (texto.length == 0) {
-            this.status = Tema.mudo("resposta cancelada")
-            return
-        }
-        var r = ComentariosApi(this.cliente).comentar(this.post.id, texto, comentario.id)
-        if (!r.ok()) {
-            this.status = Tema.erro(r.mensagem())
-            return
-        }
-        this.status = Tema.ok("resposta enviada")
-        this.carregarComentarios()
+        var comentario = this.comentarioFoco()
+        if (comentario == null) { return }
+        this.comentar(comentario)
     }
 
-    void curtir() {
-        var reagindo = this.post.currentUserReaction != null && this.post.currentUserReaction.length > 0
-        var api = ComentariosApi(this.cliente)
-        var r = Resposta(0, "", "")
-        if (reagindo) {
-            r = api.desreagir(this.post.id)
-        } else {
-            r = api.reagir(this.post.id, "LIKE")
-        }
-        if (!r.ok()) {
-            this.status = Tema.erro(r.mensagem())
+    void comentar(Comentario? pai) {
+        var usuarioPai = ""
+        if (pai != null) { usuarioPai = pai.usuario() }
+        var modal = ModalComentario(this.teclado, this.vista.fundo(), usuarioPai, false, "")
+        var enviou = modal.executar()
+        this.restaurar()
+        if (!enviou) { return }
+        var texto = modal.texto().trim()
+        if (texto.length == 0) {
+            this.status = Tema.mudo("comentário vazio")
             return
         }
-        var reacoes = 0
-        var comentarios = 0
-        if (this.post.counters != null) {
-            if (this.post.counters.reactions != null) { reacoes = this.post.counters.reactions }
-            if (this.post.counters.comments != null) { comentarios = this.post.counters.comments }
-        }
-        if (reagindo) {
-            if (reacoes > 0) { reacoes = reacoes - 1 }
-            this.status = Tema.mudo("reação removida")
-            this.post = TelaFeed.comContadores(this.post, reacoes, comentarios, null)
+        var resultado = ResultadoComentario(false, "", null)
+        if (pai == null) {
+            resultado = this.servico.criar(this.post.id, texto, null)
         } else {
-            reacoes = reacoes + 1
-            this.status = Tema.ok("curtido")
-            this.post = TelaFeed.comContadores(this.post, reacoes, comentarios, "LIKE")
+            resultado = this.servico.criar(this.post.id, texto, pai.id)
         }
+        if (!resultado.sucesso) {
+            this.status = Tema.erro(resultado.mensagem)
+            return
+        }
+        this.post = this.post.comComentario()
+        this.status = Tema.ok(resultado.mensagem)
+        this.reconstruir()
+        this.focarComentario(resultado.comentario)
+    }
+
+    void focarComentario(Comentario? comentario) {
+        if (comentario == null) { return }
+        for (var i = 0; i < this.servico.comentarios.size(); i = i + 1) {
+            if (this.servico.comentarios.get(i).id == comentario.id) {
+                this.vista.rolagem.foco = i + 1
+                this.vista.rolagem.alinhar()
+                return
+            }
+        }
+    }
+
+    void editar(Comentario comentario) {
+        if (!comentario.meu(this.usuarioId())) {
+            this.status = Tema.mudo("só o autor edita este comentário")
+            return
+        }
+        var atual = ""
+        if (comentario.content != null) { atual = comentario.content }
+        var modal = ModalComentario(this.teclado, this.vista.fundo(), "", true, atual)
+        var enviou = modal.executar()
+        this.restaurar()
+        if (!enviou) { return }
+        var texto = modal.texto().trim()
+        if (texto.length == 0) {
+            this.status = Tema.mudo("edição vazia")
+            return
+        }
+        var resultado = this.servico.editar(this.post.id, comentario.id, texto)
+        if (!resultado.sucesso) {
+            this.status = Tema.erro(resultado.mensagem)
+            return
+        }
+        this.status = Tema.ok(resultado.mensagem)
         this.reconstruir()
     }
 
-    void comentar() {
-        var texto = this.perguntar("comentário")
-        if (texto.length == 0) {
-            this.status = Tema.mudo("comentário cancelado")
+    void apagar(Comentario comentario) {
+        if (!comentario.meu(this.usuarioId())) {
+            this.status = Tema.mudo("só o autor apaga este comentário")
             return
         }
-        var r = ComentariosApi(this.cliente).comentar(this.post.id, texto, null)
-        if (!r.ok()) {
-            this.status = Tema.erro(r.mensagem())
+        var confirmacao = ModalConfirmacao(this.teclado, this.vista.fundo(),
+            "apagar o comentário de @" + comentario.usuario() + "?")
+        var confirmou = confirmacao.executar()
+        this.restaurar()
+        if (!confirmou) { return }
+        var resultado = this.servico.apagar(this.post.id, comentario.id)
+        if (!resultado.sucesso) {
+            this.status = Tema.erro(resultado.mensagem)
             return
         }
-        var comentarios = 0
-        if (this.post.counters != null && this.post.counters.comments != null) {
-            comentarios = this.post.counters.comments
-        }
-        this.post = TelaFeed.comContadores(this.post, this.reacoes(), comentarios + 1, this.post.currentUserReaction)
-        this.status = Tema.ok("comentário enviado")
-        this.carregarComentarios()
-    }
-
-    Int reacoes() {
-        if (this.post.counters == null || this.post.counters.reactions == null) { return 0 }
-        return this.post.counters.reactions
-    }
-
-    void reagir() {
-        var tipos = listOf("LIKE", "LOVE", "LAUGH", "ROFL", "WOW", "SAD",
-            "ANGRY", "DISGUST", "SKEPTICAL", "CELEBRATE", "SUPPORT", "INSIGHTFUL")
-        var rotulos = listOf("curtir", "amar", "rir", "gargalhar", "uau", "triste",
-            "raiva", "nojo", "cético", "celebrar", "apoio", "insight")
-        var escolha = this.perguntarMenu("reagir", rotulos)
-        if (escolha < 0) { return }
-        var r = ComentariosApi(this.cliente).reagir(this.post.id, tipos.get(escolha))
-        if (!r.ok()) {
-            this.status = Tema.erro(r.mensagem())
-            return
-        }
-        this.status = Tema.ok("reação registrada")
-        this.post = TelaFeed.comContadores(this.post, this.reacoes() + 1, this.comentarios(), this.post.currentUserReaction)
+        this.status = Tema.ok(resultado.mensagem)
         this.reconstruir()
     }
 
-    Int comentarios() {
-        if (this.post.counters == null || this.post.counters.comments == null) { return 0 }
-        return this.post.counters.comments
+    void fixar(Comentario comentario) {
+        if (comentario.resposta()) {
+            this.status = Tema.mudo("só comentários raiz podem ser fixados")
+            return
+        }
+        if (!comentario.meu(this.usuarioId()) && !this.meuPost()) {
+            this.status = Tema.mudo("só o autor do post ou do comentário fixa")
+            return
+        }
+        var resultado = ResultadoComentario(false, "", null)
+        if (comentario.fixado()) {
+            resultado = this.servico.desafixar(this.post.id, comentario.id)
+        } else {
+            resultado = this.servico.fixar(this.post.id, comentario.id)
+        }
+        if (!resultado.sucesso) {
+            this.status = Tema.erro(resultado.mensagem)
+            return
+        }
+        this.carregarComentarios()
+        this.status = Tema.ok(resultado.mensagem)
+    }
+
+    void curtir(Comentario? comentario) {
+        if (comentario == null) {
+            this.aplicarReacao("LIKE")
+            return
+        }
+        this.reagirComentario(comentario, "LIKE")
+    }
+
+    void reagir(Comentario? comentario) {
+        var tipos = listOf<String>()
+        var rotulos = listOf<String>()
+        for (var i = 0; i < Reacoes.TIPOS.size(); i = i + 1) {
+            tipos.add(Reacoes.TIPOS.get(i))
+            rotulos.add(Reacoes.rotulo(Reacoes.TIPOS.get(i)))
+        }
+        var modal = ModalReacoes(this.teclado, this.vista.fundo(), tipos, rotulos)
+        var escolheu = modal.executar()
+        this.restaurar()
+        if (!escolheu) { return }
+        if (comentario == null) {
+            this.aplicarReacao(modal.escolhido)
+        } else {
+            this.reagirComentario(comentario, modal.escolhido)
+        }
+    }
+
+    void reagirComentario(Comentario comentario, String tipo) {
+        var resultado = this.servico.reagir(this.post.id, comentario.id, tipo)
+        if (!resultado.sucesso) {
+            this.status = Tema.erro(resultado.mensagem)
+            return
+        }
+        this.status = Tema.ok(resultado.mensagem)
+        this.reconstruir()
+    }
+
+    void aplicarReacao(String tipo) {
+        if (this.ocupado) { return }
+        if (!this.postServico.podeAlternar(this.post.id)) { return }
+        this.postServico.marcar(this.post.id)
+        this.ocupado = true
+        var anterior = this.post
+        var removendo = anterior.temReacao(tipo)
+        this.post = this.post.reacaoOtimista(tipo)
+        this.reconstruir()
+        this.status = Tema.mudo("reagindo…")
+        var r = this.postServico.confirmar(anterior, tipo)
+        this.ocupado = false
+        if (!r.sucesso) {
+            this.status = Tema.erro(r.mensagem)
+            this.post = anterior
+            this.reconstruir()
+            return
+        }
+        this.post = r.post
+        this.status = Tema.ok(if (removendo) { "reação removida" } else { "reação registrada" })
+        this.reconstruir()
     }
 
     void salvar() {
-        var r = ComentariosApi(this.cliente).salvar(this.post.id)
+        var r = PostApi(this.cliente).salvar(this.post.id)
         if (!r.ok()) {
             this.status = Tema.erro(r.mensagem())
             return
@@ -326,7 +421,7 @@ class TelaPost {
     }
 
     void compartilhar() {
-        var r = ComentariosApi(this.cliente).compartilhar(this.post.id)
+        var r = PostApi(this.cliente).compartilhar(this.post.id)
         if (!r.ok()) {
             this.status = Tema.erro(r.mensagem())
             return
@@ -338,15 +433,31 @@ class TelaPost {
         var opiniao = this.perguntar("sua opinião (opcional)")
         var r = Resposta(0, "", "")
         if (opiniao.length == 0) {
-            r = ComentariosApi(this.cliente).republicar(this.post.id, null)
+            r = PostApi(this.cliente).republicar(this.post.id, null, null)
         } else {
-            r = ComentariosApi(this.cliente).republicar(this.post.id, opiniao)
+            r = PostApi(this.cliente).republicar(this.post.id, opiniao, null)
         }
         if (!r.ok()) {
             this.status = Tema.erro(r.mensagem())
             return
         }
         this.status = Tema.ok("repostado")
+    }
+
+    void recarregar() {
+        if (this.ocupado) { return }
+        this.ocupado = true
+        this.status = Tema.mudo("atualizando…")
+        var r = FeedApi(this.cliente).obter(this.post.id)
+        this.ocupado = false
+        if (!r.ok()) {
+            this.status = Tema.erro(r.mensagem())
+            return
+        }
+        var atualizado = FeedApi.post(r)
+        if (atualizado != null) { this.post = atualizado }
+        this.carregarComentarios()
+        this.status = Tema.ok("atualizado")
     }
 
     String perguntar(String rotulo) {
@@ -358,141 +469,19 @@ class TelaPost {
         return texto
     }
 
-    Int perguntarMenu(String titulo, List<String> opcoes) {
-        this.teclado.sair()
-        Ansi.escrever(Ansi.MOSTRAR_CURSOR)
-        var escolha = Entrada.menu(titulo, opcoes, "voltar")
-        Ansi.escrever(Ansi.OCULTAR_CURSOR)
-        this.teclado.entrar()
-        return escolha
-    }
-
     void mostrarImagens() {
-        if (Cartao.totalImagens(this.post) == 0) {
+        if (!GaleriaTela.abrir(this.teclado, this.post)) {
             this.status = Tema.mudo("este post não tem mídias")
             return
         }
-        this.teclado.sair()
-        Ansi.escrever(Ansi.MOSTRAR_CURSOR)
-        print(Ansi.NORMAL)
+        this.restaurar()
+    }
+
+    void restaurar() {
         print(Ansi.LIMPAR)
-        TelaFeed(this.cliente).mostrarImagens(this.post)
-        Entrada.pausar()
-        print(Ansi.ALTERNATIVO)
-        Ansi.escrever(Ansi.OCULTAR_CURSOR)
-        this.teclado.entrar()
-    }
-
-    void executarSimples(PostResumo post) {
-        this.post = post
-        var rodando = true
-        while (rodando && Entrada.ativa) {
-            print(Ansi.LIMPAR)
-            println(Cabecalho.linha(this.cliente, "post", this.contexto()))
-            println(Caixa.juntar(this.linhasDoPost(post)))
-            TelaFeed(this.cliente).mostrarImagens(post)
-            this.comentariosSimples()
-            var escolha = Entrada.menu("post",
-                listOf("comentar", "reagir", "salvar", "compartilhar", "repostar", "reações"), "voltar")
-            if (escolha < 0) {
-                rodando = false
-            } else if (escolha == 0) {
-                this.comentarSimples(post.id)
-            } else if (escolha == 1) {
-                this.reagirSimples(post.id)
-            } else if (escolha == 2) {
-                this.avisar(ComentariosApi(this.cliente).salvar(post.id), "post salvo")
-            } else if (escolha == 3) {
-                this.avisar(ComentariosApi(this.cliente).compartilhar(post.id), "compartilhado")
-            } else if (escolha == 4) {
-                this.repostarSimples(post.id)
-            } else if (escolha == 5) {
-                this.verReacoes(post.id)
-            }
-        }
-    }
-
-    void comentariosSimples() {
-        var r = ComentariosApi(this.cliente).listar(this.post.id, null, 30)
-        if (!r.ok()) {
-            println(Tema.mudo("comentários indisponíveis"))
-            return
-        }
-        var itens = ComentariosApi.pagina(r).items
-        if (itens == null || itens.size() == 0) {
-            println(Tema.mudo("sem comentários ainda"))
-            return
-        }
-        for (var i = 0; i < itens.size(); i = i + 1) {
-            for (var linha in this.linhasDoComentario(itens.get(i))) {
-                println(linha)
-            }
-        }
-    }
-
-    void comentarSimples(String postId) {
-        var texto = Entrada.texto("comentário (vazio para voltar)")
-        if (texto.length == 0) { return }
-        this.avisar(ComentariosApi(this.cliente).comentar(postId, texto, null), "comentário enviado")
-    }
-
-    void reagirSimples(String postId) {
-        var tipos = listOf("LIKE", "LOVE", "LAUGH", "ROFL", "WOW", "SAD",
-            "ANGRY", "DISGUST", "SKEPTICAL", "CELEBRATE", "SUPPORT", "INSIGHTFUL")
-        var rotulos = listOf("curtir", "amar", "rir", "gargalhar", "uau", "triste",
-            "raiva", "nojo", "cético", "celebrar", "apoio", "insight")
-        var escolha = Entrada.menu("reagir", rotulos, "voltar")
-        if (escolha < 0) { return }
-        this.avisar(ComentariosApi(this.cliente).reagir(postId, tipos.get(escolha)), "reação registrada")
-    }
-
-    void repostarSimples(String postId) {
-        var opiniao = Entrada.texto("sua opinião (opcional)")
-        var r = Resposta(0, "", "")
-        if (opiniao.length == 0) {
-            r = ComentariosApi(this.cliente).republicar(postId, null)
-        } else {
-            r = ComentariosApi(this.cliente).republicar(postId, opiniao)
-        }
-        this.avisar(r, "repostado")
-    }
-
-    void verReacoes(String postId) {
-        var r = ComentariosApi(this.cliente).reacoes(postId)
-        if (!r.ok()) {
-            println(Tema.erro(r.mensagem()))
-            Entrada.pausar()
-            return
-        }
-        var lista = ListaReacoes(null)
-        try {
-            lista = json.decode<ListaReacoes>(r.corpo)
-        } catch (String e) {
-            lista = ListaReacoes(null)
-        }
-        var itens = lista.reactions
-        if (itens == null || itens.size() == 0) {
-            Caixa.desenhar(Caixa.simples(Lista.vazia("ninguém reagiu ainda")))
-            Entrada.pausar()
-            return
-        }
-        for (var i = 0; i < itens.size(); i = i + 1) {
-            var reagente = itens.get(i)
-            var quem = "alguém"
-            if (reagente.userId != null) { quem = reagente.userId }
-            var tipo = ""
-            if (reagente.type != null) { tipo = " · " + reagente.type }
-            println("  " + Tema.destaque(quem) + Tema.suave(tipo))
-        }
-        Entrada.pausar()
-    }
-
-    void avisar(Resposta r, String sucesso) {
-        if (r.ok()) {
-            println(Tema.ok(sucesso))
-        } else {
-            println(Tema.erro(r.mensagem()))
-        }
-        Entrada.pausar()
+        Vista.imprimir(this.vista.montar(
+            Cabecalho.linha(this.cliente, "post", this.contexto()),
+            Caixa.juntar(BarraSecoes.linhas(this.contexto(), "feed", this.contagens())),
+            Caixa.juntar(BarraContexto.linhas(this.atalhos(), this.status, this.vista.posicao()))))
     }
 }

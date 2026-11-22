@@ -1,0 +1,464 @@
+package core
+
+record TrechoEditor(String texto, Int linha, Int colunaInicial)
+
+record Intervalo(Int inicio, Int fim)
+
+class Editor {
+
+    List<String> linhas = listOf<String>()
+    Int linhaCursor = 0
+    Int colunaCursor = 0
+    Int limite = 0
+    Int linhaAncora = -1
+    Int colunaAncora = 0
+    Int linhaFim = -1
+    Int colunaFim = 0
+    String copiado = ""
+
+    public constructor() {
+        this.linhas.add("")
+    }
+
+    public constructor(Int limite) {
+        this.linhas.add("")
+        this.limite = limite
+    }
+
+    void definirTexto(String texto) {
+        this.linhas = listOf<String>()
+        if (texto == null || texto.length == 0) {
+            this.linhas.add("")
+            this.linhaCursor = 0
+            this.colunaCursor = 0
+            return
+        }
+        for (var parte in Texto.linhas(texto)) {
+            this.linhas.add(parte)
+        }
+        this.linhaCursor = this.linhas.size() - 1
+        this.colunaCursor = this.linhaAtual().length
+    }
+
+    String texto() {
+        var saida = ""
+        for (var i = 0; i < this.linhas.size(); i = i + 1) {
+            if (i > 0) { saida = saida + "\n" }
+            saida = saida + this.linhas.get(i)
+        }
+        return saida
+    }
+
+    Int caracteres() {
+        var total = 0
+        for (var linha in this.linhas) { total = total + linha.length }
+        return total
+    }
+
+    Int linhasUsadas() {
+        return this.linhas.size()
+    }
+
+    Bool vazio() {
+        return this.caracteres() == 0
+    }
+
+    Bool cheio() {
+        if (this.limite <= 0) { return false }
+        return this.caracteres() >= this.limite
+    }
+
+    Int restantes() {
+        if (this.limite <= 0) { return -1 }
+        return this.limite - this.caracteres()
+    }
+
+    String linhaAtual() {
+        if (this.linhaCursor < 0 || this.linhaCursor >= this.linhas.size()) { return "" }
+        return this.linhas.get(this.linhaCursor)
+    }
+
+    void inserir(String caractere) {
+        if (caractere == null || caractere.length == 0) { return }
+        if (this.cheio()) { return }
+        if (this.selecaoAtiva()) { this.recortar() }
+        var linha = this.linhaAtual()
+        var antes = linha.substring(0, this.colunaCursor)
+        var depois = ""
+        if (this.colunaCursor < linha.length) {
+            depois = linha.substring(this.colunaCursor, linha.length)
+        }
+        this.linhas.set(this.linhaCursor, antes + caractere + depois)
+        this.colunaCursor = this.colunaCursor + caractere.length
+    }
+
+    void inserirTexto(String bruto) {
+        if (bruto == null || bruto.length == 0) { return }
+        var partes = Texto.linhas(bruto)
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            if (i > 0) { this.novaLinha() }
+            this.inserir(partes.get(i))
+        }
+    }
+
+    void novaLinha() {
+        if (this.cheio()) { return }
+        if (this.selecaoAtiva()) { this.recortar() }
+        var linha = this.linhaAtual()
+        var antes = linha.substring(0, this.colunaCursor)
+        var depois = ""
+        if (this.colunaCursor < linha.length) {
+            depois = linha.substring(this.colunaCursor, linha.length)
+        }
+        this.linhas.set(this.linhaCursor, antes)
+        this.linhas.add(this.linhaCursor + 1, depois)
+        this.linhaCursor = this.linhaCursor + 1
+        this.colunaCursor = 0
+    }
+
+    void apagar() {
+        if (this.selecaoAtiva()) { this.recortar(); return }
+        if (this.colunaCursor > 0) {
+            var linha = this.linhaAtual()
+            var antes = linha.substring(0, this.colunaCursor - 1)
+            var depois = ""
+            if (this.colunaCursor < linha.length) {
+                depois = linha.substring(this.colunaCursor, linha.length)
+            }
+            this.linhas.set(this.linhaCursor, antes + depois)
+            this.colunaCursor = this.colunaCursor - 1
+            return
+        }
+        if (this.linhaCursor == 0) { return }
+        var anterior = this.linhas.get(this.linhaCursor - 1)
+        var atual = this.linhaAtual()
+        this.linhas.set(this.linhaCursor - 1, anterior + atual)
+        this.linhas.remove(this.linhaCursor)
+        this.linhaCursor = this.linhaCursor - 1
+        this.colunaCursor = anterior.length
+    }
+
+    void apagarParaFrente() {
+        if (this.selecaoAtiva()) { this.recortar(); return }
+        var linha = this.linhaAtual()
+        if (this.colunaCursor < linha.length) {
+            var antes = linha.substring(0, this.colunaCursor)
+            var depois = linha.substring(this.colunaCursor + 1, linha.length)
+            this.linhas.set(this.linhaCursor, antes + depois)
+            return
+        }
+        if (this.linhaCursor + 1 >= this.linhas.size()) { return }
+        var proxima = this.linhas.get(this.linhaCursor + 1)
+        this.linhas.set(this.linhaCursor, linha + proxima)
+        this.linhas.remove(this.linhaCursor + 1)
+    }
+
+    void moverEsquerda() {
+        if (this.colunaCursor > 0) {
+            this.colunaCursor = this.colunaCursor - 1
+            return
+        }
+        if (this.linhaCursor == 0) { return }
+        this.linhaCursor = this.linhaCursor - 1
+        this.colunaCursor = this.linhaAtual().length
+    }
+
+    void moverDireita() {
+        var linha = this.linhaAtual()
+        if (this.colunaCursor < linha.length) {
+            this.colunaCursor = this.colunaCursor + 1
+            return
+        }
+        if (this.linhaCursor + 1 >= this.linhas.size()) { return }
+        this.linhaCursor = this.linhaCursor + 1
+        this.colunaCursor = 0
+    }
+
+    void moverParaCima() {
+        if (this.linhaCursor == 0) {
+            this.colunaCursor = 0
+            return
+        }
+        this.linhaCursor = this.linhaCursor - 1
+        this.limitarColuna()
+    }
+
+    void moverParaBaixo() {
+        if (this.linhaCursor + 1 >= this.linhas.size()) {
+            this.limitarColuna()
+            return
+        }
+        this.linhaCursor = this.linhaCursor + 1
+        this.limitarColuna()
+    }
+
+    void limitarColuna() {
+        var linha = this.linhaAtual()
+        if (this.colunaCursor > linha.length) { this.colunaCursor = linha.length }
+        if (this.colunaCursor < 0) { this.colunaCursor = 0 }
+    }
+
+    void irParaInicio() {
+        this.colunaCursor = 0
+    }
+
+    void irParaFim() {
+        this.colunaCursor = this.linhaAtual().length
+    }
+
+    void irParaInicioDoTexto() {
+        this.linhaCursor = 0
+        this.colunaCursor = 0
+    }
+
+    void irParaFimDoTexto() {
+        this.linhaCursor = this.linhas.size() - 1
+        this.colunaCursor = this.linhaAtual().length
+    }
+
+    void comecarSelecao() {
+        this.linhaAncora = this.linhaCursor
+        this.colunaAncora = this.colunaCursor
+        this.linhaFim = this.linhaCursor
+        this.colunaFim = this.colunaCursor
+    }
+
+    void estenderSelecao(Int linha, Int coluna) {
+        if (this.linhaAncora < 0) {
+            this.comecarSelecao()
+            this.linhaFim = linha
+            this.colunaFim = coluna
+            return
+        }
+        this.linhaFim = linha
+        this.colunaFim = coluna
+    }
+
+    void limparSelecao() {
+        this.linhaAncora = -1
+        this.linhaFim = -1
+    }
+
+    Bool selecaoAtiva() {
+        if (this.linhaAncora < 0 || this.linhaFim < 0) { return false }
+        if (this.linhaAncora == this.linhaFim) { return this.colunaAncora != this.colunaFim }
+        return true
+    }
+
+    Bool selecaoInvertida() {
+        if (!this.selecaoAtiva()) { return false }
+        if (this.linhaAncora > this.linhaFim) { return true }
+        if (this.linhaAncora == this.linhaFim) { return this.colunaAncora > this.colunaFim }
+        return false
+    }
+
+    Int linhaSelecaoInicio() {
+        if (this.selecaoInvertida()) { return this.linhaFim }
+        return this.linhaAncora
+    }
+
+    Int colunaSelecaoInicio() {
+        if (this.selecaoInvertida()) { return this.colunaFim }
+        return this.colunaAncora
+    }
+
+    Int linhaSelecaoFim() {
+        if (this.selecaoInvertida()) { return this.linhaAncora }
+        return this.linhaFim
+    }
+
+    Int colunaSelecaoFim() {
+        if (this.selecaoInvertida()) { return this.colunaAncora }
+        return this.colunaFim
+    }
+
+    String textoSelecionado() {
+        if (!this.selecaoAtiva()) { return "" }
+        var iniL = this.linhaSelecaoInicio()
+        var iniC = this.colunaSelecaoInicio()
+        var fimL = this.linhaSelecaoFim()
+        var fimC = this.colunaSelecaoFim()
+        if (iniL == fimL) {
+            var linha = this.linhas.get(iniL)
+            if (fimC > linha.length) { fimC = linha.length }
+            if (iniC > linha.length) { iniC = linha.length }
+            return linha.substring(iniC, fimC)
+        }
+        var saida = ""
+        var primeira = this.linhas.get(iniL)
+        if (iniC < primeira.length) { saida = primeira.substring(iniC, primeira.length) }
+        for (var i = iniL + 1; i < fimL; i = i + 1) {
+            saida = saida + "\n" + this.linhas.get(i)
+        }
+        var ultima = this.linhas.get(fimL)
+        if (fimC > ultima.length) { fimC = ultima.length }
+        if (fimC > 0) { saida = saida + "\n" + ultima.substring(0, fimC) }
+        return saida
+    }
+
+    void recortar() {
+        if (!this.selecaoAtiva()) { return }
+        var iniL = this.linhaSelecaoInicio()
+        var iniC = this.colunaSelecaoInicio()
+        var fimL = this.linhaSelecaoFim()
+        var fimC = this.colunaSelecaoFim()
+        var primeira = this.linhas.get(iniL)
+        var ultima = this.linhas.get(fimL)
+        if (fimC > ultima.length) { fimC = ultima.length }
+        if (iniC > primeira.length) { iniC = primeira.length }
+        var resto = ""
+        if (fimC < ultima.length) { resto = ultima.substring(fimC, ultima.length) }
+        var inicio = ""
+        if (iniC > 0) { inicio = primeira.substring(0, iniC) }
+        this.linhas.set(iniL, inicio + resto)
+        var remover = fimL - iniL
+        for (var i = 0; i < remover; i = i + 1) {
+            this.linhas.remove(iniL + 1)
+        }
+        this.linhaCursor = iniL
+        this.colunaCursor = inicio.length
+        this.limparSelecao()
+    }
+
+    void copiar() {
+        this.copiado = this.textoSelecionado()
+    }
+
+    void colar() {
+        if (this.copiado.length == 0) { return }
+        this.inserirTexto(this.copiado)
+    }
+
+    List<TrechoEditor> trechos(Int largura) {
+        var saida = listOf<TrechoEditor>()
+        for (var i = 0; i < this.linhas.size(); i = i + 1) {
+            for (var pedaco in Editor.pedacosDe(this.linhas.get(i), largura, i)) {
+                saida.add(pedaco)
+            }
+        }
+        return saida
+    }
+
+    static List<TrechoEditor> pedacosDe(String linha, Int largura, Int indiceLinha) {
+        var saida = listOf<TrechoEditor>()
+        if (largura < 4) { largura = 4 }
+        if (linha == null || linha.length == 0) {
+            saida.add(TrechoEditor("", indiceLinha, 0))
+            return saida
+        }
+        var palavras = Editor.palavrasDe(linha)
+        var inicioPeca = -1
+        var fimPeca = 0
+        for (var i = 0; i < palavras.size(); i = i + 1) {
+            var palavra = palavras.get(i)
+            var tamanho = palavra.fim - palavra.inicio
+            if (tamanho > largura) {
+                if (inicioPeca >= 0) {
+                    saida.add(TrechoEditor(linha.substring(inicioPeca, fimPeca), indiceLinha, inicioPeca))
+                    inicioPeca = -1
+                }
+                var p = palavra.inicio
+                while (p < palavra.fim) {
+                    var fim = p + largura
+                    if (fim > palavra.fim) { fim = palavra.fim }
+                    saida.add(TrechoEditor(linha.substring(p, fim), indiceLinha, p))
+                    p = fim
+                }
+                continue
+            }
+            if (inicioPeca < 0) {
+                inicioPeca = palavra.inicio
+                fimPeca = palavra.fim
+                continue
+            }
+            if (palavra.fim - inicioPeca <= largura) {
+                fimPeca = palavra.fim
+                continue
+            }
+            saida.add(TrechoEditor(linha.substring(inicioPeca, fimPeca), indiceLinha, inicioPeca))
+            inicioPeca = palavra.inicio
+            fimPeca = palavra.fim
+        }
+        if (inicioPeca >= 0) {
+            saida.add(TrechoEditor(linha.substring(inicioPeca, fimPeca), indiceLinha, inicioPeca))
+        }
+        if (saida.size() == 0) { saida.add(TrechoEditor("", indiceLinha, 0)) }
+        return saida
+    }
+
+    static List<Intervalo> palavrasDe(String linha) {
+        var saida = listOf<Intervalo>()
+        var i = 0
+        while (i < linha.length) {
+            while (i < linha.length && linha.substring(i, i + 1) == " ") { i = i + 1 }
+            if (i >= linha.length) { break }
+            var inicio = i
+            while (i < linha.length && linha.substring(i, i + 1) != " ") { i = i + 1 }
+            saida.add(Intervalo(inicio, i))
+        }
+        return saida
+    }
+
+    Int linhaVisualDoCursor(Int largura) {
+        var indice = 0
+        for (var pedaco in this.trechos(largura)) {
+            if (pedaco.linha == this.linhaCursor
+                && this.colunaCursor >= pedaco.colunaInicial
+                && this.colunaCursor <= pedaco.colunaInicial + pedaco.texto.length) {
+                return indice
+            }
+            indice = indice + 1
+        }
+        return 0
+    }
+
+    Int colunaVisualDoCursor(Int largura) {
+        var indice = 0
+        for (var pedaco in this.trechos(largura)) {
+            if (pedaco.linha == this.linhaCursor
+                && this.colunaCursor >= pedaco.colunaInicial
+                && this.colunaCursor <= pedaco.colunaInicial + pedaco.texto.length) {
+                var deslocamento = this.colunaCursor - pedaco.colunaInicial
+                if (deslocamento < 0) { deslocamento = 0 }
+                if (deslocamento > pedaco.texto.length) { deslocamento = pedaco.texto.length }
+                return deslocamento
+            }
+            indice = indice + 1
+        }
+        return 0
+    }
+
+    Int linhaVisualDe(Int linhaLogica, Int largura) {
+        var indice = 0
+        for (var pedaco in this.trechos(largura)) {
+            if (pedaco.linha == linhaLogica) { return indice }
+            indice = indice + 1
+        }
+        return 0
+    }
+
+    Intervalo selecaoNaLinha(Int linha) {
+        if (!this.selecaoAtiva()) { return Intervalo(-1, -1) }
+        var inicioLinha = this.linhaSelecaoInicio()
+        var fimLinha = this.linhaSelecaoFim()
+        if (linha < inicioLinha || linha > fimLinha) { return Intervalo(-1, -1) }
+        var inicio = 0
+        if (linha == inicioLinha) { inicio = this.colunaSelecaoInicio() }
+        var fim = 1000000
+        if (linha == fimLinha) { fim = this.colunaSelecaoFim() }
+        if (fim <= inicio) { return Intervalo(-1, -1) }
+        return Intervalo(inicio, fim)
+    }
+
+    void moverParaVisual(Int linhaVisual, Int colunaVisual, Int largura) {
+        var pedacos = this.trechos(largura)
+        if (linhaVisual < 0 || linhaVisual >= pedacos.size()) { return }
+        var pedaco = pedacos.get(linhaVisual)
+        var coluna = pedaco.colunaInicial + colunaVisual
+        var limite = pedaco.colunaInicial + pedaco.texto.length
+        if (coluna > limite) { coluna = limite }
+        if (coluna < pedaco.colunaInicial) { coluna = pedaco.colunaInicial }
+        this.linhaCursor = pedaco.linha
+        this.colunaCursor = coluna
+    }
+}
