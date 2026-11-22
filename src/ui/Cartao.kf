@@ -10,8 +10,8 @@ import tipos.*
 class Cartao {
 
     static Int LINHAS_CORPO = 4
-    static Int COLUNAS_MINIATURA = 28
-    static Int LINHAS_MINIATURA = 7
+    static Int COLUNAS_MINIATURA = 56
+    static Int LINHAS_MINIATURA = 16
     static Int COLUNAS_DETALHE = 44
     static Int LINHAS_DETALHE = 12
     static Int COLUNAS_DETALHE_UNICA = 76
