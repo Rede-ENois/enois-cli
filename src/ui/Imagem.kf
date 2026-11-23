@@ -54,6 +54,11 @@ class Imagem {
         if (endereco.length == 0) { return false }
         var caminho = Midia.arquivo(endereco)
         if (!Download.para(endereco, caminho)) { return false }
+        return Imagem.mostrarArquivo(caminho, colunas, linha, coluna)
+    }
+
+    static Bool mostrarArquivo(String caminho, Int colunas, Int linha, Int coluna) {
+        if (!File(caminho).exists() || File(caminho).size() == 0) { return false }
         if (linha > 0) { print(Ansi.posicao(linha, coluna)) }
         var protocolo = Imagem.protocoloDoTerminal()
         if (protocolo.length == 0) { return Imagem.mostrarEmBlocos(caminho, colunas, linha, coluna) }

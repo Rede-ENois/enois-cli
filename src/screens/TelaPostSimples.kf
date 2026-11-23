@@ -19,6 +19,7 @@ class TelaPostSimples {
     void executar(PostResumo post) {
         this.post = post
         Imagem.preparar(post)
+        CapaVideo.preparar(post)
         var rodando = true
         while (rodando && Entrada.ativa) {
             print(Ansi.LIMPAR)

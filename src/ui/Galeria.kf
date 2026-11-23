@@ -18,16 +18,18 @@ class Galeria {
         return acoes
     }
 
-    static List<MidiaAnexo> imagens(PostResumo p) {
-        var itens = listOf<MidiaAnexo>()
+    static List<MidiaAnexo> itens(PostResumo p) {
+        var lista = listOf<MidiaAnexo>()
         var anexos = p.media
-        if (anexos == null) { return itens }
+        if (anexos == null) { return lista }
         for (var anexo in anexos) {
-            if (!Imagem.eImagem(anexo.mimeType)) { continue }
+            var imagem = Imagem.eImagem(anexo.mimeType)
+            var video = CapaVideo.eVideo(anexo.mimeType)
+            if (!imagem && !video) { continue }
             if (Galeria.endereco(anexo).length == 0) { continue }
-            itens.add(anexo)
+            lista.add(anexo)
         }
-        return itens
+        return lista
     }
 
     static String endereco(MidiaAnexo anexo) {
@@ -40,6 +42,8 @@ class Galeria {
     }
 
     static String tipo(MidiaAnexo anexo) {
+        if (CapaVideo.eVideo(anexo.mimeType)) { return "vídeo" }
+        if (Imagem.eImagem(anexo.mimeType)) { return "imagem" }
         if (anexo.mimeType == null) { return "mídia" }
         return anexo.mimeType
     }
@@ -63,13 +67,18 @@ class Galeria {
     }
 
     static Int colunasDesenho(MidiaAnexo anexo) {
-        var largura = MeioBloco.colunasFinais(Galeria.caminho(anexo), Galeria.colunas(),
-            Terminal.altura() - 6)
+        var caminho = Galeria.caminho(anexo)
+        if (CapaVideo.eVideo(anexo.mimeType)) { caminho = CapaVideo.capa(anexo, true) }
+        if (caminho.length == 0) { return Galeria.colunas() }
+        var largura = MeioBloco.colunasFinais(caminho, Galeria.colunas(), Terminal.altura() - 6)
         if (largura <= 0) { return Galeria.colunas() }
         return largura
     }
 
     static Bool mostrar(MidiaAnexo anexo, Int linha, Int coluna) {
+        if (CapaVideo.eVideo(anexo.mimeType)) {
+            return CapaVideo.mostrar(anexo, Galeria.colunas(), linha, coluna)
+        }
         return Imagem.mostrar(Galeria.endereco(anexo), Galeria.colunas(), linha, coluna)
     }
 
@@ -78,6 +87,6 @@ class Galeria {
     }
 
     static String aviso() {
-        return "não foi possível desenhar esta imagem aqui"
+        return "não foi possível desenhar esta mídia aqui"
     }
 }

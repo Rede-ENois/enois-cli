@@ -23,6 +23,7 @@ import ui.Painel
 import ui.Rolagem
 import ui.Seletor
 import ui.Vista
+import ui.CapaVideo
 
 test "consulta ignora par vazio e nulo" {
     assert(Cliente.par("limit", "") == "")
@@ -648,14 +649,17 @@ test "cartao limita texto longo e conta as midias" {
     var p = PostResumo("p3", null, texto, "", "", "Mel", "mel", "", "", "",
         null, null, null, null, null, null, null, null, null, null, null, null, null, anexos, null, null)
     var linhas = Cartao.linhas(p, 40, "")
-    assert(linhas.size() == 6)
+    assert(linhas.size() == 11)
     for (var linha in linhas) {
         assert(Ansi.largura(linha) <= 40)
     }
     assert(Cartao.totalImagens(p) == 1)
-    assert(linhas.get(5).contains("▣ 1"))
-    assert(linhas.get(5).contains("♥ 0"))
-    assert(linhas.get(5).contains("↩ 0"))
+    assert(Cartao.totalVideos(p) == 1)
+    assert(Cartao.totalMidias(p) == 2)
+    assert(linhas.get(10).contains("▣ 1"))
+    assert(linhas.get(10).contains("▶ 1"))
+    assert(linhas.get(10).contains("♥ 0"))
+    assert(linhas.get(10).contains("↩ 0"))
 }
 
 test "cartao corta o autor que passa da largura" {
@@ -1260,19 +1264,66 @@ test "sixel usa o caractere vazio para coluna sem pixel" {
     assert(Sixel.potencia(5) == 32)
 }
 
-test "galeria lista apenas imagens com endereco" {
+test "galeria lista midias com endereco" {
     var p = json.decode<PostResumo>("{\"id\":\"p1\",\"media\":["
         + "{\"id\":\"m1\",\"cdnUrl\":\"/a.jpg\",\"mimeType\":\"image/jpeg\",\"width\":100,\"height\":50},"
         + "{\"id\":\"m2\",\"cdnUrl\":\"/b.mp4\",\"mimeType\":\"video/mp4\"},"
         + "{\"id\":\"m3\",\"mimeType\":\"image/png\"}]}")
-    var imagens = Galeria.imagens(p)
-    assert(imagens.size() == 1)
-    assert(imagens.get(0).id == "m1")
+    var midias = Galeria.itens(p)
+    assert(midias.size() == 2)
+    assert(midias.get(0).id == "m1")
+    assert(midias.get(1).id == "m2")
     assert(Galeria.indicador(1, 5) == "2/5")
-    assert(Galeria.tipo(imagens.get(0)) == "image/jpeg")
-    assert(Galeria.dimensoes(imagens.get(0)) == "100×50")
-    assert(Galeria.sufixo(imagens.get(0)) == " · 100×50")
-    assert(Galeria.endereco(imagens.get(0)) == Midia.CDN + "/a.jpg")
+    assert(Galeria.tipo(midias.get(0)) == "imagem")
+    assert(Galeria.tipo(midias.get(1)) == "vídeo")
+    assert(Galeria.dimensoes(midias.get(0)) == "100×50")
+    assert(Galeria.sufixo(midias.get(0)) == " · 100×50")
+    assert(Galeria.endereco(midias.get(0)) == Midia.CDN + "/a.jpg")
+}
+
+test "video conta como midia no cartao" {
+    var anexos = listOf<MidiaAnexo>(
+        MidiaAnexo("m2", "https://cdn.enois.ia.br/b.mp4", "video/mp4", 1280, 720))
+    var p = PostResumo("p8", null, "videio", "", "", "Mel", "mel", "", "", "",
+        null, null, null, null, null, null, null, null, null, null, null, null, null, anexos, null, null)
+    var linhas = Cartao.linhas(p, 60, "")
+    assert(Cartao.totalImagens(p) == 0)
+    assert(Cartao.totalVideos(p) == 1)
+    assert(Cartao.totalMidias(p) == 1)
+    assert(Cartao.extras(p).contains("▶ 1"))
+    var marcador = ""
+    var formato = ""
+    for (var linha in linhas) {
+        if (marcador.length == 0 && linha.contains("vídeo")) { marcador = linha }
+        if (formato.length == 0 && linha.contains("MP4")) { formato = linha }
+    }
+    assert(marcador.contains("▶"))
+    assert(formato.contains("1280×720"))
+}
+
+test "capa de video usa o cache de midia" {
+    assert(Capa.eVideo("video/mp4"))
+    assert(!Capa.eVideo("image/png"))
+    assert(!Capa.eVideo(null))
+    var caminho = Midia.arquivo("https://cdn.enois.ia.br/b.mp4")
+    assert(Midia.arquivoCapa(caminho).endsWith("-capa.png"))
+    assert(!Capa.pronta("/tmp/enois-cli/capa-que-nao-existe-12345.png"))
+}
+
+test "marcador de video respeita a largura" {
+    var anexo = MidiaAnexo("m2", "https://cdn.enois.ia.br/b.mp4", "video/mp4", 1280, 720)
+    var linhas = CapaVideo.marcador(anexo, 40)
+    assert(linhas.size() == 4)
+    assert(linhas.get(1).contains("▶"))
+    assert(linhas.get(2).contains("MP4"))
+    assert(linhas.get(2).contains("1280×720"))
+    for (var linha in linhas) {
+        assert(Ansi.largura(linha) <= 40)
+    }
+    var estreito = CapaVideo.marcador(anexo, 12)
+    for (var linha in estreito) {
+        assert(Ansi.largura(linha) <= 12)
+    }
 }
 
 test "galeria usa a largura do conteudo" {

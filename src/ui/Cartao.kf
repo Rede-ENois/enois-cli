@@ -31,7 +31,7 @@ class Cartao {
             linhas.add("   " + Cartao.colorir(linha))
         }
         for (var linha in Cartao.miniaturas(p, largura, Cartao.COLUNAS_MINIATURA,
-            Cartao.LINHAS_MINIATURA, 1)) { linhas.add(linha) }
+            Cartao.LINHAS_MINIATURA, 1, false)) { linhas.add(linha) }
         var extras = Cartao.extras(p)
         if (extras.length > 0) { linhas.add("   " + extras) }
         return linhas
@@ -46,18 +46,18 @@ class Cartao {
         for (var linha in Cartao.linhasDaEnquete(p, largura)) { linhas.add(linha) }
         var colunas = Cartao.COLUNAS_DETALHE
         var altura = Cartao.LINHAS_DETALHE
-        if (Cartao.totalImagens(p) == 1) {
+        if (Cartao.totalMidias(p) == 1) {
             colunas = Cartao.COLUNAS_DETALHE_UNICA
             altura = Cartao.LINHAS_DETALHE_UNICA
         }
-        for (var linha in Cartao.miniaturas(p, largura, colunas, altura, 2)) { linhas.add(linha) }
+        for (var linha in Cartao.miniaturas(p, largura, colunas, altura, 2, true)) { linhas.add(linha) }
         var extras = Cartao.extras(p)
         if (extras.length > 0) { linhas.add("   " + extras) }
         return linhas
     }
 
     static List<String> miniaturas(PostResumo p, Int largura, Int colunas, Int linhasMaximas,
-        Int limite) {
+        Int limite, Bool baixar) {
         var linhas = listOf<String>()
         var anexos = p.media
         if (anexos == null) { return linhas }
@@ -67,11 +67,19 @@ class Cartao {
         var desenhadas = 0
         for (var anexo in anexos) {
             if (desenhadas >= limite) { break }
-            if (!Imagem.eImagem(anexo.mimeType)) { continue }
+            var imagem = Imagem.eImagem(anexo.mimeType)
+            var video = CapaVideo.eVideo(anexo.mimeType)
+            if (!imagem && !video) { continue }
             var url = ""
             if (anexo.cdnUrl != null) { url = Midia.url(anexo.cdnUrl) }
             if (url.length == 0) { continue }
-            var blocos = Imagem.miniaturas(Midia.arquivo(url), colunasAlvo, linhasMaximas)
+            var blocos = listOf<String>()
+            if (imagem) {
+                blocos = Imagem.miniaturas(Midia.arquivo(url), colunasAlvo, linhasMaximas)
+            }
+            if (video) {
+                blocos = CapaVideo.miniaturas(anexo, colunasAlvo, linhasMaximas, baixar)
+            }
             if (blocos.size() == 0) { continue }
             linhas.add("")
             for (var bloco in blocos) { linhas.add("   " + bloco) }
@@ -217,8 +225,10 @@ class Cartao {
         if (compartilhamentos > 0) {
             partes.add(Tema.mudo("↗ " + String.valueOf(compartilhamentos)))
         }
-        var midias = Cartao.totalImagens(p)
-        if (midias > 0) { partes.add(Tema.mudo("▣ " + String.valueOf(midias))) }
+        var imagens = Cartao.totalImagens(p)
+        if (imagens > 0) { partes.add(Tema.mudo("▣ " + String.valueOf(imagens))) }
+        var videos = Cartao.totalVideos(p)
+        if (videos > 0) { partes.add(Tema.mudo("▶ " + String.valueOf(videos))) }
         if (p.poll != null) { partes.add(Tema.mudo("▤ enquete")) }
         var linha = ""
         for (var i = 0; i < partes.size(); i = i + 1) {
@@ -268,6 +278,20 @@ class Cartao {
             if (Imagem.eImagem(anexo.mimeType)) { total = total + 1 }
         }
         return total
+    }
+
+    static Int totalVideos(PostResumo p) {
+        var anexos = p.media
+        if (anexos == null) { return 0 }
+        var total = 0
+        for (var anexo in anexos) {
+            if (CapaVideo.eVideo(anexo.mimeType)) { total = total + 1 }
+        }
+        return total
+    }
+
+    static Int totalMidias(PostResumo p) {
+        return Cartao.totalImagens(p) + Cartao.totalVideos(p)
     }
 
     static String usuarioAtual(Cliente cliente) {

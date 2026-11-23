@@ -533,10 +533,6 @@ class TelaFeed {
         return Caixa.juntar(this.linhasDoPost(p))
     }
 
-    Int totalImagens(PostResumo p) {
-        return Cartao.totalImagens(p)
-    }
-
     static String tipoEmTexto(String tipo) {
         return Cartao.tipoEmTexto(tipo)
     }
