@@ -1,0 +1,109 @@
+package ui
+
+import core.*
+import tipos.*
+
+class CapaVideo {
+
+    static Int LIMITE_BYTES = 25000000
+    static Int LARGURA_MAXIMA = 66
+
+    static Bool eVideo(String? mimeType) {
+        return Capa.eVideo(mimeType)
+    }
+
+    static String endereco(MidiaAnexo anexo) {
+        if (anexo.cdnUrl == null) { return "" }
+        return Midia.url(anexo.cdnUrl)
+    }
+
+    static String capa(MidiaAnexo anexo, Bool baixar) {
+        var url = CapaVideo.endereco(anexo)
+        if (url.length == 0) { return "" }
+        var caminho = Midia.arquivo(url)
+        var arquivoCapa = Midia.arquivoCapa(caminho)
+        if (Capa.pronta(arquivoCapa)) { return arquivoCapa }
+        if (Capa.pronta(caminho)) { return Capa.deArquivo(caminho) }
+        if (!baixar) { return "" }
+        if (!Download.limitado(url, caminho, CapaVideo.LIMITE_BYTES)) { return "" }
+        return Capa.deArquivo(caminho)
+    }
+
+    static void preparar(PostResumo p) {
+        var anexos = p.media
+        if (anexos == null) { return }
+        for (var anexo in anexos) {
+            if (!CapaVideo.eVideo(anexo.mimeType)) { continue }
+            CapaVideo.capa(anexo, true)
+        }
+    }
+
+    static List<String> miniaturas(MidiaAnexo anexo, Int colunas, Int linhasMaximas, Bool baixar) {
+        var capa = CapaVideo.capa(anexo, baixar)
+        if (capa.length > 0) {
+            var blocos = MeioBloco.deArquivo(capa, colunas, linhasMaximas)
+            if (blocos.size() > 0) { return blocos }
+        }
+        return CapaVideo.marcador(anexo, colunas)
+    }
+
+    static Bool mostrar(MidiaAnexo anexo, Int colunas, Int linha, Int coluna) {
+        var capa = CapaVideo.capa(anexo, true)
+        if (capa.length > 0) { return Imagem.mostrarArquivo(capa, colunas, linha, coluna) }
+        if (CapaVideo.endereco(anexo).length == 0) { return false }
+        var linhas = CapaVideo.marcador(anexo, colunas)
+        for (var i = 0; i < linhas.size(); i = i + 1) {
+            print(Ansi.posicao(linha + i, coluna) + "  " + linhas.get(i))
+        }
+        return true
+    }
+
+    static List<String> marcador(MidiaAnexo anexo, Int colunas) {
+        var linhas = listOf<String>()
+        var largura = colunas
+        if (largura > CapaVideo.LARGURA_MAXIMA) { largura = CapaVideo.LARGURA_MAXIMA }
+        if (largura < 4) { largura = 4 }
+        var interno = largura - 2
+        linhas.add(Tema.pinta(Tema.BORDA_SUAVE, "╭" + CapaVideo.traco(interno) + "╮"))
+        linhas.add(Tema.pinta(Tema.BORDA_SUAVE, "│")
+            + Ansi.centrar(Ansi.cortar(Tema.destaque("▶  vídeo"), interno), interno)
+            + Tema.pinta(Tema.BORDA_SUAVE, "│"))
+        var detalhe = CapaVideo.detalhe(anexo)
+        if (detalhe.length > 0 && interno >= 6) {
+            linhas.add(Tema.pinta(Tema.BORDA_SUAVE, "│")
+                + Ansi.centrar(Ansi.cortar(Tema.mudo(detalhe), interno), interno)
+                + Tema.pinta(Tema.BORDA_SUAVE, "│"))
+        }
+        linhas.add(Tema.pinta(Tema.BORDA_SUAVE, "╰" + CapaVideo.traco(interno) + "╯"))
+        return linhas
+    }
+
+    static String detalhe(MidiaAnexo anexo) {
+        var partes = listOf<String>()
+        var formato = CapaVideo.formato(anexo)
+        if (formato.length > 0) { partes.add(formato) }
+        var dimensoes = Galeria.dimensoes(anexo)
+        if (dimensoes.length > 0) { partes.add(dimensoes) }
+        var texto = ""
+        for (var i = 0; i < partes.size(); i = i + 1) {
+            if (i > 0) { texto = texto + " · " }
+            texto = texto + partes.get(i)
+        }
+        return texto
+    }
+
+    static String formato(MidiaAnexo anexo) {
+        if (anexo.mimeType == null) { return "" }
+        var tipo = anexo.mimeType
+        var barra = tipo.indexOf("/")
+        if (barra >= 0) { tipo = tipo.substring(barra + 1) }
+        if (tipo.length == 0) { return "" }
+        return tipo.toUpperCase()
+    }
+
+    static String traco(Int largura) {
+        var linha = ""
+        for (var i = 0; i < largura; i = i + 1) { linha = linha + "─" }
+        return linha
+    }
+}

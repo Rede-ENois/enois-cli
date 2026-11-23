@@ -7,14 +7,24 @@ import kof.json
 
 class FeedApi {
 
+    static String ABA_PADRAO = "ALL"
+
     Cliente cliente
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
     }
 
-    Resposta listar(String? cursor, Int limite) {
-        return this.cliente.get("/feed" + Cliente.pagina(cursor, limite))
+    Resposta listar(String? cursor, Int limite, String aba) {
+        return this.cliente.get(FeedApi.endereco(aba, cursor, limite))
+    }
+
+    static String endereco(String aba, String? cursor, Int limite) {
+        var pares = listOf<String>()
+        if (aba.length > 0) { pares.add(Cliente.par("tab", aba)) }
+        pares.add(Cliente.par("cursor", cursor))
+        pares.add(Cliente.par("limit", Cliente.numero(limite)))
+        return "/feed" + Cliente.query(pares)
     }
 
     Resposta corporativo(String? cursor, Int limite) {

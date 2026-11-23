@@ -52,6 +52,10 @@ class Midia {
         return Midia.dirCache() + "/" + String.valueOf(Midia.selo(endereco)) + "-miniatura.png"
     }
 
+    static String arquivoCapa(String endereco) {
+        return Midia.dirCache() + "/" + String.valueOf(Midia.selo(endereco)) + "-capa.png"
+    }
+
     static Int selo(String texto) {
         var valor = 5381
         for (var i = 0; i < texto.length; i = i + 1) {

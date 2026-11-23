@@ -3,11 +3,40 @@ package core
 class Download {
 
     static Bool para(String endereco, String caminho) {
-        if (File(caminho).exists()) { return true }
+        return Download.comTempo(endereco, caminho, 10, 0)
+    }
+
+    static Bool limitado(String endereco, String caminho, Int bytes) {
+        return Download.comTempo(endereco, caminho, 12, bytes)
+    }
+
+    static Bool comTempo(String endereco, String caminho, Int segundos, Int bytes) {
+        if (File(caminho).exists() && File(caminho).size() > 0) { return true }
         Directory(Midia.dirCache()).mkdirs()
-        var resultado = process.run("curl", "-fsSL", "--max-time", "10", "-o", caminho, endereco)
-        if (resultado.exitCode != 0) { return false }
+        var deuCerto = false
+        if (bytes > 0) {
+            var comLimite = process.run("curl", "-fsSL", "--max-time", String.valueOf(segundos),
+                "--max-filesize", String.valueOf(bytes), "-o", caminho, endereco)
+            deuCerto = comLimite.exitCode == 0
+        } else {
+            var semLimite = process.run("curl", "-fsSL", "--max-time", String.valueOf(segundos),
+                "-o", caminho, endereco)
+            deuCerto = semLimite.exitCode == 0
+        }
+        if (!deuCerto) {
+            Download.remover(caminho)
+            return false
+        }
         if (!File(caminho).exists()) { return false }
-        return File(caminho).size() != 0
+        if (File(caminho).size() == 0) {
+            Download.remover(caminho)
+            return false
+        }
+        return true
+    }
+
+    static void remover(String caminho) {
+        if (!File(caminho).exists()) { return }
+        File(caminho).delete()
     }
 }

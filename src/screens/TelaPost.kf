@@ -34,6 +34,8 @@ class TelaPost {
         this.post = post
         this.teclado = teclado
         this.vista = Vista(Vista.alturaPadrao())
+        Imagem.preparar(post)
+        CapaVideo.preparar(post)
         this.carregarComentarios()
         var rodando = true
         var pintar = true

@@ -20,7 +20,7 @@ class GaleriaTela {
     }
 
     static Bool abrir(Teclado teclado, PostResumo post) {
-        var itens = Galeria.imagens(post)
+        var itens = Galeria.itens(post)
         if (itens.size() == 0) { return false }
         GaleriaTela(teclado, itens).executar()
         return true
@@ -104,8 +104,9 @@ class GaleriaTela {
         print(Ansi.posicao(1, 1) + Ansi.LIMPAR_LINHA + "  " + Tema.destaque("mídias")
             + Tema.mudo(" · ") + Tema.destaque(Galeria.indicador(this.indice, this.itens.size()))
             + Tema.mudo(" · " + Galeria.tipo(anexo) + Galeria.sufixo(anexo)))
-        print(Ansi.posicao(3, 3))
-        if (!Galeria.mostrar(anexo)) { this.painel(anexo) }
+        var coluna = (Ansi.LARGURA_CONTEUDO - Galeria.colunasDesenho(anexo)) / 2 - 1
+        if (coluna < 1) { coluna = 1 }
+        if (!Galeria.mostrar(anexo, 3, coluna)) { this.painel(anexo) }
         this.detalhesNaTela(altura)
         this.rodape(altura)
     }

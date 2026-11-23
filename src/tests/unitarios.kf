@@ -6,7 +6,11 @@ import core.*
 import screens.*
 import servicos.*
 import kof.json
+import java.awt.image.BufferedImage
+import javax.imageio.ImageIO
 import ui.Abas
+import ui.AbasFeed
+import ui.Caixa
 import ui.Badge
 import ui.BarraContexto
 import ui.BarraSecoes
@@ -19,6 +23,7 @@ import ui.Painel
 import ui.Rolagem
 import ui.Seletor
 import ui.Vista
+import ui.CapaVideo
 
 test "consulta ignora par vazio e nulo" {
     assert(Cliente.par("limit", "") == "")
@@ -46,6 +51,30 @@ test "consulta com cursor e contexto separa por e comercial" {
 
 test "caminho escapa espaco" {
     assert(Cliente.caminho("a b") == "a+b")
+}
+
+test "feed pede a aba na consulta" {
+    assert(FeedApi.endereco("ALL", null, 10) == "/feed?tab=ALL&limit=10")
+    assert(FeedApi.endereco("FOR_YOU", "abc", 5) == "/feed?tab=FOR_YOU&cursor=abc&limit=5")
+}
+
+test "abas do feed comecam em tudo" {
+    assert(AbasFeed.padrao() == "ALL")
+    assert(AbasFeed.TODAS.size() == 5)
+    assert(AbasFeed.rotulos(100).get(0) == "Tudo")
+    assert(AbasFeed.rotulo(100, "FOR_YOU") == "Para você")
+    assert(AbasFeed.rotulo(40, "UNSEEN") == "Não vi")
+    assert(AbasFeed.proxima("INTERACTED", 1) == "ALL")
+    assert(AbasFeed.proxima("ALL", -1) == "INTERACTED")
+}
+
+test "linha de abas registra o clique" {
+    var regioes = Regioes()
+    Abas.registrar(regioes, 4, AbasFeed.rotulos(100), "Tudo")
+    var alvo = regioes.em(4, 3)
+    assert(alvo.tipo == "aba")
+    assert(alvo.indice == 0)
+    assert(regioes.em(4, 10).indice == 1)
 }
 
 test "cookie extraido do cabecalho bruto" {
@@ -620,14 +649,17 @@ test "cartao limita texto longo e conta as midias" {
     var p = PostResumo("p3", null, texto, "", "", "Mel", "mel", "", "", "",
         null, null, null, null, null, null, null, null, null, null, null, null, null, anexos, null, null)
     var linhas = Cartao.linhas(p, 40, "")
-    assert(linhas.size() == 6)
+    assert(linhas.size() == 11)
     for (var linha in linhas) {
         assert(Ansi.largura(linha) <= 40)
     }
     assert(Cartao.totalImagens(p) == 1)
-    assert(linhas.get(5).contains("▣ 1"))
-    assert(linhas.get(5).contains("♥ 0"))
-    assert(linhas.get(5).contains("↩ 0"))
+    assert(Cartao.totalVideos(p) == 1)
+    assert(Cartao.totalMidias(p) == 2)
+    assert(linhas.get(10).contains("▣ 1"))
+    assert(linhas.get(10).contains("▶ 1"))
+    assert(linhas.get(10).contains("♥ 0"))
+    assert(linhas.get(10).contains("↩ 0"))
 }
 
 test "cartao corta o autor que passa da largura" {
@@ -1232,25 +1264,72 @@ test "sixel usa o caractere vazio para coluna sem pixel" {
     assert(Sixel.potencia(5) == 32)
 }
 
-test "galeria lista apenas imagens com endereco" {
+test "galeria lista midias com endereco" {
     var p = json.decode<PostResumo>("{\"id\":\"p1\",\"media\":["
         + "{\"id\":\"m1\",\"cdnUrl\":\"/a.jpg\",\"mimeType\":\"image/jpeg\",\"width\":100,\"height\":50},"
         + "{\"id\":\"m2\",\"cdnUrl\":\"/b.mp4\",\"mimeType\":\"video/mp4\"},"
         + "{\"id\":\"m3\",\"mimeType\":\"image/png\"}]}")
-    var imagens = Galeria.imagens(p)
-    assert(imagens.size() == 1)
-    assert(imagens.get(0).id == "m1")
+    var midias = Galeria.itens(p)
+    assert(midias.size() == 2)
+    assert(midias.get(0).id == "m1")
+    assert(midias.get(1).id == "m2")
     assert(Galeria.indicador(1, 5) == "2/5")
-    assert(Galeria.tipo(imagens.get(0)) == "image/jpeg")
-    assert(Galeria.dimensoes(imagens.get(0)) == "100×50")
-    assert(Galeria.sufixo(imagens.get(0)) == " · 100×50")
-    assert(Galeria.endereco(imagens.get(0)) == Midia.CDN + "/a.jpg")
+    assert(Galeria.tipo(midias.get(0)) == "imagem")
+    assert(Galeria.tipo(midias.get(1)) == "vídeo")
+    assert(Galeria.dimensoes(midias.get(0)) == "100×50")
+    assert(Galeria.sufixo(midias.get(0)) == " · 100×50")
+    assert(Galeria.endereco(midias.get(0)) == Midia.CDN + "/a.jpg")
 }
 
-test "galeria limita colunas da imagem ao conteudo" {
+test "video conta como midia no cartao" {
+    var anexos = listOf<MidiaAnexo>(
+        MidiaAnexo("m2", "https://cdn.enois.ia.br/b.mp4", "video/mp4", 1280, 720))
+    var p = PostResumo("p8", null, "videio", "", "", "Mel", "mel", "", "", "",
+        null, null, null, null, null, null, null, null, null, null, null, null, null, anexos, null, null)
+    var linhas = Cartao.linhas(p, 60, "")
+    assert(Cartao.totalImagens(p) == 0)
+    assert(Cartao.totalVideos(p) == 1)
+    assert(Cartao.totalMidias(p) == 1)
+    assert(Cartao.extras(p).contains("▶ 1"))
+    var marcador = ""
+    var formato = ""
+    for (var linha in linhas) {
+        if (marcador.length == 0 && linha.contains("vídeo")) { marcador = linha }
+        if (formato.length == 0 && linha.contains("MP4")) { formato = linha }
+    }
+    assert(marcador.contains("▶"))
+    assert(formato.contains("1280×720"))
+}
+
+test "capa de video usa o cache de midia" {
+    assert(Capa.eVideo("video/mp4"))
+    assert(!Capa.eVideo("image/png"))
+    assert(!Capa.eVideo(null))
+    var caminho = Midia.arquivo("https://cdn.enois.ia.br/b.mp4")
+    assert(Midia.arquivoCapa(caminho).endsWith("-capa.png"))
+    assert(!Capa.pronta("/tmp/enois-cli/capa-que-nao-existe-12345.png"))
+}
+
+test "marcador de video respeita a largura" {
+    var anexo = MidiaAnexo("m2", "https://cdn.enois.ia.br/b.mp4", "video/mp4", 1280, 720)
+    var linhas = CapaVideo.marcador(anexo, 40)
+    assert(linhas.size() == 4)
+    assert(linhas.get(1).contains("▶"))
+    assert(linhas.get(2).contains("MP4"))
+    assert(linhas.get(2).contains("1280×720"))
+    for (var linha in linhas) {
+        assert(Ansi.largura(linha) <= 40)
+    }
+    var estreito = CapaVideo.marcador(anexo, 12)
+    for (var linha in estreito) {
+        assert(Ansi.largura(linha) <= 12)
+    }
+}
+
+test "galeria usa a largura do conteudo" {
     var antes = Ansi.LARGURA_CONTEUDO
     Ansi.LARGURA_CONTEUDO = 120
-    assert(Galeria.colunas() == 72)
+    assert(Galeria.colunas() == 114)
     Ansi.LARGURA_CONTEUDO = 40
     assert(Galeria.colunas() == 34)
     Ansi.LARGURA_CONTEUDO = 22
@@ -1288,4 +1367,102 @@ test "editor edita a partir do fim do texto carregado" {
     assert(editor.colunaCursor == "linha dois".length)
     editor.inserir("!")
     assert(editor.texto() == "linha um\nlinha dois!")
+}
+
+test "paragrafos colapsam linhas vazias e cortam a largura" {
+    var linhas = Caixa.paragrafos("um\n\n\n\ndois", 20)
+    assert(linhas.size() == 3)
+    assert(linhas.get(0) == "um")
+    assert(linhas.get(1) == "")
+    assert(linhas.get(2) == "dois")
+    var longa = Caixa.paragrafos("aaaaaaaaaaaaaaaaaaaaaaaaaaaa", 10)
+    assert(Ansi.largura(longa.get(0)) == 10)
+}
+
+test "comentario com quebra de linha mantem o recuo nas duas" {
+    var c = json.decode<Comentario>("{\"id\":\"c9\",\"authorUsername\":\"mel\","
+        + "\"content\":\"linha um\\nlinha dois\"}")
+    var linhas = CartaoComentario.linhas(c, 60, 0, "u1")
+    var achou = 0
+    for (var linha in linhas) {
+        if (linha.contains("linha um") || linha.contains("linha dois")) {
+            assert(linha.startsWith("   "))
+            achou = achou + 1
+        }
+    }
+    assert(achou == 2)
+}
+
+test "badge de imagem vira selo e nao despeja a url" {
+    var p = PostResumo("p9", "INSIGHT", "oi", "2020-03-05T12:00:00Z", "u1",
+        "Messila (Kof) (Kof)", "mel", "",
+        "https://api.enois.ia.br/api/storage/uploads/media_1/file.png", "", null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    var linha = Cartao.autor(p, 120, "")
+    assert(!linha.contains("https://"))
+    assert(linha.contains("◈"))
+    assert(linha.contains("Messila (Kof)"))
+    assert(linha.contains("@mel"))
+    assert(!linha.contains("(Kof) (Kof)"))
+}
+
+test "link no corpo ganha cor sem mudar a largura" {
+    var texto = "veja https://github.com/Rede-ENois/enois-cli e ajude"
+    var linha = Cartao.colorir(texto)
+    assert(linha.contains("\u001b[4m"))
+    assert(Ansi.largura(linha) == texto.length)
+}
+
+test "corpo cortado termina com reticencias" {
+    var texto = ""
+    for (var i = 0; i < 60; i = i + 1) { texto = texto + "palavra " }
+    var p = PostResumo("p10", "INSIGHT", texto, "", "", "Mel", "mel", "", "", "",
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    var linhas = Cartao.linhas(p, 40, "")
+    assert(linhas.size() == 6)
+    assert(linhas.get(4).contains("…"))
+}
+
+test "meio bloco transforma pixels em linhas de terminal" {
+    var caminho = "/tmp/enois-teste-meiobloco.png"
+    var arquivo = new java.io.File(caminho)
+    var imagem = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB)
+    imagem.setRGB(0, 0, -65536)
+    imagem.setRGB(1, 0, -16776961)
+    imagem.setRGB(0, 1, -16711936)
+    imagem.setRGB(1, 1, -1)
+    ImageIO.write(imagem, "png", arquivo)
+    var linhas = MeioBloco.converter(caminho, 2, 4)
+    assert(linhas.size() == 1)
+    assert(linhas.get(0).contains("▀"))
+    assert(linhas.get(0).contains("38;2;"))
+    assert(Ansi.largura(linhas.get(0)) == 2)
+    arquivo.delete()
+}
+
+test "meio bloco cai em ascii sem cor quando o terminal nao tem truecolor" {
+    var caminho = "/tmp/enois-teste-meiobloco-ascii.png"
+    var arquivo = new java.io.File(caminho)
+    var imagem = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB)
+    imagem.setRGB(0, 0, -1)
+    imagem.setRGB(1, 0, -16777216)
+    imagem.setRGB(0, 1, -1)
+    imagem.setRGB(1, 1, -16777216)
+    ImageIO.write(imagem, "png", arquivo)
+    var linhas = MeioBloco.converterAscii(caminho, 2, 4)
+    assert(linhas.size() == 1)
+    assert(!linhas.get(0).contains(Ansi.ESC))
+    assert(linhas.get(0) == "@ ")
+    arquivo.delete()
+}
+
+test "meio bloco mantem a largura e recorta a imagem alta" {
+    var caminho = "/tmp/enois-teste-meiobloco-alto.png"
+    var arquivo = new java.io.File(caminho)
+    var imagem = new BufferedImage(100, 400, BufferedImage.TYPE_INT_ARGB)
+    ImageIO.write(imagem, "png", arquivo)
+    assert(MeioBloco.colunasFinais(caminho, 60, 10) == 60)
+    assert(MeioBloco.deArquivo(caminho, 60, 10).size() == 10)
+    MeioBloco.limpar()
+    arquivo.delete()
 }

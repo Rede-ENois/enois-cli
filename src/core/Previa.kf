@@ -58,7 +58,7 @@ class Previa {
 
     List<String> feed(Bool salvos) {
         var api = FeedApi(this.cliente)
-        var r = api.listar(null, 5)
+        var r = api.listar(null, 5, FeedApi.ABA_PADRAO)
         if (salvos) { r = api.salvos(null, 5) }
         if (!r.ok()) { return Previa.falha(r) }
         var itens = FeedApi.paginaFeed(r).items

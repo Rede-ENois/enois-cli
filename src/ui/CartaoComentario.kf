@@ -65,8 +65,8 @@ class CartaoComentario {
         if (c.content != null) { texto = c.content }
         var disponivel = largura - recuo.length - 1
         if (disponivel < 8) { disponivel = 8 }
-        for (var parte in Ansi.quebrar(texto, disponivel)) {
-            linhas.add(recuo + Tema.texto(parte))
+        for (var parte in Caixa.paragrafos(texto, disponivel)) {
+            linhas.add(recuo + Cartao.colorir(parte))
         }
         var midias = c.totalDeMidias()
         if (midias > 0) {

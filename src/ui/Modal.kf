@@ -306,12 +306,18 @@ class Modal {
         var folga = largura - 5 - Ansi.largura(preenchido)
         if (folga < 0) { folga = 0 }
         return Tema.pinta(Tema.BORDA_SUAVE, "│") + " " + marca + " " + preenchido
-            + Modal.tracos(folga) + Tema.pinta(Tema.BORDA_SUAVE, "│")
+            + Modal.espacos(folga) + Tema.pinta(Tema.BORDA_SUAVE, "│")
     }
 
     static String tracos(Int quantidade) {
         var saida = ""
         for (var i = 0; i < quantidade; i = i + 1) { saida = saida + "─" }
         return Tema.pinta(Tema.BORDA_SUAVE, saida)
+    }
+
+    static String espacos(Int quantidade) {
+        var saida = ""
+        for (var i = 0; i < quantidade; i = i + 1) { saida = saida + " " }
+        return saida
     }
 }

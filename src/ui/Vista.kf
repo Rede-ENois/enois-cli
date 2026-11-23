@@ -14,6 +14,9 @@ class Vista {
     Int linhaConteudo = 1
     Int alturaConteudo = 0
     List<String> quadro = listOf<String>()
+    List<String> abas = listOf<String>()
+    String abaAtiva = ""
+    String dicaAbas = ""
 
     public constructor(Int altura) {
         this.altura = altura
@@ -28,6 +31,12 @@ class Vista {
         this.contexto = contexto
         this.secaoAtiva = ativa
         this.contagens = contagens
+    }
+
+    void marcarAbas(List<String> itens, String ativa, String dica) {
+        this.abas = itens
+        this.abaAtiva = ativa
+        this.dicaAbas = dica
     }
 
     static Int alturaPadrao() {
@@ -55,7 +64,9 @@ class Vista {
         var partesTopo = topo.split("\n")
         var partesCabecalho = cabecalho.split("\n")
         var partesRodape = rodape.split("\n")
-        var conteudo = Terminal.altura() - 1 - partesTopo.length - partesCabecalho.length - partesRodape.length - 2
+        var linhasAbas = 0
+        if (this.abas.size() > 0) { linhasAbas = 1 }
+        var conteudo = Terminal.altura() - 1 - partesTopo.length - partesCabecalho.length - partesRodape.length - 2 - linhasAbas
         if (conteudo < 4) { conteudo = 4 }
         this.altura = conteudo
         this.rolagem.altura = conteudo
@@ -71,6 +82,17 @@ class Vista {
                 BarraSecoes.registrar(this.regioes, linha, this.contexto, this.secaoAtiva, this.contagens)
             }
             indice = indice + 1
+            linha = linha + 1
+        }
+        if (this.abas.size() > 0) {
+            var linhaAbas = Abas.lista(this.abas, this.abaAtiva)
+            if (this.dicaAbas.length > 0) {
+                if (Ansi.largura(linhaAbas) + Ansi.largura(this.dicaAbas) + 4 <= Ansi.LARGURA_CONTEUDO) {
+                    linhaAbas = linhaAbas + "  " + Tema.mudo(this.dicaAbas)
+                }
+            }
+            linhas.add(linhaAbas)
+            Abas.registrar(this.regioes, linha, this.abas, this.abaAtiva)
             linha = linha + 1
         }
         linhas.add("")

@@ -5,7 +5,7 @@ class Abrir {
     static String externo(String endereco) {
         if (endereco.length == 0) { return "sem endereço" }
         var caminho = Midia.arquivo(endereco)
-        if (!Download.para(endereco, caminho)) { return "não baixou a mídia" }
+        if (!Download.comTempo(endereco, caminho, 180, 0)) { return "não baixou a mídia" }
         if (Abrir.comando("xdg-open", caminho)) { return "" }
         return "abra manualmente: " + caminho
     }

@@ -2,6 +2,7 @@ package ui
 
 import core.Ansi
 import core.Cliente
+import core.Midia
 import core.Tema
 import core.Tempo
 import tipos.*
@@ -9,27 +10,28 @@ import tipos.*
 class Cartao {
 
     static Int LINHAS_CORPO = 4
+    static Int COLUNAS_MINIATURA = 56
+    static Int LINHAS_MINIATURA = 16
+    static Int COLUNAS_DETALHE = 44
+    static Int LINHAS_DETALHE = 12
+    static Int COLUNAS_DETALHE_UNICA = 76
+    static Int LINHAS_DETALHE_UNICA = 20
 
     static List<String> linhas(PostResumo p, Int largura, String usuarioAtual) {
         var linhas = listOf<String>()
         linhas.add(Cartao.autor(p, largura, usuarioAtual))
         var corpo = Cartao.corpo(p)
-        if (corpo.length > 0) {
-            var quebradas = listOf<String>()
-            for (var parte in Caixa.partes(corpo)) {
-                for (var linha in Ansi.quebrar(parte, largura - 3)) {
-                    quebradas.add(linha)
-                }
+        var quebradas = Caixa.paragrafos(corpo, largura - 3)
+        var limite = Cartao.LINHAS_CORPO
+        for (var i = 0; i < quebradas.size() && i < limite; i = i + 1) {
+            var linha = quebradas.get(i)
+            if (i == limite - 1 && quebradas.size() > limite) {
+                linha = Cartao.resumir(linha, largura - 3)
             }
-            for (var i = 0; i < quebradas.size(); i = i + 1) {
-                if (i >= Cartao.LINHAS_CORPO) { break }
-                var linha = quebradas.get(i)
-                if (i == Cartao.LINHAS_CORPO - 1 && quebradas.size() > Cartao.LINHAS_CORPO) {
-                    linha = Ansi.cortar(linha, largura - 3)
-                }
-                linhas.add("   " + Tema.texto(linha))
-            }
+            linhas.add("   " + Cartao.colorir(linha))
         }
+        for (var linha in Cartao.miniaturas(p, largura, Cartao.COLUNAS_MINIATURA,
+            Cartao.LINHAS_MINIATURA, 1, false)) { linhas.add(linha) }
         var extras = Cartao.extras(p)
         if (extras.length > 0) { linhas.add("   " + extras) }
         return linhas
@@ -38,18 +40,92 @@ class Cartao {
     static List<String> linhasCompletas(PostResumo p, Int largura, String usuarioAtual) {
         var linhas = listOf<String>()
         linhas.add(Cartao.autor(p, largura, usuarioAtual))
-        var corpo = Cartao.corpo(p)
-        if (corpo.length > 0) {
-            for (var parte in Caixa.partes(corpo)) {
-                for (var linha in Ansi.quebrar(parte, largura - 3)) {
-                    linhas.add("   " + Tema.texto(linha))
-                }
-            }
+        for (var linha in Caixa.paragrafos(Cartao.corpo(p), largura - 3)) {
+            linhas.add("   " + Cartao.colorir(linha))
         }
         for (var linha in Cartao.linhasDaEnquete(p, largura)) { linhas.add(linha) }
+        var colunas = Cartao.COLUNAS_DETALHE
+        var altura = Cartao.LINHAS_DETALHE
+        if (Cartao.totalMidias(p) == 1) {
+            colunas = Cartao.COLUNAS_DETALHE_UNICA
+            altura = Cartao.LINHAS_DETALHE_UNICA
+        }
+        for (var linha in Cartao.miniaturas(p, largura, colunas, altura, 2, true)) { linhas.add(linha) }
         var extras = Cartao.extras(p)
         if (extras.length > 0) { linhas.add("   " + extras) }
         return linhas
+    }
+
+    static List<String> miniaturas(PostResumo p, Int largura, Int colunas, Int linhasMaximas,
+        Int limite, Bool baixar) {
+        var linhas = listOf<String>()
+        var anexos = p.media
+        if (anexos == null) { return linhas }
+        var colunasAlvo = colunas
+        if (colunasAlvo > largura - 6) { colunasAlvo = largura - 6 }
+        if (colunasAlvo < 8) { return linhas }
+        var desenhadas = 0
+        for (var anexo in anexos) {
+            if (desenhadas >= limite) { break }
+            var imagem = Imagem.eImagem(anexo.mimeType)
+            var video = CapaVideo.eVideo(anexo.mimeType)
+            if (!imagem && !video) { continue }
+            var url = ""
+            if (anexo.cdnUrl != null) { url = Midia.url(anexo.cdnUrl) }
+            if (url.length == 0) { continue }
+            var blocos = listOf<String>()
+            if (imagem) {
+                blocos = Imagem.miniaturas(Midia.arquivo(url), colunasAlvo, linhasMaximas)
+            }
+            if (video) {
+                blocos = CapaVideo.miniaturas(anexo, colunasAlvo, linhasMaximas, baixar)
+            }
+            if (blocos.size() == 0) { continue }
+            linhas.add("")
+            for (var bloco in blocos) { linhas.add("   " + bloco) }
+            desenhadas = desenhadas + 1
+        }
+        return linhas
+    }
+
+    static String colorir(String linha) {
+        var saida = ""
+        var resto = linha
+        var seguindo = true
+        while (seguindo) {
+            var inicio = Cartao.proximoLink(resto)
+            if (inicio < 0) {
+                saida = saida + Tema.texto(resto)
+                seguindo = false
+            } else {
+                var fim = inicio
+                while (fim < resto.length && resto.charAt(fim) != " ") { fim = fim + 1 }
+                saida = saida + Tema.texto(resto.substring(0, inicio))
+                saida = saida + Tema.link(resto.substring(inicio, fim))
+                resto = resto.substring(fim, resto.length)
+            }
+        }
+        return saida
+    }
+
+    static Int proximoLink(String texto) {
+        var http = texto.indexOf("http://")
+        var https = texto.indexOf("https://")
+        if (http < 0 && https < 0) { return -1 }
+        if (http < 0) { return https }
+        if (https < 0) { return http }
+        if (http < https) { return http }
+        return https
+    }
+
+    static String resumir(String linha, Int largura) {
+        var texto = linha
+        while (texto.endsWith("…")) {
+            texto = texto.substring(0, texto.length - 1)
+        }
+        var cortada = Ansi.cortar(texto, largura - 1)
+        if (cortada.endsWith("…")) { return cortada }
+        return cortada + "…"
     }
 
     static List<String> linhasDaEnquete(PostResumo p, Int largura) {
@@ -79,14 +155,12 @@ class Cartao {
 
     static String autor(PostResumo p, Int largura, String usuarioAtual) {
         var nome = ""
-        if (p.authorName != null) { nome = p.authorName }
+        if (p.authorName != null) { nome = Cartao.nomeLimpo(p.authorName) }
         var usuario = ""
         if (p.authorUsername != null) { usuario = p.authorUsername }
         var texto = Tema.titulo(nome)
         if (usuario.length > 0) { texto = texto + Tema.mudo(" @" + usuario) }
-        if (p.authorBadge != null && p.authorBadge.length > 0) {
-            texto = texto + Tema.destaque(" " + p.authorBadge)
-        }
+        texto = texto + Cartao.selo(p.authorBadge)
         var tipo = Cartao.tipo(p)
         if (tipo.length > 0) { texto = texto + Tema.mudo(" · " + tipo) }
         var momento = Tempo.relativo(p.createdAt)
@@ -95,6 +169,30 @@ class Cartao {
             texto = texto + Tema.suave(" · você")
         }
         return Ansi.cortar(" " + texto, largura)
+    }
+
+    static String nomeLimpo(String nome) {
+        var fim = nome.lastIndexOf(")")
+        if (fim < 0 || fim != nome.length - 1) { return nome }
+        var inicio = nome.lastIndexOf("(", fim)
+        if (inicio <= 0) { return nome }
+        var sufixo = nome.substring(inicio, fim + 1)
+        var antes = nome.substring(0, inicio).trim()
+        if (!antes.endsWith(sufixo)) { return nome }
+        return antes
+    }
+
+    static String selo(String? badge) {
+        if (badge == null || badge.length == 0) { return "" }
+        if (badge.startsWith("http://") || badge.startsWith("https://")) {
+            return Tema.destaque(" ◈")
+        }
+        return Tema.destaque(" ◈ " + Cartao.rotuloDoSelo(badge))
+    }
+
+    static String rotuloDoSelo(String badge) {
+        var texto = badge.replace("-", " ").replace("_", " ")
+        return texto.trim()
     }
 
     static String corpo(PostResumo p) {
@@ -127,8 +225,10 @@ class Cartao {
         if (compartilhamentos > 0) {
             partes.add(Tema.mudo("↗ " + String.valueOf(compartilhamentos)))
         }
-        var midias = Cartao.totalImagens(p)
-        if (midias > 0) { partes.add(Tema.mudo("▣ " + String.valueOf(midias))) }
+        var imagens = Cartao.totalImagens(p)
+        if (imagens > 0) { partes.add(Tema.mudo("▣ " + String.valueOf(imagens))) }
+        var videos = Cartao.totalVideos(p)
+        if (videos > 0) { partes.add(Tema.mudo("▶ " + String.valueOf(videos))) }
         if (p.poll != null) { partes.add(Tema.mudo("▤ enquete")) }
         var linha = ""
         for (var i = 0; i < partes.size(); i = i + 1) {
@@ -178,6 +278,20 @@ class Cartao {
             if (Imagem.eImagem(anexo.mimeType)) { total = total + 1 }
         }
         return total
+    }
+
+    static Int totalVideos(PostResumo p) {
+        var anexos = p.media
+        if (anexos == null) { return 0 }
+        var total = 0
+        for (var anexo in anexos) {
+            if (CapaVideo.eVideo(anexo.mimeType)) { total = total + 1 }
+        }
+        return total
+    }
+
+    static Int totalMidias(PostResumo p) {
+        return Cartao.totalImagens(p) + Cartao.totalVideos(p)
     }
 
     static String usuarioAtual(Cliente cliente) {

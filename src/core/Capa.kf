@@ -1,0 +1,45 @@
+package core
+
+class Capa {
+
+    static String AMBIENTE = "ENOIS_CAPA"
+    static String FERRAMENTA = "ffmpegthumbnailer"
+    static Int LADO = 640
+
+    static Bool eVideo(String? mimeType) {
+        if (mimeType == null) { return false }
+        return mimeType.startsWith("video/")
+    }
+
+    static String ferramenta() {
+        return Capa.ferramenta(Capa.AMBIENTE)
+    }
+
+    static String ferramenta(String nome) {
+        var escolhida = config.env(nome)
+        if (escolhida != null && escolhida.length > 0) { return escolhida }
+        return Capa.FERRAMENTA
+    }
+
+    static Bool pronta(String caminho) {
+        if (caminho.length == 0) { return false }
+        if (!File(caminho).exists()) { return false }
+        return File(caminho).size() > 0
+    }
+
+    static String deArquivo(String caminhoVideo) {
+        if (!Capa.pronta(caminhoVideo)) { return "" }
+        var destino = Midia.arquivoCapa(caminhoVideo)
+        if (Capa.pronta(destino)) { return destino }
+        Directory(Midia.dirCache()).mkdirs()
+        try {
+            var resultado = process.run(Capa.ferramenta(), "-i", caminhoVideo, "-o", destino,
+                "-s", String.valueOf(Capa.LADO), "-t", "10%", "-c", "png", "-q", "8")
+            if (resultado.exitCode != 0) { return "" }
+        } catch (String erro) {
+            return ""
+        }
+        if (!Capa.pronta(destino)) { return "" }
+        return destino
+    }
+}

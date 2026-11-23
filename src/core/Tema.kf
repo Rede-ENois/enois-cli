@@ -132,4 +132,8 @@ class Tema {
     static String selecionado(String texto) {
         return FUNDO_PRIMARIO_SUAVE + NEGRITO + TEXTO + texto + RESET
     }
+
+    static String link(String texto) {
+        return "\u001b[4m" + INFO + texto + RESET
+    }
 }

@@ -23,6 +23,7 @@ class TelaFeed {
     ContagensNavegacao contagens
     SinaisApi sinaisApi
     PostService servico
+    String aba = AbasFeed.padrao()
 
     public constructor(Cliente cliente) {
         this.cliente = cliente
@@ -51,7 +52,7 @@ class TelaFeed {
 
     Resposta carregar(String cursor, Int limite) {
         if (this.corporativo()) { return FeedApi(this.cliente).corporativo(cursor, limite) }
-        return FeedApi(this.cliente).listar(cursor, limite)
+        return FeedApi(this.cliente).listar(cursor, limite, this.aba)
     }
 
     String executar() {
@@ -125,6 +126,11 @@ class TelaFeed {
         if (caractere == "r" || caractere == "R") { this.recarregar() }
         if (caractere == "m" || caractere == "M") { this.mostrarImagens() }
         if (caractere == "n" || caractere == "N") { this.compor() }
+        if (caractere == "t" || caractere == "]" || caractere == "[") {
+            var passo = 1
+            if (caractere == "[") { passo = -1 }
+            this.trocarAba(AbasFeed.proxima(this.aba, passo))
+        }
         var indice = Seletor.digito(caractere)
         if (indice >= 0) {
             var rotas = Navegacao.secoesDe(this.contexto)
@@ -153,8 +159,10 @@ class TelaFeed {
                 return
             }
             for (var i = 0; i < itens.size(); i = i + 1) {
+                Imagem.preparar(itens.get(i))
+            }
+            for (var i = 0; i < itens.size(); i = i + 1) {
                 println(this.card(itens.get(i)))
-                this.mostrarImagens(itens.get(i))
             }
             var proximo = ""
             if (pagina.nextCursor != null) { proximo = pagina.nextCursor }
@@ -181,10 +189,20 @@ class TelaFeed {
         var topo = Cabecalho.linha(this.cliente, this.titulo(), this.contexto)
         var cabecalho = Caixa.juntar(BarraSecoes.linhas(this.contexto, "feed", this.contagens))
         this.vista.marcarSecoes(this.contexto, "feed", this.contagens)
+        this.marcarAbas()
         var posicao = ""
         if (this.posts.size() > 0) { posicao = this.vista.posicao() }
         var rodape = Caixa.juntar(BarraContexto.linhas(this.atalhos(), this.status, posicao))
         this.vista.desenhar(topo, cabecalho, rodape)
+    }
+
+    void marcarAbas() {
+        if (this.corporativo()) {
+            this.vista.marcarAbas(listOf<String>(), "", "")
+            return
+        }
+        this.vista.marcarAbas(AbasFeed.rotulos(Ansi.LARGURA_CONTEUDO),
+            AbasFeed.rotulo(Ansi.LARGURA_CONTEUDO, this.aba), "T troca")
     }
 
     List<String> atalhos() {
@@ -196,6 +214,7 @@ class TelaFeed {
         lista.add("C comenta")
         lista.add("N publica")
         lista.add("R atualiza")
+        lista.add("T troca feed")
         lista.add("q volta")
         lista.add("M mídias")
         lista.add("1–6 seções")
@@ -208,9 +227,29 @@ class TelaFeed {
             this.destino = this.rotaDaSecao(alvo.indice)
             return true
         }
+        if (alvo.tipo == "aba") {
+            if (alvo.indice >= 0 && alvo.indice < AbasFeed.TODAS.size()) {
+                this.trocarAba(AbasFeed.TODAS.get(alvo.indice))
+            }
+            return true
+        }
         if (alvo.tipo != "item") { return false }
         this.abrirPost(alvo.indice)
         return true
+    }
+
+    void trocarAba(String nova) {
+        if (this.corporativo()) { return }
+        if (nova == this.aba) { return }
+        this.aba = nova
+        this.posts = listOf<PostResumo>()
+        this.proximo = ""
+        this.temMais = false
+        this.erro = ""
+        this.vista.rolagem.foco = 0
+        this.vista.rolagem.deslocamento = 0
+        this.status = Tema.mudo("carregando…")
+        this.carregarPagina("")
     }
 
     String rotaDaSecao(Int indice) {
@@ -277,6 +316,7 @@ class TelaFeed {
         if (itens != null) {
             for (var i = 0; i < itens.size(); i = i + 1) {
                 this.posts.add(itens.get(i))
+                Imagem.preparar(itens.get(i))
             }
         }
         var novo = ""
@@ -409,10 +449,6 @@ class TelaFeed {
         this.restaurar()
     }
 
-    void mostrarImagens(PostResumo p) {
-        Imagem.mostrarDoPost(p)
-    }
-
     void compor() {
         var editor = EditorPublicacao(this.teclado, this.cliente, this.vista.fundo(), this.corporativo())
         var publicou = editor.executar()
@@ -457,6 +493,7 @@ class TelaFeed {
 
     void restaurar() {
         print(Ansi.LIMPAR)
+        this.marcarAbas()
         Vista.imprimir(this.vista.montar(
             Cabecalho.linha(this.cliente, this.titulo(), this.contexto),
             Caixa.juntar(BarraSecoes.linhas(this.contexto, "feed", this.contagens)),
@@ -494,10 +531,6 @@ class TelaFeed {
 
     String card(PostResumo p) {
         return Caixa.juntar(this.linhasDoPost(p))
-    }
-
-    Int totalImagens(PostResumo p) {
-        return Cartao.totalImagens(p)
     }
 
     static String tipoEmTexto(String tipo) {
