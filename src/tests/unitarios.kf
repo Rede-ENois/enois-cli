@@ -9,6 +9,7 @@ import kof.json
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 import ui.Abas
+import ui.AbasFeed
 import ui.Caixa
 import ui.Badge
 import ui.BarraContexto
@@ -49,6 +50,30 @@ test "consulta com cursor e contexto separa por e comercial" {
 
 test "caminho escapa espaco" {
     assert(Cliente.caminho("a b") == "a+b")
+}
+
+test "feed pede a aba na consulta" {
+    assert(FeedApi.endereco("ALL", null, 10) == "/feed?tab=ALL&limit=10")
+    assert(FeedApi.endereco("FOR_YOU", "abc", 5) == "/feed?tab=FOR_YOU&cursor=abc&limit=5")
+}
+
+test "abas do feed comecam em tudo" {
+    assert(AbasFeed.padrao() == "ALL")
+    assert(AbasFeed.TODAS.size() == 5)
+    assert(AbasFeed.rotulos(100).get(0) == "Tudo")
+    assert(AbasFeed.rotulo(100, "FOR_YOU") == "Para você")
+    assert(AbasFeed.rotulo(40, "UNSEEN") == "Não vi")
+    assert(AbasFeed.proxima("INTERACTED", 1) == "ALL")
+    assert(AbasFeed.proxima("ALL", -1) == "INTERACTED")
+}
+
+test "linha de abas registra o clique" {
+    var regioes = Regioes()
+    Abas.registrar(regioes, 4, AbasFeed.rotulos(100), "Tudo")
+    var alvo = regioes.em(4, 3)
+    assert(alvo.tipo == "aba")
+    assert(alvo.indice == 0)
+    assert(regioes.em(4, 10).indice == 1)
 }
 
 test "cookie extraido do cabecalho bruto" {

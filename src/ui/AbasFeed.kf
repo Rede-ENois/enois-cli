@@ -1,0 +1,38 @@
+package ui
+
+import api.FeedApi
+
+class AbasFeed {
+
+    static List<String> TODAS = listOf<String>("ALL", "FOR_YOU", "UNSEEN", "TRENDING", "INTERACTED")
+
+    static String padrao() {
+        return FeedApi.ABA_PADRAO
+    }
+
+    static List<String> rotulos(Int largura) {
+        if (largura >= 76) {
+            return listOf<String>("Tudo", "Para você", "Ainda não vi", "Em alta", "Interações")
+        }
+        return listOf<String>("Tudo", "Pra você", "Não vi", "Em alta", "Inter.")
+    }
+
+    static String rotulo(Int largura, String aba) {
+        var lista = AbasFeed.rotulos(largura)
+        return lista.get(AbasFeed.indice(aba))
+    }
+
+    static Int indice(String aba) {
+        for (var i = 0; i < AbasFeed.TODAS.size(); i = i + 1) {
+            if (AbasFeed.TODAS.get(i) == aba) { return i }
+        }
+        return 0
+    }
+
+    static String proxima(String aba, Int passo) {
+        var indice = AbasFeed.indice(aba) + passo
+        while (indice < 0) { indice = indice + AbasFeed.TODAS.size() }
+        while (indice >= AbasFeed.TODAS.size()) { indice = indice - AbasFeed.TODAS.size() }
+        return AbasFeed.TODAS.get(indice)
+    }
+}
